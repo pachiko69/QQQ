@@ -19,13 +19,106 @@ h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;}
 .btn-front{background:#3b82f6;}
 .btn-admin{background:#f43f5e;}
 .empty-tip{text-align:center;color:#999;font-size:18px;padding:60px 0;}
+
+/* 新增版權區樣式 */
+.footer-copyright {
+  width: 100%;
+  padding: 30px 0;
+  margin-top: 60px;
+  text-align: center;
+}
+.studio-btn {
+  background: #1f2937;
+  color: #fff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.studio-btn:hover {
+  background: #374151;
+}
+
+/* 彈窗遮罩樣式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* 彈窗內容樣式 */
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+.modal-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+.modal-text {
+  line-height: 1.8;
+  color: #4b5563;
+  margin-bottom: 15px;
+}
+.close-modal {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  background: none;
+  border: none;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="container">
-  <h1>網站連結展示平台</h1>
+  <h1>~快快快~ 網站展示平台</h1>
   <div id="linkList" class="grid-row"><div class="empty-tip">載入中...</div></div>
+</div>
+
+<!-- 新增版權區域 -->
+<div class="footer-copyright">
+  <button class="studio-btn" id="studioBtn">快快快工作室</button>
+</div>
+
+<!-- 彈窗結構 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-content">
+    <button class="close-modal" id="closeModal">&times;</button>
+    <h3 class="modal-title">快快快工作室</h3>
+    <p class="modal-text"><strong>公司簡介：</strong><br>
+      快快快工作室成立於2026年，專注於網站開發、系統建置與數位行銷服務，秉持著高效、專業、創新的理念，為客戶打造優質的數位產品與解決方案。
+    </p>
+    <p class="modal-text"><strong>連絡方式：</strong><br>
+      📞 聯繫電話：0932-740558 (同LINE ID)<br>
+      📧 電子郵件：tjc@ms2.hinet.net<br>
+      🏠 公司地址：高雄市鼓山區鼓山二路69號
+    </p>
+    <p class="modal-text"><strong>營業時間：</strong><br>
+      週一至週五 09:00 - 18:00（國定假日休息）
+    </p>
+  </div>
 </div>
 
 <script>   
@@ -72,6 +165,39 @@ function renderList(list){
     `
   })
 }
+
+// 彈窗相關功能
+const studioBtn = document.getElementById('studioBtn');
+const modalOverlay = document.getElementById('modalOverlay');
+const closeModal = document.getElementById('closeModal');
+
+// 打開彈窗
+studioBtn.addEventListener('click', () => {
+  modalOverlay.style.display = 'flex';
+});
+
+// 關閉彈窗函式
+function closeModalFunc() {
+  modalOverlay.style.display = 'none';
+}
+
+// 點擊關閉按鈕關閉彈窗
+closeModal.addEventListener('click', closeModalFunc);
+
+// 點擊遮罩層關閉彈窗
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) {
+    closeModalFunc();
+  }
+});
+
+// 按下ESC鍵關閉彈窗（額外優化）
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modalOverlay.style.display === 'flex') {
+    closeModalFunc();
+  }
+});
+
 getLinks();
 </script>
 </body>
