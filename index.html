@@ -6,29 +6,35 @@
 <title>多連結展示平台</title>
 <style>
 *{box-sizing:border-box;}
-body{background:#f3f4f6;margin:0;font-family:system-ui,sans-serif;}
+/* 淺藍色背景主調 */
+body{background:#e8f4f8;margin:0;font-family:system-ui,sans-serif;}
 .container{max-width:1200px;margin:0 auto;padding:40px 16px;}
-h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;}
+h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;color:#2d3748;}
 .grid-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px;}
-.card{background:#fff;border-radius:12px;box-shadow:0 2px 10px #00000014;padding:20px;}
+/* 卡片調整為淺藍色系 */
+.card{background:#f0f8fb;border-radius:12px;box-shadow:0 2px 10px #0077b614;padding:20px;border:1px solid #deeef5;}
 .card-img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:16px;}
-.card-title{font-size:18px;font-weight:bold;margin:0 0 12px;}
-.card-desc{color:#666;margin:0 0 24px;line-height:1.6;}
+.card-title{font-size:18px;font-weight:bold;margin:0 0 12px;color:#2d3748;}
+.card-desc{color:#4a5568;margin:0 0 24px;line-height:1.6;}
 .btn-group{display:flex;gap:12px;}
-.btn{flex:1;text-align:center;padding:10px;border-radius:6px;text-decoration:none;color:#fff;border:none;cursor:pointer;}
-.btn-front{background:#3b82f6;}
-.btn-admin{background:#f43f5e;}
-.empty-tip{text-align:center;color:#999;font-size:18px;padding:60px 0;}
+.btn{flex:1;text-align:center;padding:10px;border-radius:6px;text-decoration:none;color:#fff;border:none;cursor:pointer;transition:background 0.3s;}
+/* 按鈕調整為協調的藍色系 */
+.btn-front{background:#4299e1;}
+.btn-front:hover{background:#3182ce;}
+.btn-admin{background:#9f7aea;}
+.btn-admin:hover{background:#805ad5;}
+.empty-tip{text-align:center;color:#718096;font-size:18px;padding:60px 0;}
 
-/* 新增版權區樣式 */
+/* 新增版權區樣式 - 調整為淺藍協調色 */
 .footer-copyright {
   width: 100%;
   padding: 30px 0;
   margin-top: 60px;
   text-align: center;
+  background:#f5fafe;
 }
 .studio-btn {
-  background: #1f2937;
+  background: #2d3748;
   color: #fff;
   border: none;
   padding: 12px 30px;
@@ -38,7 +44,7 @@ h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;}
   transition: background 0.3s;
 }
 .studio-btn:hover {
-  background: #374151;
+  background: #4a5568;
 }
 
 /* 彈窗遮罩樣式 */
@@ -48,34 +54,35 @@ h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;}
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(66, 153, 225, 0.5); /* 淺藍色半透明遮罩 */
   display: none;
   justify-content: center;
   align-items: center;
   z-index: 999;
 }
 
-/* 彈窗內容樣式 */
+/* 彈窗內容樣式 - 淺藍色系調整 */
 .modal-content {
-  background: #fff;
+  background: #f8fbfd;
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
   padding: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(66, 153, 225, 0.2);
   position: relative;
+  border: 1px solid #deeef5;
 }
 .modal-title {
   font-size: 22px;
   font-weight: bold;
   margin-bottom: 20px;
-  color: #1f2937;
-  border-bottom: 1px solid #e5e7eb;
+  color: #2d3748;
+  border-bottom: 1px solid #deeef5;
   padding-bottom: 10px;
 }
 .modal-text {
   line-height: 1.8;
-  color: #4b5563;
+  color: #4a5568;
   margin-bottom: 15px;
 }
 .close-modal {
@@ -84,9 +91,13 @@ h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;}
   right: 20px;
   font-size: 24px;
   cursor: pointer;
-  color: #6b7280;
+  color: #718096;
   background: none;
   border: none;
+  transition: color 0.3s;
+}
+.close-modal:hover {
+  color: #4299e1;
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
