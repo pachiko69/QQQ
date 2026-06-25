@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><<濱線露店>>購物商城</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:微軟正黑體,sans-serif;}
+        body{background:#f6f7f9;padding-top:70px;}
+        .hide{display:none !important;}
+        .container{max-width:1250px;margin:0 auto;padding:0 15px;}
+        .header{position:fixed;top:0;left:0;width:100%;background:#165DFF;color:#fff;height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 25px;z-index:999;}
+        .nav-logo{font-size:22px;font-weight:bold;cursor:pointer;}
+        .nav-menu{display:flex;gap:25px;align-items:center;}
+        .nav-item{cursor:pointer;font-size:15px;}
+        .nav-item:hover{opacity:0.85;}
+        .cart-badge{position:relative;}
+        .cart-num{position:absolute;top:-8px;right:-10px;background:#f53f3f;border-radius:50%;width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;}
+        .cate-wrap{display:flex;flex-wrap:wrap;gap:10px;margin:30px 0;}
+        .cate-tag{border:1px solid #ccc;padding:7px 15px;border-radius:3px;cursor:pointer;}
+        .cate-tag:hover{background:#165DFF;color:#fff;border-color:#165DFF;}
+        .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;}
+        .product-card{background:#fff;border-radius:6px;box-shadow:0 2px 8px #0001;padding:15px;}
+        .product-img{width:100%;height:165px;object-fit:cover;border-radius:4px;background:#eee;}
+        .product-name{font-weight:bold;margin:10px 0 5px;}
+        .product-cate{font-size:13px;color:#777;}
+        .product-price{color:#f53f3f;font-size:18px;font-weight:bold;margin:8px 0;}
+        .add-cart{width:100%;background:#165DFF;color:#fff;border:none;padding:9px;border-radius:4px;margin-top:10px;cursor:pointer;}
+        /* 新增詳細規格按鈕樣式 */
+        .spec-btn{width:100%;background:#667eea;color:#fff;border:none;padding:9px;border-radius:4px;margin-top:8px;cursor:pointer;}
+        .cart-empty{text-align:center;padding:80px 0;color:#999;}
+        .cart-empty i{font-size:55px;margin-bottom:15px;}
+        .cart-item{background:#fff;padding:15px;border-radius:6px;margin-bottom:12px;display:flex;align-items:center;gap:15px;}
+        .cart-img{width:80px;height:80px;object-fit:cover;border-radius:4px;background:#eee;}
+        .num-btn{width:28px;height:28px;border:1px solid #ddd;background:#fff;cursor:pointer;}
+        .total-bar{background:#fff;padding:18px;border-radius:6px;margin-top:15px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+        /* 新增運費區域樣式 */
+        .shipping-fee{width:100%;padding:10px 0;border-top:1px dashed #eee;margin-top:10px;display:flex;justify-content:space-between;}
+        .shipping-fee .fee-label{font-size:16px;color:#333;}
+        .shipping-fee .fee-value{font-size:16px;font-weight:bold;color:#f53f3f;}
+        /* 新增稅金區域樣式 */
+        .tax-fee{width:100%;padding:10px 0;border-top:1px dashed #eee;display:flex;justify-content:space-between;}
+        .tax-fee .fee-label{font-size:16px;color:#333;}
+        .tax-fee .fee-value{font-size:16px;font-weight:bold;color:#f53f3f;}
+        /* 新增發票資訊區域樣式 */
+        .invoice-info{width:100%;padding:15px 0;border-top:1px dashed #eee;margin-top:10px;}
+        .invoice-checkbox{margin-bottom:15px;display:flex;flex-direction:column;gap:8px;font-size:16px;}
+        .invoice-select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:15px;}
+        .invoice-input-group{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+        .invoice-input{width:100%;border:1px solid #ddd;padding:11px;border-radius:4px;font-size:14px;}
+        .invoice-label{font-size:14px;color:#333;margin-bottom:5px;display:block;}
+        .checkout{background:#165DFF;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;}
+        .clear-cart{background:#f53f3f;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;}
+        .force-clear-cart{background:#900;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;margin-bottom:15px;}
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .modal-box{background:#fff;width:92%;max-width:500px;padding:22px;border-radius:6px;max-height:90vh;overflow-y:auto;}
+        .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+        .close{font-size:22px;cursor:pointer;}
+        .input-box{width:100%;border:1px solid #ddd;padding:11px;border-radius:4px;margin:9px 0;}
+        .submit-btn{width:100%;background:#165DFF;color:#fff;border:none;padding:11px;border-radius:4px;margin-top:8px;cursor:pointer;}
+        
+        /* 新增訂單頁面樣式 */
+        .order-empty{text-align:center;padding:80px 0;color:#999;}
+        .order-empty i{font-size:55px;margin-bottom:15px;}
+        .order-item{background:#fff;padding:20px;border-radius:6px;margin-bottom:15px;}
+        .order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;}
+        .order-no{font-weight:bold;color:#333;}
+        .order-status{padding:4px 10px;border-radius:4px;font-size:13px;}
+        .status-pending{background:#fff3cd;color:#856404;border:1px solid #ffeeba;}
+        .status-paid{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb;}
+        .status-shipped{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+        .status-completed{background:#e2e3e5;color:#383d41;border:1px solid #d6d8db;}
+        .status-canceled{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+        .order-total{color:#f53f3f;font-weight:bold;font-size:18px;margin:10px 0;}
+        .order-detail-btn{background:#165DFF;color:#fff;border:none;padding:8px 15px;border-radius:4px;cursor:pointer;font-size:14px;}
+        .order-detail-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;}
+        .order-detail-img{width:60px;height:60px;object-fit:cover;border-radius:4px;}
+        .order-detail-info{flex:1;}
+        .order-detail-name{font-weight:bold;margin-bottom:3px;}
+        .order-detail-price{font-size:13px;color:#f53f3f;}
+        .order-detail-num{font-size:13px;color:#777;}
+        .order-address{margin:10px 0;padding:10px;background:#f9f9f9;border-radius:4px;font-size:14px;}
+        
+        /* 商品規格彈窗樣式 */
+        .spec-modal-box{background:#fff;width:92%;max-width:600px;padding:22px;border-radius:6px;max-height:90vh;overflow-y:auto;}
+        .spec-content{margin-top:15px;line-height:1.8;font-size:15px;}
+        .spec-title{font-size:18px;font-weight:bold;margin-bottom:10px;color:#333;}
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="nav-logo" onclick="switchPage('home')"><i class="fa fa-shopping-bag"></i> <<濱線露店>>購物商城</div>
+    <div class="nav-menu">
+        <span class="nav-item" onclick="switchPage('home')">首頁</span>
+        <span class="nav-item cart-badge" onclick="openCart()">
+            購物車
+            <span class="cart-num" id="cartCount">0</span>
+        </span>
+        <span class="nav-item" id="orderBtn" style="display:none;" onclick="switchPage('order')">我的訂單</span>
+        <span class="nav-item" id="regBtn" onclick="openRegModal()">註冊</span>
+        <span class="nav-item" id="loginBtn" onclick="openLoginModal()">登入</span>
+        <span class="nav-item" id="userText" style="display:none;"></span>
+        <span class="nav-item" id="logoutBtn" style="display:none;" onclick="userLogout()"><i class="fa fa-sign-out"></i> 登出</span>
+    </div>
+</div>
+<div class="container">
+    <!-- 首頁 -->
+    <div id="page-home" class="page-view">
+        <div class="cate-wrap" id="cateHtml"></div>
+        <h3 style="margin:10px 0;font-size:18px;">全部商品</h3>
+        <div class="product-grid" id="productHtml"></div>
+    </div>
+    <!-- 購物車頁 -->
+    <div id="page-cart" class="page-view hide">
+        <h2 style="margin:20px 0;font-size:22px;">我的購物車</h2>
+        <button class="force-clear-cart" onclick="clearAllLocalCart()">⚠️ 強制清空全部購物車</button>
+        <div class="cart-empty" id="cartEmptyTip">
+            <i class="fa fa-shopping-cart"></i>
+            <p>購物車暫無任何商品</p>
+        </div>
+        <div id="cartListBox"></div>
+    </div>
+    <!-- 我的訂單頁 -->
+    <div id="page-order" class="page-view hide">
+        <h2 style="margin:20px 0;font-size:22px;">我的訂單</h2>
+        <div class="order-empty" id="orderEmptyTip">
+            <i class="fa fa-file-text-o"></i>
+            <p>您暫無任何訂單記錄</p>
+        </div>
+        <div id="orderListBox"></div>
+    </div>
+</div>
+<!-- 會員註冊 -->
+<div id="regModal" class="modal hide">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>會員註冊</h3>
+            <span class="close" onclick="closeModal('regModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <input class="input-box" type="email" id="regEmail" placeholder="請輸入電子信箱">
+        <input class="input-box" type="password" id="regPwd" placeholder="請設定登入密碼">
+        <button class="submit-btn" onclick="userRegister()">立即註冊</button>
+        <p style="text-align:center;margin-top:12px;">已有帳號? <span style="color:#165DFF;cursor:pointer;" onclick="closeModal('regModal');openLoginModal()">前往登入</span></p>
+    </div>
+</div>
+<!-- 會員登入 -->
+<div id="loginModal" class="modal hide">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>會員登入</h3>
+            <span class="close" onclick="closeModal('loginModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <input class="input-box" type="email" id="loginEmail" placeholder="輸入註冊信箱">
+        <input class="input-box" type="password" id="loginPwd" placeholder="輸入登入密碼">
+        <button class="submit-btn" onclick="userLogin()">立即登入</button>
+    </div>
+</div>
+<!-- 結帳填寫收貨資訊彈窗 -->
+<div id="checkoutUserModal" class="modal hide">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>填寫收貨資訊</h3>
+            <span class="close" onclick="closeModal('checkoutUserModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <label>收件人姓名</label>
+        <input class="input-box" id="buyerName" placeholder="請填寫真實姓名">
+        <label>聯絡手機</label>
+        <input class="input-box" id="buyerPhone" placeholder="請填寫聯絡電話">
+        <label>收貨地址</label>
+        <textarea class="input-box" id="buyerAddress" placeholder="請填寫完整收貨地址"></textarea>
+        <label>備註</label>
+        <input class="input-box" id="buyerRemark" rows="4" placeholder="請填寫備註">
+        <button class="submit-btn" onclick="submitCheckoutOrder()">確認結帳下單</button>
+    </div>
+</div>
+<!-- 訂單詳情彈窗 -->
+<div id="orderDetailModal" class="modal hide">
+    <div class="modal-box" style="max-width:600px;">
+        <div class="modal-head">
+            <h3>訂單詳情</h3>
+            <span class="close" onclick="closeModal('orderDetailModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <div id="orderDetailContent"></div>
+    </div>
+</div>
+<!-- 商品詳細規格彈窗 -->
+<div id="productSpecModal" class="modal hide">
+    <div class="spec-modal-box">
+        <div class="modal-head">
+            <h3>商品詳細規格</h3>
+            <span class="close" onclick="closeModal('productSpecModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <div class="spec-content" id="specContent">
+            <!-- 規格內容將動態加載 -->
+        </div>
+    </div>
+</div>
+<script>
+const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const DEF_IMG = "https://picsum.photos/300/300";
+const DEF_SMALL = "https://picsum.photos/100/100";
+
+// ========== 購物車基礎邏輯 ==========
+function getCartData(){
+    let cart = localStorage.getItem("shopCartData");
+    if(!cart) return [];
+    try{
+        return JSON.parse(cart);
+    }catch{
+        return [];
+    }
+}
+function setCartData(arr){
+    localStorage.setItem("shopCartData",JSON.stringify(arr));
+    updateCartNum();
+}
+function updateCartNum(){
+    let list = getCartData();
+    let total = 0;
+    list.forEach(item=>total+=item.num);
+    document.getElementById("cartCount").innerText = total;
+}
+function addToCart(pid,name,price,img){
+    let cart = getCartData();
+    let has = cart.find(v=>v.pid == pid);
+    if(has){
+        has.num += 1;
+    }else{
+        cart.push({
+            pid:pid,
+            name:name,
+            price:Number(price),
+            img:img||DEF_SMALL,
+            num:1
+        });
+    }
+    setCartData(cart);
+    alert("成功加入購物車！");
+}
+function openCart(){
+    document.querySelectorAll(".page-view").forEach(p=>p.classList.add("hide"));
+    document.getElementById("page-cart").classList.remove("hide");
+    renderCartPage();
+}
+
+// 計算運費
+function calculateShippingFee(subtotal) {
+    return subtotal >= 1000 ? 0 : 60;
+}
+// 計算5%稅金：二聯/三聯才課稅
+function calculateTax(amount, needTax) {
+    return needTax ? Math.round(amount * 0.05) : 0;
+}
+// 切換發票類型重新渲染購物車金額
+function toggleInvoice() {
+    renderCartPage();
+}
+
+// ========== 渲染購物車頁（完整二聯/三聯發票UI） ==========
+function renderCartPage(){
+    let cart = getCartData();
+    let emptyTip = document.getElementById("cartEmptyTip");
+    let box = document.getElementById("cartListBox");
+    if(cart.length === 0){
+        emptyTip.style.display = "block";
+        box.innerHTML = "";
+        return;
+    }
+    emptyTip.style.display = "none";
+    let html = "";
+    let subtotal = 0;
+    cart.forEach((item,idx)=>{
+        let sub = item.price * item.num;
+        subtotal += sub;
+        html += `
+        <div class="cart-item">
+            <img class="cart-img" src="${item.img}" onerror="this.src='${DEF_SMALL}'">
+            <div style="flex:1">
+                <div style="font-weight:bold">${item.name}</div>
+                <div style="color:#f53f3f">NT$${item.price}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button class="num-btn" onclick="cartMinus(${idx})">-</button>
+                <span>${item.num}</span>
+                <button class="num-btn" onclick="cartPlus(${idx})">+</button>
+            </div>
+            <span style="width:80px;text-align:right;font-weight:bold">${sub}元</span>
+            <i class="fa fa-trash" style="color:#f53f3f;cursor:pointer" onclick="cartDel(${idx})"></i>
+        </div>
+        `;
+    });
+
+    // 讀取發票類型
+    let invoiceType = document.getElementById('invoiceType') ? document.getElementById('invoiceType').value : "none";
+    // 是否顯示公司/統編：只有三聯式才顯示
+    let showCompanyField = invoiceType === "triple";
+    // 是否課稅：二聯、三聯皆需計稅
+    let needCalcTax = invoiceType === "double" || invoiceType === "triple";
+
+    let shippingFee = calculateShippingFee(subtotal);
+    let subtotalShip = subtotal + shippingFee;
+    let tax = calculateTax(subtotalShip, needCalcTax);
+    let totalAmount = subtotalShip + tax;
+
+    html += `
+    <div class="total-bar">
+        <div style="width:100%;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <div>商品小計：</div>
+                <div style="color:#333;font-weight:bold">${subtotal} 元</div>
+            </div>
+            <div class="shipping-fee">
+                <div class="fee-label">運費：${shippingFee === 0 ? '(滿$1000免運費)' : ''}</div>
+                <div class="fee-value">${shippingFee === 0 ? '免運費' : `${shippingFee} 元`}</div>
+            </div>
+            <div class="tax-fee">
+                <div class="fee-label">稅金 (5%)：${!needCalcTax ? '(未開立發票)' : ''}</div>
+                <div class="fee-value">${tax === 0 ? '0 元' : `${tax} 元`}</div>
+            </div>
+            <!-- 發票類型下拉 -->
+            <div class="invoice-info">
+                <div class="invoice-checkbox">
+                    <label>發票類型</label>
+                    <select id="invoiceType" class="invoice-select" onchange="toggleInvoice()">
+                        <option value="none" ${invoiceType==="none"?"selected":""}>不開立發票</option>
+                        <option value="double" ${invoiceType==="double"?"selected":""}>二聯式發票(個人，不需統編)</option>
+                        <option value="triple" ${invoiceType==="triple"?"selected":""}>三聯式發票(公司，需填統編)</option>
+                    </select>
+                </div>
+                ${showCompanyField ? `
+                <div class="invoice-input-group">
+                    <div>
+                        <label class="invoice-label">公司名稱</label>
+                        <input type="text" id="companyName" class="invoice-input" placeholder="請輸入公司完整名稱">
+                    </div>
+                    <div>
+                        <label class="invoice-label">統一編號</label>
+                        <input type="text" id="taxId" class="invoice-input" placeholder="8位數統一編號">
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:10px;">
+                <div>應付總金額：</div>
+                <div style="color:#f53f3f;font-size:20px;font-weight:bold">${totalAmount} 元</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:15px;">
+            <button class="clear-cart" onclick="clearAllLocalCart()">清空購物車</button>
+            <button class="checkout" onclick="openCheckoutForm()">結帳下單</button>
+        </div>
+    </div>
+    `;
+    box.innerHTML = html;
+}
+
+function cartPlus(idx){
+    let cart = getCartData();
+    cart[idx].num++;
+    setCartData(cart);
+    renderCartPage();
+}
+function cartMinus(idx){
+    let cart = getCartData();
+    if(cart[idx].num > 1){
+        cart[idx].num--;
+        setCartData(cart);
+        renderCartPage();
+    }
+}
+function cartDel(idx){
+    let cart = getCartData();
+    cart.splice(idx,1);
+    setCartData(cart);
+    renderCartPage();
+}
+function clearAllLocalCart(){
+    if(!confirm("確定清空所有購物車商品？"))return;
+    setCartData([]);
+    renderCartPage();
+}
+
+// ========== 結帳前驗證發票資訊 ==========
+function openCheckoutForm(){
+    let userInfo = localStorage.getItem("shopUserInfo");
+    if(!userInfo){
+        alert("請先登入會員再結帳！");
+        openLoginModal();
+        return;
+    }
+    let cart = getCartData();
+    if(cart.length===0){
+        alert("購物車暫無商品！");
+        return;
+    }
+    const invoiceType = document.getElementById('invoiceType').value;
+    // 三聯式強制檢查公司+統編
+    if(invoiceType === "triple"){
+        const comp = document.getElementById('companyName').value.trim();
+        const tid = document.getElementById('taxId').value.trim();
+        if(!comp || !tid){
+            return alert("開立三聯式發票，請完整填寫公司名稱與統一編號！");
+        }
+    }
+    // 清空收貨欄
+    document.getElementById("buyerName").value = "";
+    document.getElementById("buyerPhone").value = "";
+    document.getElementById("buyerAddress").value = "";
+    document.getElementById("buyerRemark").value = "";
+    document.getElementById("checkoutUserModal").classList.remove("hide");
+}
+
+async function submitCheckoutOrder(){
+    let name = document.getElementById("buyerName").value.trim();
+    let phone = document.getElementById("buyerPhone").value.trim();
+    let address = document.getElementById("buyerAddress").value.trim();
+    let remark = document.getElementById("buyerRemark").value.trim();
+    if(!name||!phone||!address){
+        return alert("請填寫完整收件人、電話、收貨地址！");
+    }
+
+    // 取得發票資料
+    const invoiceType = document.getElementById('invoiceType').value;
+    const companyName = invoiceType === "triple" ? document.getElementById('companyName').value.trim() : '';
+    const taxId = invoiceType === "triple" ? document.getElementById('taxId').value.trim() : '';
+    const needCalcTax = invoiceType === "double" || invoiceType === "triple";
+
+    // 二次驗證三聯式
+    if(invoiceType === "triple" && (!companyName || !taxId)){
+        return alert("開立三聯式發票，請完整填寫公司名稱與統一編號！");
+    }
+
+    let userInfo = localStorage.getItem("shopUserInfo");
+    let user = JSON.parse(userInfo);
+    // ========== 新增：取得使用者 email ==========
+    let userEmail = user.email; // 從登入資訊中獲取 email
+    
+    let cart = getCartData();
+    let subtotal = cart.reduce((s,i)=>s+i.price*i.num,0);
+    let shippingFee = calculateShippingFee(subtotal);
+    let subtotalShip = subtotal + shippingFee;
+    let tax = calculateTax(subtotalShip, needCalcTax);
+    let total = subtotalShip + tax;
+    let orderNo = "ORD"+Date.now();
+// ========== 新增：計算本地時間（台灣時區） ==========
+    // 1. 取得本地時間物件（含時區）
+    const localDate = new Date();
+    // 2. 格式化為台灣當地時間字串（YYYY-MM-DD HH:mm:ss）
+    const localTimeStr = localDate.toLocaleString('zh-TW', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).replace(/\//g, '-').replace(/\s+/, ' ');
+    // 3. 也可以儲存時間戳（方便後續計算）
+    const localTimestamp = localDate.getTime();
+    // 重點：orders表尚未新增發票相關欄位，已全部註解避免schema錯誤
+    let {data:oRes, error:orderError} = await sb.from("orders").insert({
+        order_no:orderNo,
+        user_id:user.id,
+        user_email: userEmail,
+        subtotal_price: subtotal,
+        shipping_fee: shippingFee,
+        total_price: total,
+        status:"pending",
+        buyer_name:name,
+        buyer_phone:phone,
+        buyer_address:address,
+        buyer_remark:remark,
+        tax_fee: tax,
+        invoice_type: invoiceType,
+        company_name: companyName,
+        tax_id: taxId,
+ // ========== 新增本地時間欄位 ==========
+        local_created_at: localTimeStr,       // 格式化的本地時間字串
+        local_timestamp: localTimestamp       // 本地時間戳（選填）
+    }).select();
+
+    if(orderError) return alert("建立訂單失敗：" + orderError.message);
+    let oid = oRes[0].id;
+    let items = cart.map(i=>({
+        order_id:oid,
+        product_id:i.pid,
+        product_name:i.name,
+        price:i.price,
+        num:i.num,
+        product_img:i.img
+    }));
+    let {error:itemError} = await sb.from("order_items").insert(items);
+    if(itemError) return alert("儲存訂單明細失敗：" + itemError.message);
+
+    // 組發票提示文字
+    let invoiceMsg = "";
+    if(invoiceType === "none"){
+        invoiceMsg = "\n發票：不開立發票，無營業稅";
+    }else if(invoiceType === "double"){
+        invoiceMsg = `\n發票：二聯式個人發票\n營業稅5%：NT$${tax}`;
+    }else if(invoiceType === "triple"){
+        invoiceMsg = `\n發票：三聯式公司發票\n公司名稱：${companyName}\n統一編號：${taxId}\n營業稅5%：NT$${tax}`;
+    }
+
+    alert(`本筆訂單已下單成功，但本公司保有訂單接受與否（或出貨）的權利. \n請等待公司專人使用0932-740558手機號碼與您確認這筆訂單，非此門號來電者皆非本店人員！
+\n訂單編號：${orderNo}
+訂購信箱：${userEmail}
+商品小計：NT$${subtotal}
+運費：${shippingFee === 0 ? '免運費' : `NT$${shippingFee}`}${invoiceMsg}
+應付總金額：NT$${total}`);
+
+    closeModal("checkoutUserModal");
+    setCartData([]);
+    openCart();
+}
+
+// ========== 商品、分類載入 ==========
+let allGoods = [];
+async function loadCategory(){
+    let {data} = await sb.from("categories").select("*");
+    let h = `<span class="cate-tag" onclick="filterGoods('all')">全部分類</span>`;
+    data.forEach(item=>h+=`<span class="cate-tag" onclick="filterGoods(${item.id})">${item.name}</span>`);
+    document.getElementById("cateHtml").innerHTML = h;
+}
+async function loadGoods(){
+    let {data} = await sb.from("products").select("*,categories(name)");
+    allGoods = data;
+    renderGoods(allGoods);
+}
+function renderGoods(list) {
+    let h = "";
+    list.forEach(g => {
+        let productImgs = [];
+        try {
+            productImgs = g.imgs ? (typeof g.imgs === 'string' ? JSON.parse(g.imgs) : g.imgs) : [];
+        } catch (e) {
+            productImgs = [];
+        }
+        let img = productImgs.length > 0 ? productImgs[0] : DEF_IMG;
+        let cartImg = productImgs.length > 0 ? productImgs[0] : DEF_SMALL;
+        
+        // 【關鍵修復1】完整轉義所有特殊字元（解決引號中斷問題）
+        const escapeQuote = (str) => {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        };
+        
+        const safeName = escapeQuote(g.name);
+        const safeDesc = escapeQuote(g.goods_desc || "本商品暫無介紹說明");
+        const safeSpec = escapeQuote(g.specifications || "本商品暫無詳細規格說明");
+        const imgsJson = JSON.stringify(productImgs).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+        // 【關鍵修復2】屬性使用雙引號包裹，內部單引號已轉義
+        h += `
+        <div class="product-card">
+            <img class="product-img" src="${img}" onerror="this.src='${DEF_IMG}'">
+            <div class="product-name">${g.name}</div>
+            <div class="product-cate">${g.categories?.name || "未分類"}</div>
+            <div class="product-price">NT$${g.price}</div>
+            <div style="font-size:13px;color:#888">庫存：${g.stock}</div>
+            <button class="spec-btn" onclick="openProductSpec('${safeName}','${safeDesc}','${safeSpec}','${imgsJson}')">詳細規格</button>
+            <button class="add-cart" onclick="addToCart(${g.id},'${safeName}',${g.price},'${cartImg}')">加入購物車</button>
+        </div>
+        `;
+    });
+    document.getElementById("productHtml").innerHTML = h;
+}
+
+function filterGoods(cid){
+    if(cid === "all") return renderGoods(allGoods);
+    renderGoods(allGoods.filter(v=>v.cate_id == cid));
+}
+
+// ========== 商品規格新視窗 ==========
+function openProductSpec(productName, remarkText, specText, imgsJsonStr) {
+    let imgList = [];
+    try {
+        imgList = JSON.parse(imgsJsonStr);
+    } catch (err) {
+        imgList = [];
+    }
+    if (!Array.isArray(imgList) || imgList.length === 0) imgList = [DEF_IMG];
+    let imgHtml = "";
+    imgList.forEach(url=>{
+        imgHtml += `<img class="slide-img" src="${url}" onerror="this.src='${DEF_IMG}'">`;
+    });
+    let newWindow = window.open('', '_blank', 'width=820,height=650,scrollbars=yes,resizable=yes');
+    newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>${productName} - 詳細規格</title>
+            <style>
+                body {font-family:微軟正黑體,sans-serif;padding:24px;line-height:1.8;background:#fff;max-width:820px;margin:0 auto;}
+                .title {font-size:24px;font-weight:bold;margin-bottom:20px;color:#222;border-bottom:2px solid #165DFF;padding-bottom:10px;}
+                .img-slider {display:flex;gap:12px;overflow-x:auto;padding:8px 0;margin-bottom:25px;}
+                .slide-img {flex:0 0 320px;height:420px;object-fit:contain;border-radius:6px;background:#f6f7f9;}
+                .block h4 {font-size:18px;color:#333;margin:15px 0 8px;}
+                .text {font-size:15px;color:#444;white-space:pre-line;}
+                .divider {margin:25px 0;border-top:1px solid #eee;}
+            </style>
+        </head>
+        <body>
+            <div class="title">${productName}</div>
+            <div class="img-slider">${imgHtml}</div>
+            <div class="block"><h4>商品介紹</h4><div class="text">${remarkText.replace(/\n/g, "<br>")}</div></div>
+            <div class="divider"></div>
+            <div class="block"><h4>詳細規格</h4><div class="text">${specText.replace(/\n/g, "<br>")}</div></div>
+        </body>
+        </html>
+    `);
+    newWindow.document.close();
+}
+
+// ========== 頁面切換、會員登入登出 ==========
+function switchPage(page){
+    if(page === "order"){
+        let userInfo = localStorage.getItem("shopUserInfo");
+        if(!userInfo){
+            alert("請先登入會員查詢訂單！");
+            openLoginModal();
+            return;
+        }
+        loadUserOrders();
+    }
+    document.querySelectorAll(".page-view").forEach(p=>p.classList.add("hide"));
+    document.getElementById("page-"+page).classList.remove("hide");
+    if(page == "home"){
+        loadCategory();
+        loadGoods();
+    }
+}
+async function userRegister(){
+    let email = document.getElementById("regEmail").value.trim();
+    let pwd = document.getElementById("regPwd").value.trim();
+    if(!email||!pwd)return alert("請填寫完整資訊");
+    let {error} = await sb.auth.signUp({email,password:pwd});
+    if(error)return alert(error.message);
+    alert("註冊成功，請登入");
+    closeModal("regModal");openLoginModal();
+}
+async function userLogin(){
+    let email = document.getElementById("loginEmail").value.trim();
+    let pwd = document.getElementById("loginPwd").value.trim();
+    if(!email||!pwd)return alert("請輸入帳號密碼");
+    let {data,error} = await sb.auth.signInWithPassword({email,password:pwd});
+    if(error)return alert(error.message);
+    localStorage.setItem("shopUserInfo",JSON.stringify(data.user));
+    closeModal("loginModal");
+    refreshUserStatus();
+    alert("登入成功");
+}
+function userLogout(){
+    if(!confirm("確定要登出嗎？")) return;
+    localStorage.removeItem("shopUserInfo");
+    sb.auth.signOut().then(()=>{
+        refreshUserStatus();
+        alert("已成功登出");
+        switchPage("home");
+    });
+}
+function refreshUserStatus(){
+    let u = localStorage.getItem("shopUserInfo");
+    if(u){
+        document.getElementById("regBtn").style.display="none";
+        document.getElementById("loginBtn").style.display="none";
+        document.getElementById("userText").style.display="block";
+        document.getElementById("logoutBtn").style.display="inline-block";
+        document.getElementById("orderBtn").style.display="inline-block";
+        document.getElementById("userText").innerText = JSON.parse(u).email;
+    }else{
+        document.getElementById("regBtn").style.display="inline-block";
+        document.getElementById("loginBtn").style.display="inline-block";
+        document.getElementById("userText").style.display="none";
+        document.getElementById("logoutBtn").style.display="none";
+        document.getElementById("orderBtn").style.display="none";
+    }
+}
+function openRegModal(){document.getElementById("regModal").classList.remove("hide");}
+function openLoginModal(){document.getElementById("loginModal").classList.remove("hide");}
+function closeModal(id){document.getElementById(id).classList.add("hide");}
+
+// ========== 訂單查詢（暫不顯示發票DB欄位，避免報錯） ==========
+async function loadUserOrders(){
+    let userInfo = localStorage.getItem("shopUserInfo");
+    if(!userInfo) return;
+    let user = JSON.parse(userInfo);
+    // 修正查詢：user.id 不要寫成 user.id 放在 select 裡，eq 單獨條件
+    let {data:orders, error} = await sb
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id) // 這邊之前寫錯成 user.id 會400！
+        .order("local_timestamp", { ascending: false });
+    if(error){
+        alert("查詢訂單失敗：" + error.message);
+        return;
+    }
+    let emptyTip = document.getElementById("orderEmptyTip");
+    let box = document.getElementById("orderListBox");
+    if(orders.length === 0){
+        emptyTip.style.display = "block";
+        box.innerHTML = "";
+        return;
+    }
+    emptyTip.style.display = "none";
+    let html = "";
+    const statusMap = {
+        "pending": "請等待專人跟您確認訂單",
+        "precessing": "訂單處理中",
+        "shipping": "送貨中",
+        "arrival": "已到貨",
+        "completed": "已完成",
+        "canceled": "已取消"
+    };
+
+    // 普通 for of，搭配內部 async 查詢
+    for (let order of orders){
+        // 強制初始化，杜絕 firstProductImg is not defined
+        let firstProductImg = DEF_SMALL;
+        // 單獨查詢該訂單第一筆明細
+        const {data:items, err} = await sb
+            .from("order_items")
+            .select("product_img")
+            .eq("order_id", order.id)
+            .limit(1);
+        
+        // 有圖片才覆蓋
+        if(!err && items && items.length > 0 && items[0].product_img){
+            firstProductImg = items[0].product_img;
+        }
+
+        let createTime = order.local_created_at || new Date(order.created_at).toLocaleString("zh-TW");
+        html += `
+        <div class="order-item">
+            <div class="order-header">
+                <div class="order-no">訂單編號：${order.order_no}</div>
+                <div class="order-status status-${order.status}">${statusMap[order.status] || order.status}</div>
+            </div>
+            <div>建立時間：${createTime}</div>
+            <div>訂購信箱：${order.user_email || '未記錄'}</div> 
+            <div style="margin:8px 0;">
+                <img src="${firstProductImg}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" onerror="this.src='${DEF_SMALL}'">
+            </div>
+            <div style="margin:8px 0;">
+                <div>商品小計：NT$${order.subtotal_price || 0}</div>
+                <div>運費：${order.shipping_fee === 0 ? '免運費' : `NT$${order.shipping_fee}`}</div>
+                <div>營業稅(5%)：NT$${order.tax_fee || 0}</div>
+            </div>
+            <div class="order-total">總金額：NT$${order.total_price}</div>
+            <div class="order-address">
+                <div><strong>收貨資訊：</strong></div>
+                <div>收件人：${order.buyer_name}</div>
+                <div>聯繫電話：${order.buyer_phone}</div>
+                <div>收貨地址：${order.buyer_address}</div>
+                ${order.buyer_remark ? `<div>備註：${order.buyer_remark}</div>` : ""}
+            </div>
+<div style="margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+    <div><strong>發票資訊</strong></div>
+    <div>發票類型：${order.invoice_type === 'none' ? '不開立' : order.invoice_type === 'double' ? '二聯式(個人)' : '三聯式(公司)'}</div>
+    ${order.invoice_type === 'triple' ? `
+    <div>公司名稱：${order.company_name}</div>
+    <div>統一編號：${order.tax_id}</div>
+    ` : ''}
+</div>
+            <button class="order-detail-btn" onclick="viewOrderDetail(${order.id})">查看訂單詳情</button>
+        </div>
+        `;
+    }
+    box.innerHTML = html;
+}
+
+async function viewOrderDetail(orderId){
+    let {data:items, error} = await sb
+        .from("order_items")
+        .select("*") // 一定要選取全部欄，包含 product_img
+        .eq("order_id", orderId);
+    if(error){
+        alert("查詢訂單詳情失敗：" + error.message);
+        return;
+    }
+    let {data:order} = await sb
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+    
+    let html = `
+    <div style="margin-bottom:15px;">
+        <div style="font-weight:bold;margin-bottom:8px;">訂單編號：${order.order_no}</div>
+        <div style="color:#777;font-size:14px;margin-bottom:15px;">建立時間：${order.local_created_at || new Date(order.created_at).toLocaleString("zh-TW")}</div>
+        <div style="color:#777;font-size:14px;margin-bottom:15px;">訂購信箱：${order.user_email || '未記錄'}</div>        
+        <div style="margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+            <div><strong>收貨資訊：</strong></div>
+            <div>收件人：${order.buyer_name}</div>
+            <div>聯繫電話：${order.buyer_phone}</div>
+            <div>收貨地址：${order.buyer_address}</div>
+            ${order.buyer_remark ? `<div>備註：${order.buyer_remark}</div>` : ""}
+        </div>
+        <div style="margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+            <div><strong>費用明細</strong></div>
+            <div>商品小計：NT$${order.subtotal_price || 0}</div>
+            <div>運費：${order.shipping_fee === 0 ? '免運費' : `NT$${order.shipping_fee}`}</div>
+            <div>營業稅5%：NT$${order.tax_fee || 0}</div>
+        </div>
+<div style="margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+    <div><strong>發票資訊</strong></div>
+    <div>發票類型：${order.invoice_type === 'none' ? '不開立' : order.invoice_type === 'double' ? '二聯式(個人)' : '三聯式(公司)'}</div>
+    ${order.invoice_type === 'triple' ? `
+    <div>公司名稱：${order.company_name}</div>
+    <div>統一編號：${order.tax_id}</div>
+    ` : ''}
+</div>
+        <div style="margin-bottom:15px;"><strong>訂單商品：</strong></div>
+    `;
+    // 重點修正：讀取 item.product_img，空值才用預設圖
+    items.forEach(item => {
+        // 優先取存進資料庫的商品圖，無圖才用 DEF_SMALL
+        const realImg = item.product_img ? item.product_img : DEF_SMALL;
+        html += `
+        <div class="order-detail-item">
+            <!-- 替換成真實圖片連結，斷圖自動切預設 -->
+            <img class="order-detail-img" src="${realImg}" onerror="this.src='${DEF_SMALL}'">
+            <div class="order-detail-info">
+                <div class="order-detail-name">${item.product_name}</div>
+                <div class="order-detail-price">單價：NT$${item.price}</div>
+                <div class="order-detail-num">數量：${item.num}件</div>
+            </div>
+            <div style="font-weight:bold;">小計：NT$${item.price * item.num}</div>
+        </div>
+        `;
+    });
+    html += `
+    <div style="margin-top:20px;padding-top:15px;border-top:2px solid #f5f5f5;">
+        <div style="font-size:18px;font-weight:bold;color:#f53f3f;">
+            訂單總金額：NT$${order.total_price}
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:#0000ff;">
+            感謝您的惠顧,對於本筆訂購有疑問或者要更改內容的話.請撥打手機0932-740558 或者加LINE ID:0932740558詢問.
+        </div>
+    </div>
+    `;
+    document.getElementById("orderDetailContent").innerHTML = html;
+    document.getElementById("orderDetailModal").classList.remove("hide");
+}
+
+// 初始載入
+window.onload = function(){
+    updateCartNum();
+    refreshUserStatus();
+    switchPage("home");
+}
+</script>
+</body>
+</html>

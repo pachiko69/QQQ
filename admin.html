@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購物商城-後台管理</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:微軟正黑體,sans-serif;}
+        body{background:#f6f7f9;padding-top:70px;}
+        .hide{display:none !important;}
+        .container{max-width:1250px;margin:0 auto;padding:0 15px;}
+        .header{position:fixed;top:0;left:0;width:100%;background:#165DFF;color:#fff;height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 25px;z-index:999;}
+        .nav-logo{font-size:22px;font-weight:bold;cursor:pointer;}
+        .nav-menu{display:flex;gap:25px;align-items:center;}
+        .nav-item{cursor:pointer;font-size:15px;}
+        .nav-item:hover{opacity:0.85;}
+        .admin-tab{display:flex;gap:12px;border-bottom:1px solid #eee;padding-bottom:12px;margin:25px 0;}
+        .tab-btn{padding:8px 18px;border:none;border-radius:4px;background:#eee;cursor:pointer;}
+        .tab-btn.active{background:#165DFF;color:#fff;}
+        .flex-row{display:flex;justify-content:space-between;align-items:center;margin:15px 0;}
+        .add-btn{background:#00b42a;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;}
+        table{width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;}
+        th,td{padding:13px;text-align:left;border-bottom:1px solid #f1f1f1;}
+        th{background:#f5f7fa;}
+        .edit{color:#165DFF;border:none;background:none;cursor:pointer;margin-right:10px;}
+        .del{color:#f53f3f;border:none;background:none;cursor:pointer;}
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .modal-box{background:#fff;width:92%;max-width:700px;padding:22px;border-radius:6px;max-height:90vh;overflow-y:auto;}
+        .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+        .close{font-size:22px;cursor:pointer;}
+        .input-box{width:100%;border:1px solid #ddd;padding:11px;border-radius:4px;margin:9px 0;}
+        .submit-btn{width:100%;background:#165DFF;color:#fff;border:none;padding:11px;border-radius:4px;margin-top:8px;cursor:pointer;}
+        .logout-btn{background:#f53f3f;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-weight:bold;cursor:pointer;}
+        .login-wrap{max-width:400px;margin:50px auto;background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+        .login-title{text-align:center;margin-bottom:20px;color:#165DFF;font-size:20px;}
+        /* 多圖片樣式 */
+        .imgs-group{margin:15px 0;}
+        .img-item{display:flex;gap:10px;align-items:center;margin:8px 0;}
+        .img-item input{flex:1;}
+        .img-preview{width:50px;height:50px;border-radius:4px;object-fit:cover;}
+    </style>
+</head>
+<body>
+
+<!-- 登入頁面 -->
+<div id="loginPage" class="login-wrap">
+    <h3 class="login-title">後台管理系統登入</h3>
+    <input class="input-box" type="email" id="adminEmail" placeholder="輸入管理員信箱">
+    <input class="input-box" type="password" id="adminPwd" placeholder="輸入管理員密碼">
+    <button class="submit-btn" onclick="adminLogin()">登入後台</button>
+</div>
+
+<!-- 後台主頁 -->
+<div id="adminMain" class="hide">
+    <div class="header">
+        <div class="nav-logo"><i class="fa fa-cog"></i> 商城後台管理</div>
+        <div class="nav-menu">
+            <span class="nav-item" id="adminUserText"></span>
+            <button class="logout-btn" onclick="adminLogout()">登出</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="admin-tab">
+            <button class="tab-btn active" onclick="adminTabChange('goods',this)">商品管理</button>
+            <button class="tab-btn" onclick="adminTabChange('category',this)">分類管理</button>
+            <button class="tab-btn" onclick="adminTabChange('order',this)">訂單管理</button>
+        </div>
+        <div id="admin-goods" class="admin-content">
+            <div class="flex-row">
+                <h3>商品列表</h3>
+                <button class="add-btn" onclick="openAddProduct()">新增商品</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>封面圖</th>
+                        <th>商品名稱</th>
+                        <th>所屬分類</th>
+                        <th>售價</th>
+                        <th>庫存</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="adminProductBody"></tbody>
+            </table>
+        </div>
+        <div id="admin-category" class="admin-content hide">
+            <div class="flex-row">
+                <h3>分類列表</h3>
+                <button class="add-btn" onclick="openAddCategory()">新增分類</button>
+            </div>
+            <div id="adminCateBody"></div>
+        </div>
+        <div id="admin-order" class="admin-content hide">
+            <h3 style="margin-bottom:15px;">全部訂單</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>訂單編號</th>
+                        <th>信箱</th>
+                        <th>收件人</th>
+                        <th>手機</th>
+                        <th>地址</th>
+                        <th>訂單金額</th>
+                        <th>狀態</th>
+                        <th>時間</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="adminOrderBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 新增/編輯商品 (支援10張圖片) -->
+    <div id="productModal" class="modal hide">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="prodModalTitle">新增商品</h3>
+                <span class="close" onclick="closeModal('productModal')"><i class="fa fa-times"></i></span>
+            </div>
+            <input type="hidden" id="editProductId">
+            <label>商品名稱</label>
+            <input class="input-box" id="prodName">
+            <label>選擇分類</label>
+            <select class="input-box" id="prodCateSelect"></select>
+            <label>商品售價</label>
+            <input class="input-box" type="number" id="prodPrice">
+            <label>庫存數量</label>
+            <input class="input-box" type="number" id="prodStock">
+            
+            <!-- 多圖片上傳區域 (10張) -->
+            <div class="imgs-group">
+                <label>商品圖片 (最多10張，第一張為封面)</label>
+                <div id="productImgsContainer">
+                    <!-- 動態生成10個圖片輸入框 -->
+                </div>
+            </div>
+
+            <label>商品簡介</label>
+            <textarea class="input-box" id="prodDesc" rows="3" placeholder="請輸入商品簡介"></textarea>
+            
+            <!-- 新增：商品規格輸入框 -->
+            <label>商品規格</label>
+            <textarea class="input-box" id="prodSpec" rows="3" placeholder="請輸入商品規格（如尺寸、材質、顏色等）"></textarea>
+            
+            <button class="submit-btn" onclick="saveProductInfo()">儲存資料</button>
+        </div>
+    </div>
+
+    <!-- 新增/編輯分類 -->
+    <div id="categoryModal" class="modal hide">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="cateModalTitle">新增分類</h3>
+                <span class="close" onclick="closeModal('categoryModal')"><i class="fa fa-times"></i></span>
+            </div>
+            <input type="hidden" id="editCateId">
+            <input class="input-box" id="cateNameInput" placeholder="輸入分類名稱">
+            <button class="submit-btn" onclick="saveCategoryInfo()">儲存</button>
+        </div>
+    </div>
+
+    <!-- 訂單明細彈窗 -->
+    <div id="orderDetailModal" class="modal hide">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>訂單詳細明細</h3>
+                <span class="close" onclick="closeModal('orderDetailModal')"><i class="fa fa-times"></i></span>
+            </div>
+            <div id="orderDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- 編輯訂單彈窗 (移除稅金項目) -->
+    <div id="editOrderModal" class="modal hide">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>編輯訂單</h3>
+                <span class="close" onclick="closeModal('editOrderModal')"><i class="fa fa-times"></i></span>
+            </div>
+            <input type="hidden" id="editOrderId">
+            <label>訂單狀態</label>
+            <select class="input-box" id="editOrderStatus">
+                <option value="pending">訂單等待確認</option>
+                <option value="precessing">訂單處理中</option>
+                <option value="shipping">送貨中</option>
+                <option value="arrival">已到貨</option>
+                <option value="completed">已完成</option>
+                <option value="canceled">訂單已取消</option>
+            </select>
+            <label>訂購者信箱</label>
+            <input class="input-box" id="editBuyerEmail" placeholder="輸入訂購者信箱">
+            <label>收件人</label>
+            <input class="input-box" id="editBuyerName" placeholder="輸入收件人姓名">
+            <label>聯絡電話</label>
+            <input class="input-box" id="editBuyerPhone" placeholder="輸入聯絡電話">
+            <label>收貨地址</label>
+            <input class="input-box" id="editBuyerAddress" placeholder="輸入收貨地址">
+            <label>備註</label>
+            <textarea class="input-box" id="editBuyerRemark" rows="2" placeholder="輸入訂單備註"></textarea>
+            <label>發票類別</label>
+            <select class="input-box" id="editInvoiceType">
+                <option value="none">不開發票</option>
+                <option value="double">二聯式</option>
+                <option value="triple">三聯式</option>
+            </select>
+            <label>公司名稱</label>
+            <input class="input-box" id="editCompanyName" placeholder="輸入公司名稱（如適用）">
+            <label>發票統一編號</label>
+            <input class="input-box" id="editTaxId" placeholder="輸入統一編號（如適用）">
+            <button class="submit-btn" onclick="saveOrderEdit()">儲存修改</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const DEF_IMG = "https://picsum.photos/300/300";
+const DEF_SMALL = "https://picsum.photos/100/100";
+const MAX_IMAGES = 10; // 最大圖片數量
+
+// ========== 新增：設定後台管理員白名單 ==========
+const ADMIN_WHITELIST = [
+    "pachiko@gmail.com",  // 替換為你的合法管理員信箱
+       // 可新增多個合法帳號 "manager@shop.com",  
+];
+
+// ========== 後台登入驗證 (修改後) ==========
+async function adminLogin(){
+    let email = document.getElementById("adminEmail").value.trim();
+    let pwd = document.getElementById("adminPwd").value.trim();
+    
+    // 1. 基礎欄位驗證
+    if(!email||!pwd)return alert("請輸入帳號密碼");
+    
+    // 2. 白名單校驗：只有指定信箱能登入
+    if(!ADMIN_WHITELIST.includes(email)){
+        return alert("您無權限登入後台管理系統！");
+    }
+    
+    // 3. Supabase 帳號密碼驗證
+    let {data,error} = await sb.auth.signInWithPassword({email,password:pwd});
+    if(error)return alert(error.message);
+    
+    // 4. 驗證通過，進入後台
+    localStorage.setItem("shopUserInfo",JSON.stringify(data.user));
+    document.getElementById("loginPage").classList.add("hide");
+    document.getElementById("adminMain").classList.remove("hide");
+    document.getElementById("adminUserText").innerText = data.user.email;
+    loadAdminAll();
+}
+
+function adminLogout(){
+    localStorage.removeItem("shopUserInfo");
+    document.getElementById("loginPage").classList.remove("hide");
+    document.getElementById("adminMain").classList.add("hide");
+    document.getElementById("adminEmail").value = "";
+    document.getElementById("adminPwd").value = "";
+    alert("已成功登出");
+}
+
+// ========== 後台頁面切換 ==========
+function adminTabChange(t,d){
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    d.classList.add("active");
+    document.querySelectorAll(".admin-content").forEach(c=>c.classList.add("hide"));
+    document.getElementById("admin-"+t).classList.remove("hide");
+}
+
+// ========== 後台分類管理 ==========
+async function loadAdminCate(){
+    let {data} = await sb.from("categories").select("*").order("id");
+    let html = "";
+    data.forEach(item=>{
+        html += `
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee;">
+            <span>${item.name}</span>
+            <div>
+                <button class="edit" onclick="editCate(${item.id},'${item.name}')">編輯</button>
+                <button class="del" onclick="delCate(${item.id})">刪除</button>
+            </div>
+        </div>
+        `;
+    });
+    document.getElementById("adminCateBody").innerHTML = html;
+}
+
+function openAddCategory(){
+    document.getElementById("cateModalTitle").innerText = "新增商品分類";
+    document.getElementById("editCateId").value = "";
+    document.getElementById("cateNameInput").value = "";
+    document.getElementById("categoryModal").classList.remove("hide");
+}
+
+async function saveCategoryInfo(){
+    let cid = document.getElementById("editCateId").value;
+    let name = document.getElementById("cateNameInput").value.trim();
+    if(!name) return alert("請輸入分類名稱");
+    
+    if(cid){
+        await sb.from("categories").update({name:name}).eq("id",cid);
+    }else{
+        await sb.from("categories").insert({name:name});
+    }
+    
+    closeModal("categoryModal");
+    loadAdminCate();
+    alert("儲存成功");
+}
+
+function editCate(id,name){
+    document.getElementById("cateModalTitle").innerText = "編輯分類";
+    document.getElementById("editCateId").value = id;
+    document.getElementById("cateNameInput").value = name;
+    document.getElementById("categoryModal").classList.remove("hide");
+}
+
+async function delCate(id){
+    if(!confirm("確定刪除此分類？"))return;
+    await sb.from("categories").delete().eq("id",id);
+    loadAdminCate();
+}
+
+// ========== 後台商品管理 (支援多圖片) ==========
+async function loadAdminGoods(){
+    let {data} = await sb.from("products").select("*,categories(name)").order("id");
+    let html = "";
+    data.forEach(item=>{
+        // 取第一張圖片做為封面
+        let imgList = item.imgs ? JSON.parse(item.imgs) : [];
+        let coverImg = imgList[0] || DEF_SMALL;
+        html += `
+        <tr>
+            <td><img src="${coverImg}" style="width:40px;height:40px;border-radius:4px;" onerror="this.src='${DEF_SMALL}'"></td>
+            <td>${item.name}</td>
+            <td>${item.categories?.name||"未分類"}</td>
+            <td>${item.price}</td>
+            <td>${item.stock}</td>
+            <td>
+                <button class="edit" onclick="editGoods(${item.id})">編輯</button>
+                <button class="del" onclick="delGoods(${item.id})">刪除</button>
+            </td>
+        </tr>
+        `;
+    });
+    document.getElementById("adminProductBody").innerHTML = html;
+}
+
+async function fillCateSelect(){
+    let {data} = await sb.from("categories").select("*");
+    let opt = "<option value=''>請選擇分類</option>";
+    data.forEach(item=>opt += `<option value="${item.id}">${item.name}</option>`);
+    document.getElementById("prodCateSelect").innerHTML = opt;
+}
+
+// 生成10個圖片輸入框
+function renderProductImageInputs() {
+    const container = document.getElementById("productImgsContainer");
+    container.innerHTML = ""; // 清空原有內容
+    
+    for (let i = 0; i < MAX_IMAGES; i++) {
+        const imgItem = document.createElement("div");
+        imgItem.className = "img-item";
+        imgItem.innerHTML = `
+            <img id="previewImg${i}" class="img-preview" src="${DEF_SMALL}" onerror="this.src='${DEF_SMALL}'">
+            <input 
+                class="input-box prod-img-input" 
+                type="text" 
+                id="prodImgUrl${i}" 
+                placeholder="圖片${i+1}網址"
+                onchange="previewImage(${i}, this.value)"
+            >
+        `;
+        container.appendChild(imgItem);
+    }
+}
+
+// 預覽圖片
+function previewImage(index, url) {
+    const previewImg = document.getElementById(`previewImg${index}`);
+    previewImg.src = url || DEF_SMALL;
+}
+
+function openAddProduct(){
+    document.getElementById("prodModalTitle").innerText = "新增商品";
+    document.getElementById("editProductId").value = "";
+    document.getElementById("prodName").value = "";
+    document.getElementById("prodPrice").value = "";
+    document.getElementById("prodStock").value = "";
+    document.getElementById("prodDesc").value = "";
+    document.getElementById("prodSpec").value = ""; // 清空規格輸入框
+    
+    // 生成圖片輸入框並清空
+    renderProductImageInputs();
+    fillCateSelect();
+    document.getElementById("productModal").classList.remove("hide");
+}
+
+async function editGoods(pid){
+    document.getElementById("prodModalTitle").innerText = "編輯商品";
+    let {data} = await sb.from("products").select("*").eq("id",pid).single();
+    
+    // 填充基礎資訊
+    document.getElementById("editProductId").value = pid;
+    document.getElementById("prodName").value = data.name;
+    document.getElementById("prodPrice").value = data.price;
+    document.getElementById("prodStock").value = data.stock;
+    document.getElementById("prodDesc").value = data.goods_desc||""; // 填充商品簡介
+    document.getElementById("prodSpec").value = data.specifications||""; // 填充商品規格
+    await fillCateSelect();
+    document.getElementById("prodCateSelect").value = data.cate_id||"";
+    
+    // 生成圖片輸入框並填充已有圖片
+    renderProductImageInputs();
+    const imgList = data.imgs ? JSON.parse(data.imgs) : [];
+    imgList.forEach((imgUrl, index) => {
+        if (index < MAX_IMAGES) {
+            const input = document.getElementById(`prodImgUrl${index}`);
+            input.value = imgUrl;
+            previewImage(index, imgUrl);
+        }
+    });
+    
+    document.getElementById("productModal").classList.remove("hide");
+}
+
+async function saveProductInfo(){
+    let pid = document.getElementById("editProductId").value;
+    let name = document.getElementById("prodName").value.trim();
+    let cate_id = document.getElementById("prodCateSelect").value;
+    let price = Number(document.getElementById("prodPrice").value);
+    let stock = Number(document.getElementById("prodStock").value);
+    let goods_desc = document.getElementById("prodDesc").value.trim();
+    let specifications = document.getElementById("prodSpec").value.trim();
+    
+    // 驗證必填欄位
+    if(!name||!cate_id||!price||!stock){
+        return alert("請填寫完整商品基礎資訊");
+    }
+    
+    // 收集10張圖片網址 (過濾空值)
+    let imgList = [];
+    for (let i = 0; i < MAX_IMAGES; i++) {
+        const imgUrl = document.getElementById(`prodImgUrl${i}`).value.trim();
+        if (imgUrl) imgList.push(imgUrl);
+    }
+    
+    let postData = {
+        name:name,
+        cate_id,
+        price,
+        stock,
+        imgs: JSON.stringify(imgList), // 將圖片列表轉為JSON字串儲存
+        goods_desc,
+        specifications
+    };
+    
+    if(pid){
+        await sb.from("products").update(postData).eq("id",pid);
+    }else{
+        await sb.from("products").insert(postData);
+    }
+    
+    closeModal("productModal");
+    loadAdminGoods();
+    alert("商品儲存成功");
+}
+
+async function delGoods(pid){
+    if(!confirm("確定刪除此商品？"))return;
+    await sb.from("products").delete().eq("id",pid);
+    loadAdminGoods();
+}
+
+// ========== 後台訂單管理 ==========
+async function loadAdminOrder(){
+    let {data} = await sb.from("orders").select("*").order("local_created_at",{asc:false});
+    let html = "";
+    if(!data.length){
+        document.getElementById("adminOrderBody").innerHTML = `<tr><td colspan="8" style="text-align:center">暫無訂單</td></tr>`;
+        return;
+    }
+    
+    data.forEach(o=>{
+        let stText = o.status=="pending"?"訂單等待確認-完成": o.status=="precessing"?"訂單處理中": o.status=="shipping"?"送貨中": o.status=="arrival"?"已到貨": o.status=="canceled"?"訂單已取消": "已完成";
+        html += `
+        <tr>
+            <td>${o.order_no}</td>
+            <td>${o.user_email||"未填寫"}</td>
+            <td>${o.buyer_name||"未填寫"}</td>
+            <td>${o.buyer_phone||"未填寫"}</td>
+            <td>${o.buyer_address||"未填寫"}</td>
+            <td>${o.total_price}元</td>
+            <td>${stText}</td>
+            <td>${new Date(o.local_created_at).toLocaleString()}</td>
+            <td>
+                <button class="edit" onclick="showOrderDetail(${o.id})">查看明細</button>
+                <button class="edit" onclick="openEditOrder(${o.id})">編輯</button>
+                <button class="del" onclick="deleteOrder(${o.id})">刪除</button>
+            </td>
+        </tr>
+        `;
+    });
+    document.getElementById("adminOrderBody").innerHTML = html;
+}
+
+async function showOrderDetail(oid){
+    let {data:order} = await sb.from("orders").select("*").eq("id",oid).single();
+    let {data:items} = await sb.from("order_items").select("*").eq("order_id",oid);
+    
+    // 處理發票類別顯示文字 test
+    let invoiceTypeText = order.invoice_type === "double" ? "二聯式" : order.invoice_type === "triple" ? "三聯式" : "不開發票";
+    
+    let content = `
+        <p><strong>訂單編號：</strong>${order.order_no}</p>
+        <p><strong>訂購者信箱：</strong>${order.user_email||""}</p>
+        <p><strong>收件人：</strong>${order.buyer_name||""}</p>
+        <p><strong>聯絡電話：</strong>${order.buyer_phone||""}</p>
+        <p><strong>收貨地址：</strong>${order.buyer_address||""}</p>
+        <p><strong>備註：</strong>${order.buyer_remark||""}</p>
+        <p><strong>訂單總金額：</strong>${order.total_price} 元</p>
+        <p><strong>稅金：</strong>${order.tax_fee || 0} 元</p>
+        <p><strong>發票類別：</strong>${invoiceTypeText}</p>
+        <p><strong>公司名稱：</strong>${order.company_name || "無"}</p>
+        <p><strong>發票統一編號：</strong>${order.tax_id || "無"}</p>
+        <p><strong>訂單狀態：</strong>${order.status === "pending" ? "訂單等待確認" : order.status === "precessing" ? "訂單處理中" : order.status === "shipping" ? "送貨中" : order.status === "arrival" ? "已到貨" : order.status === "canceled" ? "訂單已取消" :"已完成"}</p>
+        <hr>
+        <p><strong>購買商品清單</strong></p>
+    `;
+    
+    items.forEach(i=>{
+        content += `<p>${i.product_name}  ×${i.num}  單價：${i.price}元</p>`;
+    });
+    
+    document.getElementById("orderDetailContent").innerHTML = content;
+    document.getElementById("orderDetailModal").classList.remove("hide");
+}
+
+// 打開編輯訂單視窗
+async function openEditOrder(oid){
+    let {data:order} = await sb.from("orders").select("*").eq("id",oid).single();
+    
+    // 填充表單 (移除稅金相關程式碼)
+    document.getElementById("editOrderId").value = oid;
+    document.getElementById("editOrderStatus").value = order.status || "pending";
+    document.getElementById("editBuyerEmail").value = order.user_email || "";
+    document.getElementById("editBuyerName").value = order.buyer_name || "";
+    document.getElementById("editBuyerPhone").value = order.buyer_phone || "";
+    document.getElementById("editBuyerAddress").value = order.buyer_address || "";
+    document.getElementById("editBuyerRemark").value = order.buyer_remark || "";
+    document.getElementById("editInvoiceType").value = order.invoice_type || "double";
+    document.getElementById("editCompanyName").value = order.company_name || "";
+    document.getElementById("editTaxId").value = order.tax_id || "";
+    
+    document.getElementById("editOrderModal").classList.remove("hide");
+}
+
+// 儲存編輯的訂單資訊 (移除稅金相關程式碼)
+async function saveOrderEdit(){
+    let oid = document.getElementById("editOrderId").value;
+    let status = document.getElementById("editOrderStatus").value;
+    let user_email = document.getElementById("editBuyerEmail").value.trim();
+    let buyer_name = document.getElementById("editBuyerName").value.trim();
+    let buyer_phone = document.getElementById("editBuyerPhone").value.trim();
+    let buyer_address = document.getElementById("editBuyerAddress").value.trim();
+    let buyer_remark = document.getElementById("editBuyerRemark").value.trim();
+    let invoice_type = document.getElementById("editInvoiceType").value;
+    let company_name = document.getElementById("editCompanyName").value.trim();
+    let tax_id = document.getElementById("editTaxId").value.trim();
+    
+    if(!buyer_name || !buyer_phone){
+        return alert("收件人姓名和電話為必填欄位");
+    }
+    
+    let updateData = {
+        status,
+        user_email,
+        buyer_name,
+        buyer_phone,
+        buyer_address,
+        buyer_remark,
+        invoice_type,
+        company_name,
+        tax_id
+    };
+    
+    await sb.from("orders").update(updateData).eq("id", oid);
+    
+    closeModal("editOrderModal");
+    loadAdminOrder();
+    alert("訂單修改成功");
+}
+
+// 刪除訂單
+async function deleteOrder(oid){
+    if(!confirm("確定要刪除此訂單嗎？此操作無法復原！")){
+        return;
+    }
+    
+    // 先刪除訂單項目
+    await sb.from("order_items").delete().eq("order_id", oid);
+    // 再刪除訂單
+    await sb.from("orders").delete().eq("id", oid);
+    
+    loadAdminOrder();
+    alert("訂單已成功刪除");
+}
+
+// 後台一次性載入
+async function loadAdminAll(){
+    await loadAdminGoods();
+    await loadAdminCate();
+    await loadAdminOrder();
+}
+
+// 通用方法
+function closeModal(id){
+    document.getElementById(id).classList.add("hide");
+}
+
+// 初始檢查登入狀態 (修改後)
+window.onload = function(){
+    let userInfo = localStorage.getItem("shopUserInfo");
+    if(userInfo){
+        const userEmail = JSON.parse(userInfo).email;
+        // 即使有快取，非白名單帳號仍強制登出
+        if(!ADMIN_WHITELIST.includes(userEmail)){
+            localStorage.removeItem("shopUserInfo");
+            alert("無權限存取後台！");
+            return;
+        }
+        // 合法帳號，進入後台
+        document.getElementById("loginPage").classList.add("hide");
+        document.getElementById("adminMain").classList.remove("hide");
+        document.getElementById("adminUserText").innerText = userEmail;
+        loadAdminAll();
+    }
+}</script>
+
+</body>
+</html>
