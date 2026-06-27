@@ -1,215 +1,619 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>多連結展示平台</title>
-<style>
-*{box-sizing:border-box;}
-/* 淺藍色背景主調 */
-body{background:#e8f4f8;margin:0;font-family:system-ui,sans-serif;}
-.container{max-width:1200px;margin:0 auto;padding:40px 16px;}
-h1{text-align:center;font-size:30px;font-weight:bold;margin-bottom:40px;color:#2d3748;}
-.grid-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px;}
-/* 卡片調整為淺藍色系 */
-.card{background:#f0f8fb;border-radius:12px;box-shadow:0 2px 10px #0077b614;padding:20px;border:1px solid #deeef5;}
-.card-img{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:16px;}
-.card-title{font-size:18px;font-weight:bold;margin:0 0 12px;color:#2d3748;}
-.card-desc{color:#4a5568;margin:0 0 24px;line-height:1.6;}
-.btn-group{display:flex;gap:12px;}
-.btn{flex:1;text-align:center;padding:10px;border-radius:6px;text-decoration:none;color:#fff;border:none;cursor:pointer;transition:background 0.3s;}
-/* 按鈕調整為協調的藍色系 */
-.btn-front{background:#4299e1;}
-.btn-front:hover{background:#3182ce;}
-.btn-admin{background:#9f7aea;}
-.btn-admin:hover{background:#805ad5;}
-.empty-tip{text-align:center;color:#718096;font-size:18px;padding:60px 0;}
-
-/* 新增版權區樣式 - 調整為淺藍協調色 */
-.footer-copyright {
-  width: 100%;
-  padding: 30px 0;
-  margin-top: 60px;
-  text-align: center;
-  background:#f5fafe;
-}
-.studio-btn {
-  background: #2d3748;
-  color: #fff;
-  border: none;
-  padding: 12px 30px;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-.studio-btn:hover {
-  background: #4a5568;
-}
-
-/* 彈窗遮罩樣式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(66, 153, 225, 0.5); /* 淺藍色半透明遮罩 */
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-/* 彈窗內容樣式 - 淺藍色系調整 */
-.modal-content {
-  background: #f8fbfd;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  padding: 30px;
-  box-shadow: 0 4px 20px rgba(66, 153, 225, 0.2);
-  position: relative;
-  border: 1px solid #deeef5;
-}
-.modal-title {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #2d3748;
-  border-bottom: 1px solid #deeef5;
-  padding-bottom: 10px;
-}
-.modal-text {
-  line-height: 1.8;
-  color: #4a5568;
-  margin-bottom: 15px;
-}
-.close-modal {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 24px;
-  cursor: pointer;
-  color: #718096;
-  background: none;
-  border: none;
-  transition: color 0.3s;
-}
-.close-modal:hover {
-  color: #4299e1;
-}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><<濱線露店>>購物商城</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:微軟正黑體,sans-serif;}
+        body{background:#f6f7f9;padding-top:70px;}
+        .hide{display:none !important;}
+        .container{max-width:1250px;margin:0 auto;padding:0 15px;}
+        .header{position:fixed;top:0;left:0;width:100%;background:#165DFF;color:#fff;height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 25px;z-index:999;}
+        .nav-logo{font-size:22px;font-weight:bold;cursor:pointer;}
+        .nav-menu{display:flex;gap:25px;align-items:center;}
+        .nav-item{cursor:pointer;font-size:15px;}
+        .nav-item:hover{opacity:0.85;}
+        .cart-badge{position:relative;}
+        .cart-num{position:absolute;top:-8px;right:-10px;background:#f53f3f;border-radius:50%;width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;}
+        .cate-wrap{display:flex;flex-wrap:wrap;gap:10px;margin:30px 0;}
+        .cate-tag{border:1px solid #ccc;padding:7px 15px;border-radius:3px;cursor:pointer;}
+        .cate-tag:hover{background:#165DFF;color:#fff;border-color:#165DFF;}
+        .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;}
+        .product-card{background:#fff;border-radius:6px;box-shadow:0 2px 8px #0001;padding:15px;}
+        .product-img{width:100%;height:165px;object-fit:cover;border-radius:4px;background:#eee;}
+        .product-name{font-weight:bold;margin:10px 0 5px;}
+        .product-cate{font-size:13px;color:#777;}
+        .product-price{color:#f53f3f;font-size:18px;font-weight:bold;margin:8px 0;}
+        .add-cart{width:100%;background:#165DFF;color:#fff;border:none;padding:9px;border-radius:4px;margin-top:10px;cursor:pointer;}
+        .spec-btn{width:100%;background:#667eea;color:#fff;border:none;padding:9px;border-radius:4px;margin-top:8px;cursor:pointer;}
+        .cart-empty{text-align:center;padding:80px 0;color:#999;}
+        .cart-empty i{font-size:55px;margin-bottom:15px;}
+        .cart-item{background:#fff;padding:15px;border-radius:6px;margin-bottom:12px;display:flex;align-items:center;gap:15px;}
+        .cart-img{width:80px;height:80px;object-fit:cover;border-radius:4px;background:#eee;}
+        .num-btn{width:28px;height:28px;border:1px solid #ddd;background:#fff;cursor:pointer;}
+        .total-bar{background:#fff;padding:18px;border-radius:6px;margin-top:15px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+        .shipping-fee{width:100%;padding:10px 0;border-top:1px dashed #eee;margin-top:10px;display:flex;justify-content:space-between;}
+        .shipping-fee .fee-label{font-size:16px;color:#333;}
+        .shipping-fee .fee-value{font-size:16px;font-weight:bold;color:#f53f3f;}
+        .tax-fee{width:100%;padding:10px 0;border-top:1px dashed #eee;display:flex;justify-content:space-between;}
+        .tax-fee .fee-label{font-size:16px;color:#333;}
+        .tax-fee .fee-value{font-size:16px;font-weight:bold;color:#f53f3f;}
+        .invoice-info{width:100%;padding:15px 0;border-top:1px dashed #eee;margin-top:10px;}
+        .invoice-checkbox{margin-bottom:15px;display:flex;flex-direction:column;gap:8px;font-size:16px;}
+        .invoice-select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:15px;}
+        .invoice-input-group{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+        .invoice-input{width:100%;border:1px solid #ddd;padding:11px;border-radius:4px;font-size:14px;}
+        .invoice-label{font-size:14px;color:#333;margin-bottom:5px;display:block;}
+        .checkout{background:#165DFF;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;}
+        .clear-cart{background:#f53f3f;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;}
+        .force-clear-cart{background:#900;color:#fff;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;margin-bottom:15px;}
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .modal-box{background:#fff;width:92%;max-width:500px;padding:22px;border-radius:6px;max-height:90vh;overflow-y:auto;}
+        .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+        .close{font-size:22px;cursor:pointer;}
+        .input-box{width:100%;border:1px solid #ddd;padding:11px;border-radius:4px;margin:9px 0;}
+        .submit-btn{width:100%;background:#165DFF;color:#fff;border:none;padding:11px;border-radius:4px;margin-top:8px;cursor:pointer;}
+        .order-empty{text-align:center;padding:80px 0;color:#999;}
+        .order-empty i{font-size:55px;margin-bottom:15px;}
+        .order-item{background:#fff;padding:20px;border-radius:6px;margin-bottom:15px;}
+        .order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;}
+        .order-no{font-weight:bold;color:#333;}
+        .order-status{padding:4px 10px;border-radius:4px;font-size:13px;}
+        .status-pending{background:#fff3cd;color:#856404;border:1px solid #ffeeba;}
+        .status-precessing{background:#fff3cd;color:#856404;border:1px solid #ffeeba;}
+        .status-shipped{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb;}
+        .status-arrival{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+        .status-completed{background:#e2e3e5;color:#383d41;border:1px solid #d6d8db;}
+        .status-canceled{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+        .order-total{color:#f53f3f;font-weight:bold;font-size:18px;margin:10px 0;}
+        .order-detail-btn{background:#165DFF;color:#fff;border:none;padding:8px 15px;border-radius:4px;cursor:pointer;font-size:14px;}
+        .order-detail-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;}
+        .order-detail-img{width:60px;height:60px;object-fit:cover;border-radius:4px;}
+        .order-detail-info{flex:1;}
+        .order-detail-name{font-weight:bold;margin-bottom:3px;}
+        .order-detail-price{font-size:13px;color:#f53f3f;}
+        .order-detail-num{font-size:13px;color:#777;}
+        .order-address{margin:10px 0;padding:10px;background:#f9f9f9;border-radius:4px;font-size:14px;}
+        .spec-modal-box{background:#fff;width:92%;max-width:600px;padding:22px;border-radius:6px;max-height:90vh;overflow-y:auto;}
+        .spec-content{margin-top:15px;line-height:1.8;font-size:15px;}
+        .spec-title{font-size:18px;font-weight:bold;margin-bottom:10px;color:#333;}
+    </style>
 </head>
 <body>
-<div class="container">
-  <h1>~快快快~ 網站展示平台</h1>
-  <div id="linkList" class="grid-row"><div class="empty-tip">載入中...</div></div>
-</div>
-
-<!-- 新增版權區域 -->
-<div class="footer-copyright">
-  <button class="studio-btn" id="studioBtn">快快快工作室</button>
-</div>
-
-<!-- 彈窗結構 -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal-content">
-    <button class="close-modal" id="closeModal">&times;</button>
-    <h3 class="modal-title">快快快工作室</h3>
-    <p class="modal-text"><strong>公司簡介：</strong><br>
-      快快快工作室成立於2026年，專注於網站開發、系統建置與數位行銷服務，秉持著高效、專業、創新的理念，為客戶打造優質的數位產品與解決方案。
-    </p>
-    <p class="modal-text"><strong>連絡方式：</strong><br>
-      📞 聯繫電話：0932-740558 (同LINE ID)<br>
-      📧 電子郵件：tjc@ms2.hinet.net<br>
-      🏠 公司地址：高雄市鼓山區鼓山二路69號
-    </p>
-    <p class="modal-text"><strong>營業時間：</strong><br>
-      週一至週五 09:00 - 18:00（國定假日休息）
-    </p>
-  </div>
-</div>
-
-<script>   
-const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function getLinks(){
-  const {data, error} = await client
-    .from('qqq_links')
-    .select('*')
-    .eq('is_show',true)
-    .order('sort_num',{asc:true});
-    
-  if(error){
-    console.error('讀取失敗',error);
-    document.getElementById('linkList').innerHTML = '<div class="empty-tip">連線失敗，請確認金鑰與資料庫權限</div>';
-    return;
-  }
-  const list = Array.isArray(data) ? data : [];
-  renderList(list);
-}
-
-function renderList(list){
-  const box = document.getElementById('linkList');
-  if(list.length === 0){
-    box.innerHTML = '<div class="empty-tip">暫無展示網站</div>';
-    return;
-  }
-  box.innerHTML = '';
-  list.forEach(item=>{
-    let img = item.cover_image || 'https://picsum.photos/400/220';
-    let desc = item.description || '暫無網站介紹';
-    box.innerHTML += `
-    <div class="card">
-      <img class="card-img" src="${img}" alt="">
-      <h2 class="card-title">${item.title}</h2>
-      <p class="card-desc">${desc}</p>
-      <div class="btn-group">
-        <a href="${item.front_url}" target="_blank" class="btn btn-front">前台入口</a>
-        <a href="${item.admin_url}" target="_blank" class="btn btn-admin">後台入口</a>
-      </div>
+<div class="header">
+    <div class="nav-logo" onclick="switchPage('home')"><i class="fa fa-shopping-bag"></i> <<濱線露店>>購物商城</div>
+    <div class="nav-menu">
+        <span class="nav-item" onclick="switchPage('home')">首頁</span>
+        <span class="nav-item cart-badge" onclick="openCart()">
+            購物車
+            <span class="cart-num" id="cartCount">0</span>
+        </span>
+        <span class="nav-item" id="orderBtn" style="display:none;" onclick="switchPage('order')">我的訂單</span>
+        <span class="nav-item" id="regBtn" onclick="openRegModal()">註冊</span>
+        <span class="nav-item" id="loginBtn" onclick="openLoginModal()">登入</span>
+        <span class="nav-item" id="userText" style="display:none;"></span>
+        <span class="nav-item" id="logoutBtn" style="display:none;" onclick="userLogout()"><i class="fa fa-sign-out"></i> 登出</span>
     </div>
-    `
-  })
+</div>
+<div class="container">
+    <div id="page-home" class="page-view">
+        <div class="cate-wrap" id="cateHtml"></div>
+        <h3 style="margin:10px 0;font-size:18px;">全部商品</h3>
+        <div class="product-grid" id="productHtml"></div>
+    </div>
+    <div id="page-cart" class="page-view hide">
+        <h2 style="margin:20px 0;font-size:22px;">我的購物車</h2>
+        <button class="force-clear-cart" onclick="clearAllLocalCart()">⚠️ 強制清空全部購物車</button>
+        <div class="cart-empty" id="cartEmptyTip">
+            <i class="fa fa-shopping-cart"></i>
+            <p>購物車暫無任何商品</p>
+        </div>
+        <div id="cartListBox"></div>
+    </div>
+    <div id="page-order" class="page-view hide">
+        <h2 style="margin:20px 0;font-size:22px;">我的訂單</h2>
+        <div class="order-empty" id="orderEmptyTip">
+            <i class="fa fa-file-text-o"></i>
+            <p>您暫無任何訂單記錄</p>
+        </div>
+        <div id="orderListBox"></div>
+    </div>
+</div>
+<div id="regModal" class="modal hide">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>會員註冊</h3>
+            <span class="close" onclick="closeModal('regModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <input class="input-box" type="email" id="regEmail" placeholder="請輸入電子信箱">
+        <input class="input-box" type="password" id="regPwd" placeholder="請設定登入密碼">
+        <button class="submit-btn" onclick="userRegister()">立即註冊</button>
+        <p style="text-align:center;margin-top:12px;">已有帳號? <span style="color:#165DFF;cursor:pointer;" onclick="closeModal('regModal');openLoginModal()">前往登入</span></p>
+    </div>
+</div>
+<div id="loginModal" class="modal hide">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>會員登入</h3>
+            <span class="close" onclick="closeModal('loginModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <input class="input-box" type="email" id="loginEmail" placeholder="輸入註冊信箱">
+        <input class="input-box" type="password" id="loginPwd" placeholder="輸入登入密碼">
+        <button class="submit-btn" onclick="userLogin()">立即登入</button>
+    </div>
+</div>
+<div id="checkoutUserModal" class="modal hide">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>填寫收貨資訊</h3>
+            <span class="close" onclick="closeModal('checkoutUserModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <label>收件人姓名</label>
+        <input class="input-box" id="buyerName" placeholder="請填寫真實姓名">
+        <label>聯絡手機</label>
+        <input class="input-box" id="buyerPhone" placeholder="請填寫聯絡電話">
+        <label>收貨地址</label>
+        <textarea class="input-box" id="buyerAddress" placeholder="請填寫完整收貨地址"></textarea>
+        <label>備註</label>
+        <input class="input-box" id="buyerRemark" rows="4" placeholder="請填寫備註">
+        <button class="submit-btn" onclick="submitCheckoutOrder()">確認結帳下單</button>
+    </div>
+</div>
+<div id="orderDetailModal" class="modal hide">
+    <div class="modal-box" style="max-width:600px;">
+        <div class="modal-head">
+            <h3>訂單詳情</h3>
+            <span class="close" onclick="closeModal('orderDetailModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <div id="orderDetailContent"></div>
+    </div>
+</div>
+<div id="productSpecModal" class="modal hide">
+    <div class="spec-modal-box">
+        <div class="modal-head">
+            <h3>商品詳細規格</h3>
+            <span class="close" onclick="closeModal('productSpecModal')"><i class="fa fa-times"></i></span>
+        </div>
+        <div class="spec-content" id="specContent"></div>
+    </div>
+</div>
+<script>
+const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Q2xWWpwZkgYj4UAdqbvqAQ_XJ4TsVHO";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const DEF_IMG = "https://picsum.photos/300/300";
+const DEF_SMALL = "https://picsum.photos/100/100";
+
+function getCartData(){
+    let cart = localStorage.getItem("shopCartData");
+    if(!cart) return [];
+    try{return JSON.parse(cart);}catch{return [];}
+}
+function setCartData(arr){
+    localStorage.setItem("shopCartData",JSON.stringify(arr));
+    updateCartNum();
+}
+function updateCartNum(){
+    let list = getCartData();
+    let total = list.reduce((s,i)=>s+i.num,0);
+    document.getElementById("cartCount").innerText = total;
+}
+function addToCart(pid,name,price,img){
+    let cart = getCartData();
+    let has = cart.find(v=>v.pid == pid);
+    if(has) has.num +=1;
+    else cart.push({pid,name,price:Number(price),img:img||DEF_SMALL,num:1});
+    setCartData(cart);
+    alert("成功加入購物車！");
+}
+function openCart(){
+    document.querySelectorAll(".page-view").forEach(p=>p.classList.add("hide"));
+    document.getElementById("page-cart").classList.remove("hide");
+    renderCartPage();
+}
+function calculateShippingFee(subtotal){
+    return subtotal >= 1000 ? 0 : 60;
+}
+function calculateTax(amount,needTax){
+    return needTax ? Math.round(amount * 0.05) : 0;
+}
+function toggleInvoice(){renderCartPage();}
+function renderCartPage(){
+    let cart = getCartData();
+    let emptyTip = document.getElementById("cartEmptyTip");
+    let box = document.getElementById("cartListBox");
+    if(cart.length ===0){
+        emptyTip.style.display="block";
+        box.innerHTML="";
+        return;
+    }
+    emptyTip.style.display="none";
+    let html="";
+    let subtotal = cart.reduce((s,i)=>s+i.price*i.num,0);
+    cart.forEach((item,idx)=>{
+        let sub = item.price * item.num;
+        html += `
+        <div class="cart-item">
+            <img class="cart-img" src="${item.img}" onerror="this.src='${DEF_SMALL}'">
+            <div style="flex:1">
+                <div style="font-weight:bold">${item.name}</div>
+                <div style="color:#f53f3f">NT$${item.price}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button class="num-btn" onclick="cartMinus(${idx})">-</button>
+                <span>${item.num}</span>
+                <button class="num-btn" onclick="cartPlus(${idx})">+</button>
+            </div>
+            <span style="width:80px;text-align:right;font-weight:bold">${sub}元</span>
+            <i class="fa fa-trash" style="color:#f53f3f;cursor:pointer" onclick="cartDel(${idx})"></i>
+        </div>`;
+    });
+    let invoiceType = document.getElementById('invoiceType')?.value || "none";
+    let showCompany = invoiceType === "triple";
+    let needTax = ["double","triple"].includes(invoiceType);
+    let ship = calculateShippingFee(subtotal);
+    let subShip = subtotal + ship;
+    let tax = calculateTax(subShip,needTax);
+    let total = subShip + tax;
+    html += `
+    <div class="total-bar">
+        <div style="width:100%;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <div>商品小計：</div>
+                <div style="color:#333;font-weight:bold">${subtotal} 元</div>
+            </div>
+            <div class="shipping-fee">
+                <div class="fee-label">運費：${ship===0?'(滿$1000免運費)':''}</div>
+                <div class="fee-value">${ship===0?'免運費':ship+' 元'}</div>
+            </div>
+            <div class="tax-fee">
+                <div class="fee-label">稅金 (5%)：${!needTax?'(未開立發票)':''}</div>
+                <div class="fee-value">${tax} 元</div>
+            </div>
+            <div class="invoice-info">
+                <div class="invoice-checkbox">
+                    <label>發票類型</label>
+                    <select id="invoiceType" class="invoice-select" onchange="toggleInvoice()">
+                        <option value="none" ${invoiceType==="none"?"selected":""}>不開立發票</option>
+                        <option value="double" ${invoiceType==="double"?"selected":""}>二聯式發票(個人)</option>
+                        <option value="triple" ${invoiceType==="triple"?"selected":""}>三聯式發票(公司)</option>
+                    </select>
+                </div>
+                ${showCompany?`
+                <div class="invoice-input-group">
+                    <div><label class="invoice-label">公司名稱</label><input id="companyName" class="invoice-input" placeholder="公司名稱"></div>
+                    <div><label class="invoice-label">統一編號</label><input id="taxId" class="invoice-input" placeholder="8位統編"></div>
+                </div>`:''}
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:10px;">
+                <div>應付總金額：</div>
+                <div style="color:#f53f3f;font-size:20px;font-weight:bold">${total} 元</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:15px;">
+            <button class="clear-cart" onclick="clearAllLocalCart()">清空購物車</button>
+            <button class="checkout" onclick="openCheckoutForm()">結帳下單</button>
+        </div>
+    </div>`;
+    box.innerHTML = html;
+}
+function cartPlus(idx){let c=getCartData();c[idx].num++;setCartData(c);renderCartPage();}
+function cartMinus(idx){let c=getCartData();if(c[idx].num>1){c[idx].num--;setCartData(c);renderCartPage();}}
+function cartDel(idx){let c=getCartData();c.splice(idx,1);setCartData(c);renderCartPage();}
+function clearAllLocalCart(){if(confirm("確定清空？")){setCartData([]);renderCartPage();}}
+function openCheckoutForm(){
+    if(!localStorage.getItem("shopUserInfo")){alert("請先登入！");openLoginModal();return;}
+    if(getCartData().length===0){alert("購物車無商品");return;}
+    let inv = document.getElementById("invoiceType").value;
+    if(inv==="triple"){
+        let comp = document.getElementById("companyName").value.trim();
+        let tid = document.getElementById("taxId").value.trim();
+        if(!comp||!tid)return alert("三聯需填公司與統編");
+    }
+    document.getElementById("buyerName").value="";
+    document.getElementById("buyerPhone").value="";
+    document.getElementById("buyerAddress").value="";
+    document.getElementById("buyerRemark").value="";
+    document.getElementById("checkoutUserModal").classList.remove("hide");
+}
+async function submitCheckoutOrder(){
+    let name = document.getElementById("buyerName").value.trim();
+    let phone = document.getElementById("buyerPhone").value.trim();
+    let addr = document.getElementById("buyerAddress").value.trim();
+    let remark = document.getElementById("buyerRemark").value.trim();
+    if(!name||!phone||!addr)return alert("填完整收貨資訊");
+    let invType = document.getElementById("invoiceType").value;
+    let comp = invType==="triple"?document.getElementById("companyName").value.trim():"";
+    let tid = invType==="triple"?document.getElementById("taxId").value.trim():"";
+    if(invType==="triple"&&(!comp||!tid))return alert("三聯需填公司統編");
+    let user = JSON.parse(localStorage.getItem("shopUserInfo"));
+    let cart = getCartData();
+    let subtotal = cart.reduce((s,i)=>s+i.price*i.num,0);
+    let ship = calculateShippingFee(subtotal);
+    let subShip = subtotal + ship;
+    let tax = calculateTax(subShip,["double","triple"].includes(invType));
+    let total = subShip + tax;
+    let orderNo = "ORD"+Date.now();
+    let localDate = new Date();
+    let localTimeStr = localDate.toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).replace(/\//g,'-');
+    let ts = localDate.getTime();
+    let {data:oRes,err} = await sb.from("yo_orders").insert({
+    order_no:orderNo,
+    user_id:user.id,
+    user_email:user.email,
+    subtotal_price:Number(subtotal), // 強制轉數字
+    shipping_fee:Number(ship),
+    tax_fee:Number(tax),
+    total_price:Number(total),
+    status:"pending",
+    buyer_name:name,
+    buyer_phone:phone,
+    buyer_address:addr,
+    buyer_remark:remark||"", // 避免null值（若表不允許null）
+    invoice_type:invType,
+    company_name:comp||"",   // 避免null值
+    tax_id:tid||"",          // 避免null值
+    local_timestamp:Number(ts), // 確保是數字
+    local_created_at:localTimeStr
+    }).select();
+    if(err)return alert("建立訂單失敗："+err.message);
+    let oid = oRes[0].id;
+    let items = cart.map(i=>({order_id:oid,product_id:i.pid,product_name:i.name,price:i.price,num:i.num,product_img:i.img}));
+    let {err2} = await sb.from("yo_order_items").insert(items);
+    if(err2)return alert("明細儲存失敗："+err2.message);
+    let invMsg = invType==="none"?"\n發票：不開立":invType==="double"?`\n發票：二聯式 稅金：NT$${tax}`:`\n發票三聯式\n公司：${comp}\n統編：${tid}\n稅金NT$${tax}`;
+    alert(`下單成功！訂單號${orderNo}\n信箱：${user.email}\n小計：${subtotal} 運費：${ship} 稅金：${tax} 總價：${total}${invMsg}\n等待店家0932-740558確認`);
+    closeModal("checkoutUserModal");
+    setCartData([]);
+    openCart();
+}
+let allGoods = [];
+async function loadCategory(){
+    let {data} = await sb.from("yo_categories").select("*");
+    let h = `<span class="cate-tag" onclick="filterGoods('all')">全部分類</span>`;
+    data.forEach(d=>h+=`<span class="cate-tag" onclick="filterGoods(${d.id})">${d.name}</span>`);
+    document.getElementById("cateHtml").innerHTML = h;
+}
+async function loadGoods(){
+    try{
+        let {data, error} = await sb.from("yo_products").select("*,yo_categories(name)");
+        if(error) throw error;
+        allGoods = data;
+        renderGoods(allGoods);
+    }catch(err){
+        alert("商品加載失敗：" + err.message);
+        console.error("商品加載錯誤：", err);
+        // 加載失敗時顯示空數據，避免頁面卡死
+        allGoods = [];
+        renderGoods(allGoods);
+    }
 }
 
-// 彈窗相關功能
-const studioBtn = document.getElementById('studioBtn');
-const modalOverlay = document.getElementById('modalOverlay');
-const closeModal = document.getElementById('closeModal');
+function escapeStr(s){
+    if(!s)return "";
+    return s.replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');
+}
+function renderGoods(list){
+    let h="";
+    list.forEach(g=>{
+        let imgs = [];
+        try{imgs = g.imgs?JSON.parse(g.imgs):[];}catch{}
+        let img = imgs[0]||DEF_IMG;
+        let sm = imgs[0]||DEF_SMALL;
+        let name = escapeStr(g.name);
+        let desc = escapeStr(g.goods_desc||"無說明");
+        let spec = escapeStr(g.specifications||"無規格");
+        let imgJson = JSON.stringify(imgs).replace(/"/g,'&quot;');
+        h += `
+        <div class="product-card">
+            <img class="product-img" src="${img}" onerror="this.src='${DEF_IMG}'">
+            <div class="product-name">${g.name}</div>
+            <div class="product-cate">${g.categories?.name||"未分類"}</div>
+            <div class="product-price">NT$${g.price}</div>
+            <div style="font-size:13px;color:#888">庫存：${g.stock}</div>
+            <button class="spec-btn" onclick="openProductSpec('${name}','${desc}','${spec}','${imgJson}')">詳細規格</button>
+            <button class="add-cart" onclick="addToCart(${g.id},'${name}',${g.price},'${sm}')">加入購物車</button>
+        </div>`;
+    });
+    document.getElementById("productHtml").innerHTML = h;
+}
+function filterGoods(cid){
+    if(cid==="all")return renderGoods(allGoods);
+    renderGoods(allGoods.filter(v=>v.cate_id==cid));
+}
+function openProductSpec(name,desc,spec,imgJson){
+    let imgs = [];
+    try{imgs=JSON.parse(imgJson);}catch{imgs=[DEF_IMG];}
+    let imgHtml = imgs.map(u=>`<img class="slide-img" src="${u}" onerror="this.src='${DEF_IMG}'">`).join("");
+    let win = window.open("","_blank","width=820,height=650,scrollbars=yes");
+    win.document.write(`
+    <html><head><meta charset="UTF-8"><title>${name}</title>
+    <style>
+    body{font-family:微軟正黑體;padding:24px;max-width:820px;margin:0 auto;}
+    .title{font-size:24px;font-weight:bold;border-bottom:2px solid #165DFF;padding-bottom:10px;}
+    .img-slider{display:flex;gap:12;overflow-x:auto;margin:20px 0;}
+    .slide-img{width:320;height:420;object-fit:contain;background:#f6f7f9;border-radius:6px;}
+    h4{margin:15px 0 8px}
+    .text{white-space:pre-line;line-height:1.8}
+    </style></head>
+    <body>
+    <div class="title">${name}</div>
+    <div class="img-slider">${imgHtml}</div>
+    <div><h4>商品介紹</h4><div class="text">${desc.replace(/\n/g,"<br>")}</div></div>
+    <hr style="margin:20px 0">
+    <div><h4>詳細規格</h4><div class="text">${spec.replace(/\n/g,"<br>")}</div></div>
+    </body></html>`);
+    win.document.close();
+}
+function switchPage(page){
+    // 先隱藏所有頁面
+    document.querySelectorAll(".page-view").forEach(p=>p.classList.add("hide"));
+    const targetPage = document.getElementById("page-"+page);
+    targetPage.classList.remove("hide");
 
-// 打開彈窗
-studioBtn.addEventListener('click', () => {
-  modalOverlay.style.display = 'flex';
-});
-
-// 關閉彈窗函式
-function closeModalFunc() {
-  modalOverlay.style.display = 'none';
+    if(page==="order"){
+        if(!localStorage.getItem("shopUserInfo")){
+            alert("請登入");
+            openLoginModal();
+            // 新增：若未登入，切回首頁
+            document.getElementById("page-order").classList.add("hide");
+            document.getElementById("page-home").classList.remove("hide");
+            loadCategory();
+            loadGoods();
+            return;
+        }
+        loadUserOrders();
+    }
+    // 首頁加載邏輯獨立，確保一定執行
+    if(page==="home"){
+        loadCategory();
+        loadGoods();
+    }
 }
 
-// 點擊關閉按鈕關閉彈窗
-closeModal.addEventListener('click', closeModalFunc);
+async function userRegister(){
+    let email = document.getElementById("regEmail").value.trim();
+    let pwd = document.getElementById("regPwd").value.trim();
+    if(!email||!pwd)return alert("填完整");
+    let {error} = await sb.auth.signUp({email,password:pwd});
+    if(error)return alert(error.message);
+    alert("註冊成功，請登入");
+    closeModal("regModal");openLoginModal();
+}
+async function userLogin(){
+    let email = document.getElementById("loginEmail").value.trim();
+    let pwd = document.getElementById("loginPwd").value.trim();
+    if(!email||!pwd)return alert("填帳密");
+    let {data,error} = await sb.auth.signInWithPassword({email,password:pwd});
+    if(error)return alert(error.message);
+    localStorage.setItem("shopUserInfo",JSON.stringify(data.user));
+    closeModal("loginModal");
+    refreshUserStatus();
+    // 新增：登入後強制切回首頁並加載商品
+    switchPage("home");
+    alert("登入成功");
+}
+async function userLogout(){
+    if(!confirm("確定登出？"))return;
+    localStorage.removeItem("shopUserInfo");
+    await sb.auth.signOut();
+    refreshUserStatus();
+    alert("已登出");
+    switchPage("home");
+}
+function refreshUserStatus(){
+    let u = localStorage.getItem("shopUserInfo");
+    if(u){
+        let user = JSON.parse(u);
+        document.getElementById("regBtn").style.display="none";
+        document.getElementById("loginBtn").style.display="none";
+        document.getElementById("userText").style.display="block";
+        document.getElementById("userText").innerText = user.email;
+        document.getElementById("logoutBtn").style.display="inline-block";
+        document.getElementById("orderBtn").style.display="inline-block";
+    }else{
+        document.getElementById("regBtn").style.display="inline-block";
+        document.getElementById("loginBtn").style.display="inline-block";
+        document.getElementById("userText").style.display="none";
+        document.getElementById("logoutBtn").style.display="none";
+        document.getElementById("orderBtn").style.display="none";
+    }
+    // 新增：如果當前頁面是首頁，重新加載商品和分類
+    if(!document.getElementById("page-home").classList.contains("hide")){
+        loadCategory();
+        loadGoods();
+    }
+}
 
-// 點擊遮罩層關閉彈窗
-modalOverlay.addEventListener('click', (e) => {
-  if (e.target === modalOverlay) {
-    closeModalFunc();
-  }
-});
-
-// 按下ESC鍵關閉彈窗（額外優化）
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modalOverlay.style.display === 'flex') {
-    closeModalFunc();
-  }
-});
-
-getLinks();
+function openRegModal(){document.getElementById("regModal").classList.remove("hide");}
+function openLoginModal(){document.getElementById("loginModal").classList.remove("hide");}
+function closeModal(id){document.getElementById(id).classList.add("hide");}
+async function loadUserOrders(){
+    let user = JSON.parse(localStorage.getItem("shopUserInfo"));
+    let {data:yo_orders,err} = await sb.from("yo_orders").select("*").eq("user_id",user.id).order("local_timestamp",{asc:false});
+    if(err)return alert("查詢失敗"+err.message);
+    let emptyTip = document.getElementById("orderEmptyTip");
+    let box = document.getElementById("orderListBox");
+    if(yo_orders.length===0){emptyTip.style.display="block";box.innerHTML="";return;}
+    emptyTip.style.display="none";
+    let statusMap = {pending:"等待確認",precessing:"處理中",shipping:"送貨中",arrival:"已到貨",completed:"已完成",canceled:"已取消"};
+    let html = "";
+    for(let o of yo_orders){
+        let img = DEF_SMALL;
+        let {data:items} = await sb.from("yo_order_items").select("product_img").eq("order_id",o.id).limit(1);
+        if(items.length>0)img=items[0].product_img;
+        let time = o.local_created_at || new Date(o.created_at).toLocaleString("zh-TW");
+        let invTxt = o.invoice_type==="none"?"不開立":o.invoice_type==="double"?"二聯個人":"三聯公司";
+        html += `
+        <div class="order-item">
+            <div class="order-header">
+                <div class="order-no">訂單：${o.order_no}</div>
+                <div class="order-status status-${o.status}">${statusMap[o.status]||o.status}</div>
+            </div>
+            <div>建立時間：${time}</div>
+            <div>信箱：${o.user_email}</div>
+            <img src="${img}" style="width:50;height:50" onerror="this.src='${DEF_SMALL}'">
+            <div>小計：${o.subtotal_price} 運費：${o.shipping_fee} 稅金：${o.tax_fee}</div>
+            <div class="order-total">總金額： NT$${o.total_price}</div>
+            <div class="order-address">
+                <div>收件：${o.buyer_name} ${o.buyer_phone}</div>
+                <div>地址：${o.buyer_address}</div>
+                ${o.buyer_remark?`<div>備註：${o.buyer_remark}</div>`:""}
+            </div>
+            <div style="margin:10px 0;padding:8px;border:1px solid #eee">
+                <div>發票：${invTxt}</div>
+                ${o.invoice_type==="triple"?`<div>公司：${o.company_name} 統編：${o.tax_id}</div>`:""}
+            </div>
+            <button class="order-detail-btn" onclick="viewOrderDetail(${o.id})">查看詳情</button>
+        </div>`;
+    }
+    box.innerHTML = html;
+}
+async function viewOrderDetail(oid){
+    let {data:order} = await sb.from("yo_orders").select("*").eq("id",oid).single();
+    let {data:items} = await sb.from("yo_order_items").select("*").eq("order_id",oid);
+    let invTxt = order.invoice_type==="none"?"不開立":order.invoice_type==="double"?"二聯":"三聯";
+    let html = `
+    <div style="margin-bottom:15px">
+        <div style="font-weight:bold">訂單號：${order.order_no}</div>
+        <div>時間：${order.local_created_at||new Date(order.created_at).toLocaleString("zh-TW")}</div>
+        <div>信箱：${order.user_email}</div>
+        <div style="margin:10px 0;border-bottom:1px solid #eee;padding-bottom:10px">
+            <div>收件：${order.buyer_name} ${order.buyer_phone}</div>
+            <div>地址：${order.buyer_address}</div>
+            ${order.buyer_remark?`<div>備註：${order.buyer_remark}</div>`:""}
+        </div>
+        <div style="margin:10px 0;border-bottom:1px solid #eee;padding-bottom:10px">
+            <div>小計：${order.subtotal_price} 運費：${order.shipping_fee} 稅金：${order.tax_fee}</div>
+            <div>發票：${invTxt} ${order.invoice_type==="triple"?`公司：${order.company_name} 統編：${order.tax_id}`:""}</div>
+        </div>
+        <div><strong>商品清單</strong></div>
+    `;
+    items.forEach(i=>{
+        let im = i.product_img||DEF_SMALL;
+        html += `
+        <div class="order-detail-item">
+            <img class="order-detail-img" src="${im}" onerror="this.src='${DEF_SMALL}'">
+            <div class="order-detail-info">
+                <div class="order-detail-name">${i.product_name}</div>
+                <div class="order-detail-price">單價：${i.price}</div>
+                <div class="order-detail-num">數量：${i.num}</div>
+            </div>
+            <div style="font-weight:bold">小計：${i.price*i.num}</div>
+        </div>`;
+    });
+    html += `<div style="margin-top:20px;font-size:18px;font-weight:bold;color:#f53f3f">總金額： NT$${order.total_price}</div>`;
+    document.getElementById("orderDetailContent").innerHTML = html;
+    document.getElementById("orderDetailModal").classList.remove("hide");
+}
+window.onload = function(){
+    updateCartNum();
+    refreshUserStatus();
+    switchPage("home");
+}
 </script>
 </body>
 </html>
