@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購物清單後台管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f4f8; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #2c5282; margin-bottom: 20px; text-align: center; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; border: none; background: #cbd5e0; cursor: pointer; border-radius: 8px; font-size: 16px; }
+        .tab-btn.active { background: #3182ce; color: white; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .tab-content.active { display: block; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        input, select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; flex: 1; min-width: 120px; }
+        button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #3182ce; color: white; }
+        .btn-danger { background: #e53e3e; color: white; }
+        .btn-edit { background: #dd6b20; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #edf2f7; font-weight: 600; }
+        .action-btns { display: flex; gap: 5px; }
+        .product-url { color: #3182ce; text-decoration: none; }
+        .product-url:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 購物清單後台管理系統</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="products">商品管理</button>
+            <button class="tab-btn" data-tab="markets">市場管理</button>
+            <button class="tab-btn" data-tab="history">歷史購物記錄</button>
+        </div>
+        <!-- 商品管理 -->
+        <div id="products" class="tab-content active">
+            <h2 style="margin-bottom:15px;">商品資料維護</h2>
+            <div class="form-row">
+                <input type="text" id="productName" placeholder="商品名稱">
+                <input type="text" id="productUrl" placeholder="商品網址">
+                <input type="text" id="productCategory" placeholder="分類">
+                <input type="number" step="0.01" id="productPrice" placeholder="預設價格">
+                <button class="btn-primary" id="btnAddProduct">新增商品</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>商品名稱</th>
+                        <th>分類</th>
+                        <th>預設價格</th>
+                        <th>網址</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="productList"></tbody>
+            </table>
+        </div>
+        <!-- 市場管理 -->
+        <div id="markets" class="tab-content">
+            <h2 style="margin-bottom:15px;">市場資料維護</h2>
+            <div class="form-row">
+                <input type="text" id="marketName" placeholder="市場名稱">
+                <input type="text" id="marketAddress" placeholder="地址">
+                <button class="btn-primary" id="btnAddMarket">新增市場</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>市場名稱</th>
+                        <th>地址</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="marketList"></tbody>
+            </table>
+        </div>
+        <!-- 歷史記錄 -->
+        <div id="history" class="tab-content">
+            <h2 style="margin-bottom:15px;">歷史購物價格記錄</h2>
+            <div class="form-row">
+                <select id="filterProduct">
+                    <option value="">全部商品</option>
+                </select>
+                <select id="filterMarket">
+                    <option value="">全部市場</option>
+                </select>
+                <button class="btn-primary" id="btnQueryHistory">查詢</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>商品</th>
+                        <th>市場</th>
+                        <th>單價</th>
+                        <th>數量</th>
+                        <th>購買日期</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="historyList"></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        // 全域變數只宣告一次
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        // 修正：變數更名為 supabaseClient，與window.supabase避免重複宣告衝突
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let editingProductId = null;
+        let editingMarketId = null;
+
+        // 切換分頁
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // 商品管理
+        async function loadProducts() {
+            const { data, error } = await supabaseClient
+                .from('mar_products')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) { alert('載入失敗: ' + error.message); return; }
+            
+            const tbody = document.getElementById('productList');
+            tbody.innerHTML = data.map(p => {
+                const safeName = p.name.replace(/'/g, "\\'");
+                const safeUrl = (p.url || '').replace(/'/g, "\\'");
+                const safeCat = (p.category || '').replace(/'/g, "\\'");
+                return `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.category || ''}</td>
+                    <td>$${p.default_price || 0}</td>
+                    <td>${p.url ? `<a href="${p.url}" target="_blank" class="product-url">連結</a>` : ''}</td>
+                    <td class="action-btns">
+                        <button class="btn-edit" onclick="editProduct('${p.id}', '${safeName}', '${safeUrl}', '${safeCat}', ${p.default_price || 0})">編輯</button>
+                        <button class="btn-danger" onclick="deleteProduct('${p.id}')">刪除</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            const filter = document.getElementById('filterProduct');
+            filter.innerHTML = '<option value="">全部商品</option>' + 
+                data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+
+        async function addProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const url = document.getElementById('productUrl').value.trim();
+            const category = document.getElementById('productCategory').value.trim();
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            if (!name) { alert('請輸入商品名稱'); return; }
+            if (editingProductId) {
+                const { error } = await supabaseClient
+                    .from('mar_products')
+                    .update({ name, url, category, default_price: price })
+                    .eq('id', editingProductId);
+                if (error) { alert('更新失敗: ' + error.message); return; }
+                editingProductId = null;
+                document.getElementById('btnAddProduct').textContent = '新增商品';
+            } else {
+                const { error } = await supabaseClient
+                    .from('mar_products')
+                    .insert({ name, url, category, default_price: price });
+                if (error) { alert('新增失敗: ' + error.message); return; }
+            }
+            document.getElementById('productName').value = '';
+            document.getElementById('productUrl').value = '';
+            document.getElementById('productCategory').value = '';
+            document.getElementById('productPrice').value = '';
+            loadProducts();
+        }
+
+        function editProduct(id, name, url, category, price) {
+            editingProductId = id;
+            document.getElementById('productName').value = name;
+            document.getElementById('productUrl').value = url;
+            document.getElementById('productCategory').value = category;
+            document.getElementById('productPrice').value = price;
+            document.getElementById('btnAddProduct').textContent = '更新商品';
+            document.getElementById('productName').focus();
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('確定要刪除此商品？')) return;
+            const { error } = await supabaseClient.from('mar_products').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadProducts();
+        }
+
+        // 市場管理
+        async function loadMarkets() {
+            const { data, error } = await supabaseClient
+                .from('mar_markets')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) { alert('載入失敗: ' + error.message); return; }
+            
+            const tbody = document.getElementById('marketList');
+            tbody.innerHTML = data.map(m => {
+                const safeName = m.name.replace(/'/g, "\\'");
+                const safeAddr = (m.address || '').replace(/'/g, "\\'");
+                return `
+                <tr>
+                    <td>${m.name}</td>
+                    <td>${m.address || ''}</td>
+                    <td class="action-btns">
+                        <button class="btn-edit" onclick="editMarket('${m.id}', '${safeName}', '${safeAddr}')">編輯</button>
+                        <button class="btn-danger" onclick="deleteMarket('${m.id}')">刪除</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            const filter = document.getElementById('filterMarket');
+            filter.innerHTML = '<option value="">全部市場</option>' + 
+                data.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        }
+
+        async function addMarket() {
+            const name = document.getElementById('marketName').value.trim();
+            const address = document.getElementById('marketAddress').value.trim();
+            if (!name) { alert('請輸入市場名稱'); return; }
+            if (editingMarketId) {
+                const { error } = await supabaseClient
+                    .from('mar_markets')
+                    .update({ name, address })
+                    .eq('id', editingMarketId);
+                if (error) { alert('更新失敗: ' + error.message); return; }
+                editingMarketId = null;
+                document.getElementById('btnAddMarket').textContent = '新增市場';
+            } else {
+                const { error } = await supabaseClient
+                    .from('mar_markets')
+                    .insert({ name, address });
+                if (error) { alert('新增失敗: ' + error.message); return; }
+            }
+            document.getElementById('marketName').value = '';
+            document.getElementById('marketAddress').value = '';
+            loadMarkets();
+        }
+
+        function editMarket(id, name, address) {
+            editingMarketId = id;
+            document.getElementById('marketName').value = name;
+            document.getElementById('marketAddress').value = address;
+            document.getElementById('btnAddMarket').textContent = '更新市場';
+            document.getElementById('marketName').focus();
+        }
+
+        async function deleteMarket(id) {
+            if (!confirm('確定要刪除此市場？')) return;
+            const { error } = await supabaseClient.from('mar_markets').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadMarkets();
+        }
+
+        // 歷史價格
+        async function loadPriceHistory() {
+            const productId = document.getElementById('filterProduct').value;
+            const marketId = document.getElementById('filterMarket').value;
+            let query = supabaseClient
+                .from('mar_price_history')
+                .select(`
+                    *,
+                    mar_products(name),
+                    mar_markets(name)
+                `)
+                .order('purchase_date', { ascending: false });
+            if (productId) query = query.eq('product_id', productId);
+            if (marketId) query = query.eq('market_id', marketId);
+            const { data, error } = await query;
+            if (error) { alert('載入失敗: ' + error.message); return; }
+            const tbody = document.getElementById('historyList');
+            tbody.innerHTML = data.map(h => `
+                <tr>
+                    <td>${h.mar_products?.name || '已刪除'}</td>
+                    <td>${h.mar_markets?.name || '已刪除'}</td>
+                    <td>$${h.price}</td>
+                    <td>${h.quantity}</td>
+                    <td>${h.purchase_date}</td>
+                    <td><button class="btn-danger" onclick="deleteHistory('${h.id}')">刪除</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteHistory(id) {
+            if (!confirm('確定要刪除此記錄？')) return;
+            const { error } = await supabaseClient.from('mar_price_history').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadPriceHistory();
+        }
+
+        // 頁面載入完成後繫結事件
+        document.addEventListener('DOMContentLoaded', function() {
+            // 分頁切換事件
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchTab(this.dataset.tab);
+                });
+            });
+            // 按鈕事件
+            document.getElementById('btnAddProduct').addEventListener('click', addProduct);
+            document.getElementById('btnAddMarket').addEventListener('click', addMarket);
+            document.getElementById('btnQueryHistory').addEventListener('click', loadPriceHistory);
+            // 初始化載入
+            loadProducts();
+            loadMarkets();
+        });
+    </script>
+</body>
+</html>
