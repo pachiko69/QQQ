@@ -27,6 +27,7 @@
         .btn-secondary { background: #4a5568; color: white; }
         .btn-blue { background: #3182ce; color: white; }
         .btn-orange { background: #dd6b20; color: white; }
+        .btn-purple { background: #9f7aea; color: white; } /* 新增按鈕樣式 */
         .add-section {
             background: white; padding: 15px; border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px;
@@ -44,6 +45,13 @@
         .item-name { font-weight: 600; color: #2d3748; font-size: 16px; }
         .item-name a { color: #3182ce; text-decoration: none; margin-left: 8px; font-size: 12px; }
         .item-name a:hover { text-decoration: underline; }
+        /* 儲位標籤樣式 */
+        .storage-location {
+            font-size: 12px;
+            color: #718096;
+            margin-left: 8px;
+            font-weight: normal;
+        }
         
         .item-detail { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: #4a5568; }
         .item-detail input { width: 80px; padding: 5px 8px; }
@@ -53,16 +61,48 @@
         .status-btn.active-pending { background: #e2e8f0; color: #2d3748; border-color: #a0aec0; }
         .status-btn.active-purchased { background: #c6f6d5; color: #22543d; border-color: #68d391; }
         .status-btn.active-out_of_stock { background: #fed7d7; color: #742a2a; border-color: #fc8181; }
-        .status-btn.active-too_expensive { background: #feebc8; color: #744210; border-color: #f6ad55; }
+        .status-btn.active-compare_price { background: #feebc8; color: #744210; border-color: #f6ad55; }
         .history-price { font-size: 12px; color: #718096; }
+        .history-price .compare-tag { color: #dd6b20; font-weight: 600; }
+        .history-price .purchase-tag { color: #38a169; font-weight: 600; }
         .item-delete { color: #e53e3e; cursor: pointer; font-size: 12px; }
         .status-purchased { background: #f0fff4; }
         .status-out_of_stock { background: #fff5f5; }
-        .status-too_expensive { background: #fffaf0; }
+        .status-compare_price { background: #fffaf0; }
         .action-bar {
             display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap;
         }
         .empty-tip { text-align: center; padding: 30px; color: #a0aec0; }
+        /* 新增模糊搜尋輸入框樣式 */
+        .search-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        #productSearch {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        /* 新增商品表單樣式 */
+        .new-product-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #cbd5e0;
+            display: none; /* 預設隱藏 */
+        }
+        .new-product-form .form-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .new-product-form input {
+            flex: 1;
+            min-width: 100px;
+        }
     </style>
 </head>
 <body>
@@ -83,11 +123,33 @@
         </div>
         <div class="add-section">
             <div class="add-row">
+                <!-- 新增商品搜尋框 -->
+                <div class="search-container">
+                    <input type="text" id="productSearch" placeholder="搜尋商品名稱/儲位..." oninput="filterProducts()">
+                </div>
                 <select id="productSelect">
                     <option value="">選擇商品加入清單</option>
                 </select>
-                <input type="number" id="addQty" value="1" min="0.1" step="0.1" style="width:80px;">
+                <!-- 修改數量輸入框：step=1，min=1，移除小數點 -->
+                <input type="number" id="addQty" value="1" min="1" step="1" style="width:80px;">
                 <button class="btn btn-primary" onclick="addItem()">加入清單</button>
+                <!-- 新增插入新商品按鈕 -->
+                <button class="btn btn-purple" onclick="toggleNewProductForm()">插入新商品</button>
+            </div>
+            
+            <!-- 新增商品表單 (預設隱藏) -->
+            <div class="new-product-form" id="newProductForm">
+                <div class="form-row">
+                    <input type="text" id="newProductName" placeholder="商品名稱" required>
+                    <input type="text" id="newProductStorage" placeholder="儲位 (選填)">
+                    <input type="number" id="newProductPrice" placeholder="預設單價" min="0" step="1" value="0">
+                </div>
+                <div class="form-row">
+                    <input type="number" id="newProductQty" value="1" min="1" step="1" placeholder="數量" style="width:80px;">
+                    <input type="url" id="newProductUrl" placeholder="商品網址 (選填)">
+                    <button class="btn btn-primary" onclick="addCustomProduct()">新增自定義商品</button>
+                    <button class="btn btn-secondary" onclick="toggleNewProductForm()">取消</button>
+                </div>
             </div>
         </div>
         <div class="list-section" id="itemList">
@@ -101,25 +163,22 @@
     <script>
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
-
         // 單例初始化全域客戶端，徹底解決重複宣告錯誤
         if (!window.supabaseClient) {
             window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
         // 簡化別名，後續全部使用 window.supabaseClient
         const getSupabase = () => window.supabaseClient;
-
         let currentListId = localStorage.getItem('currentListId') || null;
         let currentMarketId = null;
-        let products = [];
+        let products = []; // 儲存所有商品
         let items = [];
         const statusLabels = {
             pending: '待購買',
             purchased: '已購買',
             out_of_stock: '缺貨中',
-            too_expensive: '太貴了'
+            compare_price: '純比價'
         };
-
         // 初始化
         async function init() {
             await loadMarkets();
@@ -128,7 +187,6 @@
                 await loadCurrentList();
             }
         }
-
         async function loadMarkets() {
             const { data } = await getSupabase()
                 .from('mar_markets')
@@ -138,22 +196,36 @@
             sel.innerHTML = '<option value="">請選擇市場</option>' + 
                 data.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         }
-
         async function loadProducts() {
             const { data } = await getSupabase()
                 .from('mar_products')
                 .select('*')
                 .order('name');
             products = data || [];
+            renderProductSelect(products); // 初始化商品下拉選單
+        }
+        // 渲染商品下拉選單：顯示儲位
+        function renderProductSelect(filteredProducts) {
             const sel = document.getElementById('productSelect');
             sel.innerHTML = '<option value="">選擇商品加入清單</option>' + 
-                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                filteredProducts.map(p => `<option value="${p.id}">${p.name} ${p.category ? `(儲位：${p.category})` : ''}</option>`).join('');
         }
-
+        // 模糊搜尋：同時搜商品名稱、儲位category
+        function filterProducts() {
+            const searchTerm = document.getElementById('productSearch').value.toLowerCase().trim();
+            if (!searchTerm) {
+                renderProductSelect(products);
+                return;
+            }
+            const filtered = products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm) || 
+                (product.category && product.category.toLowerCase().includes(searchTerm))
+            );
+            renderProductSelect(filtered);
+        }
         function onMarketChange() {
             currentMarketId = document.getElementById('marketSelect').value;
         }
-
         async function newList() {
             const marketId = document.getElementById('marketSelect').value;
             if (!marketId) { alert('請先選擇市場'); return; }
@@ -172,7 +244,6 @@
             renderList();
             updateTotal();
         }
-
         async function loadCurrentList() {
             const { data: listData } = await getSupabase()
                 .from('mar_shopping_lists')
@@ -197,27 +268,26 @@
             renderList();
             updateTotal();
         }
-
         async function addItem() {
             if (!currentListId) {
                 alert('請先點擊「開新清單」建立購物清單');
                 return;
             }
             const productId = document.getElementById('productSelect').value;
-            const qty = parseFloat(document.getElementById('addQty').value) || 1;
+            const qty = parseInt(document.getElementById('addQty').value) || 1;
             if (!productId) { alert('請選擇商品'); return; }
             const product = products.find(p => p.id === productId);
             
             // 查詢歷史價格
             const { data: history } = await getSupabase()
                 .from('mar_price_history')
-                .select('price')
+                .select('price, price_type')
                 .eq('product_id', productId)
                 .eq('market_id', currentMarketId)
                 .order('purchase_date', { ascending: false })
                 .limit(1);
             
-            const refPrice = history && history.length > 0 ? history[0].price : (product.default_price || 0);
+            const refPrice = history && history.length > 0 ? parseInt(history[0].price) || 0 : (parseInt(product.default_price) || 0);
             const { data, error } = await getSupabase()
                 .from('mar_shopping_items')
                 .insert({
@@ -238,7 +308,83 @@
             renderList();
             updateTotal();
         }
-
+        // 切換新增商品表單顯示/隱藏
+        function toggleNewProductForm() {
+            const form = document.getElementById('newProductForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+        // 新增自定義商品
+        async function addCustomProduct() {
+            if (!currentListId) {
+                alert('請先點擊「開新清單」建立購物清單');
+                return;
+            }
+            
+            // 取得表單值
+            const productName = document.getElementById('newProductName').value.trim();
+            const productStorage = document.getElementById('newProductStorage').value.trim();
+            const productPrice = parseInt(document.getElementById('newProductPrice').value) || 0;
+            const productQty = parseInt(document.getElementById('newProductQty').value) || 1;
+            const productUrl = document.getElementById('newProductUrl').value.trim();
+            
+            // 驗證必填欄位
+            if (!productName) {
+                alert('請輸入商品名稱');
+                return;
+            }
+            
+            try {
+                // 1. 先新增商品到 mar_products 資料表
+                const { data: newProduct, error: productError } = await getSupabase()
+                    .from('mar_products')
+                    .insert({
+                        name: productName,
+                        category: productStorage,
+                        default_price: productPrice,
+                        url: productUrl
+                    })
+                    .select().single();
+                
+                if (productError) throw productError;
+                
+                // 2. 將新商品加入購物清單
+                const { data: newItem, error: itemError } = await getSupabase()
+                    .from('mar_shopping_items')
+                    .insert({
+                        list_id: currentListId,
+                        product_id: newProduct.id,
+                        product_name: newProduct.name,
+                        quantity: productQty,
+                        price: productPrice,
+                        status: 'pending'
+                    })
+                    .select().single();
+                
+                if (itemError) throw itemError;
+                
+                // 3. 更新本地資料
+                products.push(newProduct);
+                items.push(newItem);
+                
+                // 4. 重置表單並隱藏
+                document.getElementById('newProductName').value = '';
+                document.getElementById('newProductStorage').value = '';
+                document.getElementById('newProductPrice').value = '0';
+                document.getElementById('newProductQty').value = '1';
+                document.getElementById('newProductUrl').value = '';
+                toggleNewProductForm();
+                
+                // 5. 更新畫面
+                renderProductSelect(products); // 更新商品下拉選單
+                renderList();
+                updateTotal();
+                
+                alert(`成功新增商品：${productName}`);
+                
+            } catch (error) {
+                alert('新增商品失敗: ' + error.message);
+            }
+        }
         async function updateItemStatus(itemId, status) {
             const { error } = await getSupabase()
                 .from('mar_shopping_items')
@@ -251,19 +397,23 @@
             renderList();
             updateTotal();
         }
-
         async function updateItemField(itemId, field, value) {
+            let updateValue = value;
+            if (field === 'quantity' || field === 'price') {
+                updateValue = parseInt(value) || 1;
+                if (field === 'price' && updateValue < 0) updateValue = 0;
+            }
+            
             const { error } = await getSupabase()
                 .from('mar_shopping_items')
-                .update({ [field]: value })
+                .update({ [field]: updateValue })
                 .eq('id', itemId);
             
             if (error) return;
             const item = items.find(i => i.id === itemId);
-            if (item) item[field] = value;
+            if (item) item[field] = updateValue;
             updateTotal();
         }
-
         async function deleteItem(itemId) {
             if (!confirm('確定移除此商品？')) return;
             const { error } = await getSupabase()
@@ -276,25 +426,22 @@
             renderList();
             updateTotal();
         }
-
         function updateTotal() {
             const total = items
                 .filter(i => i.status === 'purchased')
-                .reduce((sum, i) => sum + (parseFloat(i.price) * parseFloat(i.quantity)), 0);
-            document.getElementById('totalPrice').textContent = '$' + total.toFixed(2);
+                .reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
+            document.getElementById('totalPrice').textContent = '$' + total;
         }
-
         async function getHistoryPrice(productId) {
             const { data } = await getSupabase()
                 .from('mar_price_history')
-                .select('price, purchase_date')
+                .select('price, purchase_date, price_type')
                 .eq('product_id', productId)
                 .eq('market_id', currentMarketId)
                 .order('purchase_date', { ascending: false })
                 .limit(1);
             return data && data.length > 0 ? data[0] : null;
         }
-
         async function renderList() {
             const container = document.getElementById('itemList');
             
@@ -307,23 +454,34 @@
                 const product = products.find(p => p.id === item.product_id);
                 const history = await getHistoryPrice(item.product_id);
                 const statusClass = item.status !== 'pending' ? `status-${item.status}` : '';
+                // 直接從product讀取儲位，不需存資料庫
+                const storageText = product?.category ? `<span class="storage-location">【儲位：${product.category}】</span>` : '';
+                
+                let historyHtml = '';
+                if (history) {
+                    const priceTypeTag = history.price_type === 'compare' 
+                        ? '<span class="compare-tag">[比價]</span>' 
+                        : '<span class="purchase-tag">[購買]</span>';
+                    historyHtml = `<div class="history-price">歷史參考價：$${parseInt(history.price)} ${priceTypeTag} (${history.purchase_date})</div>`;
+                }
                 
                 html += `
                 <div class="item-card ${statusClass}">
                     <div class="item-main">
                         <div class="item-name">
                             ${item.product_name}
+                            ${storageText}
                             ${product && product.url ? `<a href="${product.url}" target="_blank">🔗 官網</a>` : ''}
                         </div>
                         <span class="item-delete" onclick="deleteItem('${item.id}')">✕ 移除</span>
                     </div>
-                    ${history ? `<div class="history-price">歷史參考價：$${history.price} (${history.purchase_date})</div>` : ''}
+                    ${historyHtml}
                     <div class="item-detail">
-                        <span>數量：<input type="number" step="0.1" value="${item.quantity}" 
+                        <span>數量：<input type="number" step="1" min="1" value="${item.quantity}" 
                             onchange="updateItemField('${item.id}', 'quantity', this.value)"></span>
-                        <span>單價：<input type="number" step="0.01" value="${item.price}" 
+                        <span>單價：<input type="number" step="1" min="0" value="${item.price}" 
                             onchange="updateItemField('${item.id}', 'price', this.value)"></span>
-                        <span>小計：$${(parseFloat(item.price) * parseFloat(item.quantity)).toFixed(2)}</span>
+                        <span>小計：$${(parseInt(item.price) * parseInt(item.quantity))}</span>
                     </div>
                     <div class="status-btns">
                         <button class="status-btn ${item.status === 'pending' ? 'active-pending' : ''}" 
@@ -332,22 +490,21 @@
                             onclick="updateItemStatus('${item.id}', 'purchased')">已購買</button>
                         <button class="status-btn ${item.status === 'out_of_stock' ? 'active-out_of_stock' : ''}" 
                             onclick="updateItemStatus('${item.id}', 'out_of_stock')">缺貨中</button>
-                        <button class="status-btn ${item.status === 'too_expensive' ? 'active-too_expensive' : ''}" 
-                            onclick="updateItemStatus('${item.id}', 'too_expensive')">太貴了</button>
+                        <button class="status-btn ${item.status === 'compare_price' ? 'active-compare_price' : ''}" 
+                            onclick="updateItemStatus('${item.id}', 'compare_price')">純比價</button>
                     </div>
                 </div>
                 `;
             }
             container.innerHTML = html;
         }
-
         async function checkout() {
             const purchasedItems = items.filter(i => i.status === 'purchased');
             if (purchasedItems.length === 0) {
                 alert('尚無已購買的商品');
                 return;
             }
-            const total = purchasedItems.reduce((sum, i) => sum + (parseFloat(i.price) * parseFloat(i.quantity)), 0);
+            const total = purchasedItems.reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
             
             const { error } = await getSupabase()
                 .from('mar_shopping_lists')
@@ -356,28 +513,39 @@
             
             if (error) { alert('結帳失敗: ' + error.message); return; }
             
-            alert(`結帳完成！本次總花費：$${total.toFixed(2)}`);
+            alert(`結帳完成！本次總花費：$${total}`);
         }
-
         async function saveToHistory() {
-            const purchasedItems = items.filter(i => i.status === 'purchased');
-            if (purchasedItems.length === 0) {
-                alert('尚無已購買的商品可存入歷史');
+            const targetItems = items.filter(i => i.status === 'purchased' || i.status === 'compare_price');
+            if (targetItems.length === 0) {
+                alert('尚無已購買或純比價的商品可存入歷史');
                 return;
             }
-            const records = purchasedItems.map(i => ({
+            
+            const records = targetItems.map(i => ({
                 product_id: i.product_id,
                 market_id: currentMarketId,
-                price: i.price,
+                price: parseInt(i.price),
                 quantity: i.quantity,
-                purchase_date: new Date().toISOString().split('T')[0]
+                purchase_date: new Date().toISOString().split('T')[0],
+                price_type: i.status === 'purchased' ? 'purchase' : 'compare'
             }));
+            
             const { error } = await getSupabase()
                 .from('mar_price_history')
                 .insert(records);
             
             if (error) { alert('存入失敗: ' + error.message); return; }
-            alert('已成功存入歷史價格記錄！下次購物時可參考');
+            
+            const count = {
+                purchase: targetItems.filter(i => i.status === 'purchased').length,
+                compare: targetItems.filter(i => i.status === 'compare_price').length
+            };
+            
+            alert(`已成功存入歷史價格記錄！
+購買價格：${count.purchase} 筆
+比價價格：${count.compare} 筆
+下次購物時可參考`);
         }
 
         init();
