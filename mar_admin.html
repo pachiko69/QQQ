@@ -46,7 +46,7 @@
             <div class="form-row">
                 <input type="text" id="productName" placeholder="商品名稱">
                 <input type="text" id="productUrl" placeholder="商品網址">
-                <input type="text" id="productCategory" placeholder="賣場儲位">
+                <input type="text" id="productCategory" placeholder="儲位/備註">
                 <input type="number" step="1" id="productPrice" placeholder="預設價格">
                 <button class="btn-primary" id="btnAddProduct">新增商品</button>
             </div>
@@ -54,7 +54,7 @@
                 <thead>
                     <tr>
                         <th>商品名稱</th>
-                        <th>賣場儲位</th>
+                        <th>儲位/備註</th>
                         <th>預設價格</th>
                         <th>網址</th>
                         <th>操作</th>
@@ -125,6 +125,34 @@
         let editingProductId = null;
         let editingMarketId = null;
 
+        // 工具函數：取得本地日期時間（YYYY-MM-DD HH:mm:ss）
+        function getLocalDateTime() {
+            const now = new Date();
+            // 補零函數
+            const pad = (num) => num.toString().padStart(2, '0');
+            const year = now.getFullYear();
+            const month = pad(now.getMonth() + 1);
+            const day = pad(now.getDate());
+            const hours = pad(now.getHours());
+            const minutes = pad(now.getMinutes());
+            const seconds = pad(now.getSeconds());
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 【核心修改】工具函數：格式化本地日期顯示（僅保留年月日）
+        function formatLocalDate(dateStr) {
+            if (!dateStr) return '';
+            // 處理帶時間的格式和僅日期的格式
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            const pad = (num) => num.toString().padStart(2, '0');
+            const year = date.getFullYear();
+            const month = pad(date.getMonth() + 1);
+            const day = pad(date.getDate());
+            // 移除時間部分，只返回 YYYY-MM-DD
+            return `${year}-${month}-${day}`;
+        }
+
         // 切換分頁
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -173,7 +201,13 @@
             if (editingProductId) {
                 const { error } = await supabaseClient
                     .from('mar_products')
-                    .update({ name, url, category, default_price: price })
+                    .update({ 
+                        name, 
+                        url, 
+                        category, 
+                        default_price: price,
+                        updated_at: getLocalDateTime() // 新增：更新時間使用本地時間
+                    })
                     .eq('id', editingProductId);
                 if (error) { alert('更新商品失敗: ' + error.message); return; }
                 editingProductId = null;
@@ -181,7 +215,14 @@
             } else {
                 const { error } = await supabaseClient
                     .from('mar_products')
-                    .insert({ name, url, category, default_price: price });
+                    .insert({ 
+                        name, 
+                        url, 
+                        category, 
+                        default_price: price,
+                        created_at: getLocalDateTime(), // 新增：建立時間使用本地時間
+                        updated_at: getLocalDateTime()
+                    });
                 if (error) { alert('新增商品失敗: ' + error.message); return; }
             }
             document.querySelectorAll('#products input').forEach(el=>el.value='');
@@ -239,7 +280,11 @@
             if (editingMarketId) {
                 const { error } = await supabaseClient
                     .from('mar_markets')
-                    .update({ name, address })
+                    .update({ 
+                        name, 
+                        address,
+                        updated_at: getLocalDateTime() // 新增：更新時間使用本地時間
+                    })
                     .eq('id', editingMarketId);
                 if (error) { alert('更新市場失敗: ' + error.message); return; }
                 editingMarketId = null;
@@ -247,7 +292,12 @@
             } else {
                 const { error } = await supabaseClient
                     .from('mar_markets')
-                    .insert({ name, address });
+                    .insert({ 
+                        name, 
+                        address,
+                        created_at: getLocalDateTime(), // 新增：建立時間使用本地時間
+                        updated_at: getLocalDateTime()
+                    });
                 if (error) { alert('新增市場失敗: ' + error.message); return; }
             }
             document.getElementById('marketName').value = '';
@@ -269,7 +319,7 @@
             loadMarkets();
         }
 
-        // 歷史價格（核心修正：從 mar_price_history 取 price_type）
+        // 歷史價格（核心修正：從 mar_price_history 取 price_type + 本地時間處理）
         async function loadPriceHistory() {
             const productId = document.getElementById('filterProduct').value;
             const marketId = document.getElementById('filterMarket').value;
@@ -295,6 +345,8 @@
             tbody.innerHTML = data.map(h=>{
                 const typeText = h.price_type === 'purchase' ? '購買' : '純比價';
                 const typeClass = h.price_type === 'purchase' ? 'tag-purchase' : 'tag-compare';
+                // 格式化本地日期顯示（此處會呼叫修改後的 formatLocalDate，只返回年月日）
+                const localDate = formatLocalDate(h.purchase_date);
                 return `
                 <tr>
                     <td>${h.mar_products?.name || '已刪除商品'}</td>
@@ -302,7 +354,7 @@
                     <td><span class="${typeClass}">${typeText}</span></td>
                     <td>$${h.price}</td>
                     <td>${h.quantity}</td>
-                    <td>${h.purchase_date}</td>
+                    <td>${localDate}</td>
                     <td><button class="btn-danger" onclick="deleteHistory('${h.id}')">刪除</button></td>
                 </tr>`;
             }).join('');

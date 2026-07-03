@@ -71,6 +71,15 @@
         .status-compare_price { background: #fffaf0; }
         .action-bar {
             display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap;
+            align-items: center; /* 新增：垂直居中對齊 */
+        }
+        /* 新增日期選擇框樣式 */
+        .date-input {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 120px;
         }
         .empty-tip { text-align: center; padding: 30px; color: #a0aec0; }
         /* 新增模糊搜尋輸入框樣式 */
@@ -142,7 +151,7 @@
                 <div class="form-row">
                     <input type="text" id="newProductName" placeholder="商品名稱" required>
                     <input type="text" id="newProductStorage" placeholder="儲位 (選填)">
-                    <input type="number" id="newProductPrice" placeholder="預設單價" min="0" step="1" value="0">
+                    <input type="number" id="newProductPrice" placeholder="$單價">
                 </div>
                 <div class="form-row">
                     <input type="number" id="newProductQty" value="1" min="1" step="1" placeholder="數量" style="width:80px;">
@@ -156,6 +165,9 @@
             <div class="empty-tip">尚未加入商品，請從上方選擇商品加入購物清單</div>
         </div>
         <div class="action-bar">
+            <!-- 新增日期選擇框 -->
+            <label for="customDate">選擇日期：</label>
+            <input type="date" id="customDate" class="date-input">
             <button class="btn btn-primary" onclick="checkout()">💳 結帳</button>
             <button class="btn btn-orange" onclick="saveToHistory()">📊 加入歷史價格</button>
         </div>
@@ -179,10 +191,24 @@
             out_of_stock: '缺貨中',
             compare_price: '純比價'
         };
+
+        // 初始化日期選擇框為當天日期
+        function initDatePicker() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('customDate').value = today;
+        }
+
+        // 獲取選擇的日期（預設當天）
+        function getSelectedDate() {
+            const dateInput = document.getElementById('customDate');
+            return dateInput.value || new Date().toISOString().split('T')[0];
+        }
+
         // 初始化
         async function init() {
             await loadMarkets();
             await loadProducts();
+            initDatePicker(); // 初始化日期選擇框
             if (currentListId) {
                 await loadCurrentList();
             }
@@ -499,35 +525,70 @@
             container.innerHTML = html;
         }
         async function checkout() {
-            const purchasedItems = items.filter(i => i.status === 'purchased');
-            if (purchasedItems.length === 0) {
-                alert('尚無已購買的商品');
-                return;
-            }
-            const total = purchasedItems.reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
-            
-            const { error } = await getSupabase()
-                .from('mar_shopping_lists')
-                .update({ total_price: total, status: 'completed' })
-                .eq('id', currentListId);
-            
-            if (error) { alert('結帳失敗: ' + error.message); return; }
-            
-            alert(`結帳完成！本次總花費：$${total}`);
-        }
+    const purchasedItems = items.filter(i => i.status === 'purchased');
+    if (purchasedItems.length === 0) {
+        alert('尚無已購買的商品');
+        return;
+    }
+    const total = purchasedItems.reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
+    // 獲取使用者選擇的日期
+    const selectedDate = getSelectedDate();
+
+    try {
+        // 1. 更新購物清單狀態和總金額
+        const { error: listError } = await getSupabase()
+            .from('mar_shopping_lists')
+            .update({ total_price: total, status: 'completed' })
+            .eq('id', currentListId);
+        
+        if (listError) throw new Error('更新清單失敗: ' + listError.message);
+
+        // 2. 將已購買商品寫入歷史價格表（核心補充邏輯）
+        const historyRecords = purchasedItems.map(item => ({
+            product_id: item.product_id,
+            market_id: currentMarketId,
+            price: parseInt(item.price),
+            quantity: parseInt(item.quantity),
+            purchase_date: selectedDate, // 使用選擇的日期
+            price_type: 'purchase' // 標記為「實際購買」類型
+        }));
+
+        const { error: historyError } = await getSupabase()
+            .from('mar_price_history')
+            .insert(historyRecords);
+        
+        if (historyError) throw new Error('存入購買記錄失敗: ' + historyError.message);
+
+        // 3. 提示成功
+        alert(`結帳完成！本次總花費：$${total}\n已自動保存 ${purchasedItems.length} 筆購買記錄到歷史價格庫（日期：${selectedDate}）`);
+
+        // （可選）重置當前清單（根據業務需求選擇是否保留）
+        // currentListId = null;
+        // localStorage.removeItem('currentListId');
+        // items = [];
+        // renderList();
+        // updateTotal();
+
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
         async function saveToHistory() {
             const targetItems = items.filter(i => i.status === 'purchased' || i.status === 'compare_price');
             if (targetItems.length === 0) {
                 alert('尚無已購買或純比價的商品可存入歷史');
                 return;
             }
+            // 獲取使用者選擇的日期
+            const selectedDate = getSelectedDate();
             
             const records = targetItems.map(i => ({
                 product_id: i.product_id,
                 market_id: currentMarketId,
                 price: parseInt(i.price),
                 quantity: i.quantity,
-                purchase_date: new Date().toISOString().split('T')[0],
+                purchase_date: selectedDate, // 使用選擇的日期
                 price_type: i.status === 'purchased' ? 'purchase' : 'compare'
             }));
             
@@ -545,6 +606,7 @@
             alert(`已成功存入歷史價格記錄！
 購買價格：${count.purchase} 筆
 比價價格：${count.compare} 筆
+記錄日期：${selectedDate}
 下次購物時可參考`);
         }
 
