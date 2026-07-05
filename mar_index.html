@@ -31,7 +31,9 @@
         .btn-calc { background: #2f855a; color: white; }
         .btn-paper { background: #6366f1; color: white; }
         .btn-clear { background: #718096; color: white; }
-        .btn-convert { background: #805ad5; color: white; }
+        .btn-convert { background: #805ad5; color: white; margin-bottom: 15px; }
+        /* 新增後台按鈕樣式 */
+        .btn-admin { background: #d69e2e; color: white; }
         .add-section {
             background: white; padding: 15px; border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px;
@@ -187,14 +189,17 @@
                     <option value="">請選擇市場</option>
                 </select>
                 <button class="btn btn-blue" onclick="newList()">開新清單</button>
-                <!-- 單價換算按鈕移至開新清單旁邊 -->
-                <button class="btn btn-convert" onclick="openConvertModal()">💰 單價換算</button>
+                <!-- 新增後台按鈕 -->
+                <button class="btn btn-admin" onclick="openAdminPage()">後台</button>
             </div>
             <div class="total-bar">
                 <span>本次購買總計</span>
                 <span id="totalPrice">$0</span>
             </div>
         </div>
+
+        <!-- 新增單價換算按鈕 -->
+        <button class="btn btn-convert" onclick="openConvertModal()">💰 單價換算</button>
 
         <!-- 換算彈窗 -->
         <div class="convert-modal" id="convertModal">
@@ -288,6 +293,13 @@
             out_of_stock: '缺貨中',
             compare_price: '純比價'
         };
+
+        // 新增打開後台頁面函數
+        function openAdminPage() {
+            // 開啟新分頁打開admin.html
+            window.open('https://qqq-theta-flax.vercel.app/mar_admin.html', '_blank');
+            // 如果要在當前頁面打開，請使用：window.location.href = 'admin.html';
+        }
 
         // 彈窗控制函數
         function openConvertModal() {

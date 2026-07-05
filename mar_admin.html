@@ -25,8 +25,8 @@
         /* 新增備份還原按鈕樣式 */
         .btn-backup { background: #9f7aea; color: white; margin-left: 10px; }
         .btn-restore { background: #38b2ac; color: white; margin-left: 10px; }
-        /* 新增清空查詢條件按鈕樣式 */
-        .btn-reset { background: #ed8936; color: white; margin-left: 10px; }
+        /* 新增前台按鈕樣式 */
+        .btn-front { background: #48bb78; color: white; margin-left: 10px; }
         /* 隱藏檔案輸入框 */
         #fileInput { display: none; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -90,9 +90,11 @@
         
         <!-- 新增備份還原區域 -->
         <div class="backup-restore-section">
-            <span style="font-weight: 600; color: #2c5282;">資料備份/還原(JSON)：</span>
-            <button class="btn-backup" id="btnBackup">備份資料</button>
-            <button class="btn-restore" id="btnRestore">還原資料</button>
+            <span style="font-weight: 600; color: #2c5282;">資料備份/還原：</span>
+            <button class="btn-backup" id="btnBackup">備份資料 (JSON)</button>
+            <button class="btn-restore" id="btnRestore">還原資料 (JSON)</button>
+            <!-- 新增前台按鈕 -->
+            <button class="btn-front" id="btnFront">前台</button>
             <input type="file" id="fileInput" accept=".json" />
         </div>
         
@@ -169,10 +171,8 @@
                     <option value="compare">純比價</option>
                 </select>
                 <button class="btn-primary" id="btnQueryHistory">查詢</button>
-                <!-- 新增：清空查詢條件按鈕 -->
-                <button class="btn-reset" id="btnResetHistory">清空</button>
-                <!-- 修改：按鈕文字改為清除暫存清單 -->
-                <button class="btn-clear" id="btnClearShoppingLists">清除暫存清單</button>
+                <!-- 新增：清除購物檢查清單按鈕 -->
+                <button class="btn-clear" id="btnClearShoppingLists">清除購物檢查清單記錄</button>
             </div>
             
             <!-- 新增：價格統計顯示區域 -->
@@ -364,16 +364,12 @@ function formatLocalDate(dateStr) {
             }
         }
 
-        // 新增：清空歷史查詢條件
-        function resetHistoryFilters() {
-            document.getElementById('searchProductName').value = '';
-            document.getElementById('filterProduct').value = '';
-            document.getElementById('filterMarket').value = '';
-            document.getElementById('filterPriceType').value = '';
-            // 清空統計區域
-            document.getElementById('priceStats').style.display = 'none';
-            // 重新加載歷史記錄（顯示全部）
-            loadPriceHistory();
+        // 新增：打開前台頁面並關閉當前頁面
+        function openFrontPage() {
+            // 打開index.html（同目錄下）
+            window.open('https://qqq-theta-flax.vercel.app/mar_index.html', '_blank');
+            // 關閉當前管理頁面
+            window.close();
         }
 
         // ====================== 新增：備份還原功能 ======================
@@ -768,8 +764,6 @@ function formatLocalDate(dateStr) {
             document.getElementById('btnAddProduct').onclick = addProduct;
             document.getElementById('btnAddMarket').onclick = addMarket;
             document.getElementById('btnQueryHistory').onclick = loadPriceHistory;
-            // 新增：綁定清空查詢條件按鈕事件
-            document.getElementById('btnResetHistory').onclick = resetHistoryFilters;
             // 新增：綁定清除購物清單按鈕事件
             document.getElementById('btnClearShoppingLists').onclick = clearShoppingLists;
             // 新增：綁定更新價格按鈕事件
@@ -785,6 +779,9 @@ function formatLocalDate(dateStr) {
                     e.target.value = '';
                 }
             });
+
+            // 新增：綁定前台按鈕事件
+            document.getElementById('btnFront').onclick = openFrontPage;
 
             // 新增：模糊搜尋框支援即時搜尋（按Enter鍵）
             document.getElementById('searchProductName').addEventListener('keypress', function(e) {
