@@ -124,7 +124,7 @@
                 <input type="text" id="productName" placeholder="商品名稱">
                 <input type="text" id="productUrl" placeholder="商品網址">
                 <input type="text" id="productCategory" placeholder="儲位/備註">
-                <input type="number" step="1" id="productPrice" placeholder="預設價格">
+                <input type="number" step="1" id="productPrice" placeholder="最近的價格">
                 <button class="btn-primary" id="btnAddProduct">新增商品</button>
                 <!-- 新增：更新價格按鈕 -->
                 <button class="btn-price-update" id="btnUpdatePrice">更新價格</button>
@@ -134,7 +134,7 @@
                     <tr>
                         <th>商品名稱</th>
                         <th>儲位/備註</th>
-                        <th>預設價格</th>
+                        <th>最近價格</th>
                         <th>網址</th>
                         <th>操作</th>
                     </tr>
@@ -306,10 +306,10 @@ function formatLocalDate(dateStr) {
             return avgPrice;
         }
 
-        // 【核心修改】批量更新所有商品的預設價格為最近一次購買價
+        // 【核心修改】批量更新所有商品的最近價格為最近一次購買價
         async function updateProductDefaultPrice() {
             // 確認操作
-            const confirmUpdate = confirm('⚠️ 確認要批量更新所有商品的預設價格為「最近一次購買價」嗎？');
+            const confirmUpdate = confirm('⚠️ 確認要批量更新所有商品的最近價格為「最近一次購買價」嗎？');
             if (!confirmUpdate) return;
 
             try {
@@ -369,7 +369,7 @@ function formatLocalDate(dateStr) {
                 loadProducts();
 
                 // 4. 提示結果
-                alert(`✅ 批量更新完成！\n成功更新 ${updateCount} 個商品的預設價格\n其餘商品無購買記錄，未更新`);
+                alert(`✅ 批量更新完成！\n成功更新 ${updateCount} 個商品的最近價格.`);
 
             } catch (err) {
                 alert('❌ 批量更新價格失敗：' + err.message);
