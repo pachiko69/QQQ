@@ -82,6 +82,10 @@
             color: #718096;
             pointer-events: none;
         }
+.search-input::placeholder {
+    color: #dc2626 !important;
+    opacity: 1;
+}
     </style>
 </head>
 <body>
@@ -107,6 +111,15 @@
         <!-- 商品管理 -->
         <div id="products" class="tab-content active">
             <h2 style="margin-bottom:15px;">商品資料維護</h2>
+            <!-- 新增：商品名稱模糊搜尋框 -->
+            <div class="form-row" style="margin-bottom: 10px;">
+                <div class="search-input-wrapper">
+                    <input type="text" id="searchProductByName" class="search-input" placeholder="模糊搜尋商品名稱...">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <button class="btn-primary" id="btnSearchProduct">搜尋</button>
+                <button class="btn-clear" id="btnClearSearch">清空搜尋</button>
+            </div>
             <div class="form-row">
                 <input type="text" id="productName" placeholder="商品名稱">
                 <input type="text" id="productUrl" placeholder="商品網址">
@@ -293,45 +306,73 @@ function formatLocalDate(dateStr) {
             return avgPrice;
         }
 
-        // 新增：計算商品歷史購買平均價並更新default_price
+        // 【核心修改】批量更新所有商品的預設價格為最近一次購買價
         async function updateProductDefaultPrice() {
-            // 判斷是否處於編輯狀態（必須選擇商品才能更新）
-            if (!editingProductId) {
-                alert('請先選擇要編輯的商品！');
-                return;
-            }
+            // 確認操作
+            const confirmUpdate = confirm('⚠️ 確認要批量更新所有商品的預設價格為「最近一次購買價」嗎？');
+            if (!confirmUpdate) return;
 
             try {
-                // 計算該商品的平均購買價格
-                const avgPrice = await calculatePriceStats(editingProductId);
-                
-                // 檢查是否有購買記錄
-                if (!avgPrice && avgPrice !== 0) {
-                    alert('該商品無歷史購買記錄，無法計算平均價格！');
+                // 1. 先獲取所有商品列表
+                const { data: allProductsData, error: productError } = await supabaseClient
+                    .from('mar_products')
+                    .select('id, name')
+                    .neq('id', '00000000-0000-0000-0000-000000000000'); // 排除空UUID
+
+                if (productError) throw productError;
+                if (!allProductsData || allProductsData.length === 0) {
+                    alert('⚠️ 沒有可更新的商品資料');
                     return;
                 }
 
-                // 更新商品的default_price
-                const { error } = await supabaseClient
-                    .from('mar_products')
-                    .update({ 
-                        default_price: avgPrice,
-                        updated_at: getLocalDateTime()
-                    })
-                    .eq('id', editingProductId);
+                // 2. 遍歷每個商品，查詢最近一次購買價
+                let updateCount = 0;
+                const updatePromises = [];
 
-                if (error) throw error;
+                for (const product of allProductsData) {
+                    // 查詢該商品最近一次的購買記錄（purchase類型）
+                    const { data: historyData, error: historyError } = await supabaseClient
+                        .from('mar_price_history')
+                        .select('price')
+                        .eq('product_id', product.id)
+                        .eq('price_type', 'purchase') // 只取「購買」類型
+                        .order('purchase_date', { ascending: false }) // 最新的在前
+                        .limit(1); // 只取一筆
 
-                // 更新表單中的價格輸入框
-                document.getElementById('productPrice').value = avgPrice;
-                
-                // 重新加載商品列表
+                    if (historyError) {
+                        console.warn(`❌ 查詢商品【${product.name}】的購買記錄失敗:`, historyError.message);
+                        continue;
+                    }
+
+                    // 如果有購買記錄，執行更新
+                    if (historyData && historyData.length > 0) {
+                        const latestPrice = Number(historyData[0].price);
+                        const { error: updateError } = await supabaseClient
+                            .from('mar_products')
+                            .update({
+                                default_price: latestPrice,
+                                updated_at: getLocalDateTime()
+                            })
+                            .eq('id', product.id);
+
+                        if (updateError) {
+                            console.warn(`❌ 更新商品【${product.name}】價格失敗:`, updateError.message);
+                        } else {
+                            updateCount++;
+                        }
+                    } else {
+                        console.log(`ℹ️ 商品【${product.name}】無購買記錄，跳過更新`);
+                    }
+                }
+
+                // 3. 重新加載商品列表
                 loadProducts();
-                
-                alert(`✅ 已成功更新商品預設價格為 $${avgPrice}（歷史購買平均價）`);
+
+                // 4. 提示結果
+                alert(`✅ 批量更新完成！\n成功更新 ${updateCount} 個商品的預設價格\n其餘商品無購買記錄，未更新`);
 
             } catch (err) {
-                alert('❌ 更新價格失敗：' + err.message);
+                alert('❌ 批量更新價格失敗：' + err.message);
             }
         }
 
@@ -524,6 +565,57 @@ function formatLocalDate(dateStr) {
             }
         }
         // ====================== 備份還原功能結束 ======================
+
+        // 新增：根據商品名稱模糊搜尋商品
+        async function searchProductByName() {
+            const searchKeyword = document.getElementById('searchProductByName').value.trim().toLowerCase();
+            // 如果搜尋框為空，直接加載所有商品
+            if (!searchKeyword) {
+                loadProducts();
+                return;
+            }
+
+            // 從所有商品數據中過濾符合條件的商品
+            const filteredProducts = allProducts.filter(product => {
+                const productName = (product.name || '').toLowerCase();
+                return productName.includes(searchKeyword);
+            });
+
+            // 渲染過濾後的商品列表
+            renderProductList(filteredProducts);
+            
+            // 如果沒有找到匹配的商品，提示用戶
+            if (filteredProducts.length === 0) {
+                alert(`未找到包含「${searchKeyword}」的商品`);
+            }
+        }
+
+        // 新增：渲染商品列表（抽離 loadProducts 中的渲染邏輯）
+        function renderProductList(products) {
+            const tbody = document.getElementById('productList');
+            tbody.innerHTML = products.map(p => {
+                const safeName = p.name.replace(/'/g, "\\'");
+                const safeUrl = (p.url || '').replace(/'/g, "\\'");
+                const safeCat = (p.category || '').replace(/'/g, "\\'");
+                return `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.category || ''}</td>
+                    <td>$${p.default_price || 0}</td>
+                    <td>${p.url ? `<a href="${p.url}" target="_blank" class="product-url">連結</a>` : ''}</td>
+                    <td class="action-btns">
+                        <button class="btn-edit" onclick="editProduct('${p.id}', '${safeName}', '${safeUrl}', '${safeCat}', ${p.default_price || 0})">編輯</button>
+                        <button class="btn-danger" onclick="deleteProduct('${p.id}')">刪除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 新增：清空搜尋框並還原所有商品
+        function clearProductSearch() {
+            document.getElementById('searchProductByName').value = '';
+            loadProducts();
+        }
         
         // 切換分頁
         function switchTab(tabId) {
@@ -544,23 +636,8 @@ function formatLocalDate(dateStr) {
             // 新增：存儲所有商品數據
             allProducts = data;
 
-            const tbody = document.getElementById('productList');
-            tbody.innerHTML = data.map(p => {
-                const safeName = p.name.replace(/'/g, "\\'");
-                const safeUrl = (p.url || '').replace(/'/g, "\\'");
-                const safeCat = (p.category || '').replace(/'/g, "\\'");
-                return `
-                <tr>
-                    <td>${p.name}</td>
-                    <td>${p.category || ''}</td>
-                    <td>$${p.default_price || 0}</td>
-                    <td>${p.url ? `<a href="${p.url}" target="_blank" class="product-url">連結</a>` : ''}</td>
-                    <td class="action-btns">
-                        <button class="btn-edit" onclick="editProduct('${p.id}', '${safeName}', '${safeUrl}', '${safeCat}', ${p.default_price || 0})">編輯</button>
-                        <button class="btn-danger" onclick="deleteProduct('${p.id}')">刪除</button>
-                    </td>
-                </tr>`;
-            }).join('');
+            // 渲染商品列表
+            renderProductList(allProducts);
 
             const filter = document.getElementById('filterProduct');
             filter.innerHTML = '<option value="">全部商品</option>' + data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
@@ -787,6 +864,16 @@ function formatLocalDate(dateStr) {
             document.getElementById('searchProductName').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     loadPriceHistory();
+                }
+            });
+
+            // 新增：商品管理搜尋按鈕事件
+            document.getElementById('btnSearchProduct').onclick = searchProductByName;
+            document.getElementById('btnClearSearch').onclick = clearProductSearch;
+            // 支援按Enter鍵搜尋商品
+            document.getElementById('searchProductByName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchProductByName();
                 }
             });
 
