@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>進銷存管理系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header .datetime {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background: #e8e8e8;
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f8f9ff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .alert-danger {
+            background: #ffe6e6;
+            color: #d63384;
+            border-left: 4px solid #d63384;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #842029;
+            border-left: 4px solid #ffc107;
+        }
+
+        .stock-low {
+            background: #fff3cd !important;
+        }
+
+        .product-link {
+            color: #667eea;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .product-link:hover {
+            color: #764ba2;
+        }
+
+        .action-btn {
+            padding: 5px 12px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .order-items {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .order-item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .order-item-header {
+            font-weight: bold;
+            color: #667eea;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 10px;
+        }
+
+        .price-history {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+        }
+
+        .price-history-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .price-history-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>進銷存管理系統</h1>
+            <div class="datetime" id="datetime"></div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboard">儀表板</button>
+            <button class="nav-tab" data-tab="products">商品管理</button>
+            <button class="nav-tab" data-tab="combos">套餐管理</button>
+            <button class="nav-tab" data-tab="suppliers">廠商管理</button>
+            <button class="nav-tab" data-tab="customers">客戶管理</button>
+            <button class="nav-tab" data-tab="purchase">進貨作業</button>
+            <button class="nav-tab" data-tab="sales">出貨作業</button>
+            <button class="nav-tab" data-tab="history">歷史記錄</button>
+            <button class="nav-tab" data-tab="backup">備份與還原</button>
+        </div>
+
+        <div class="content">
+            <!-- 儀表板 -->
+            <div class="tab-content active" id="dashboard">
+                <div class="stats-grid" id="stats-grid"></div>
+                <h3>低庫存警示</h3>
+                <div id="low-stock-alert"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>商品名稱</th>
+                            <th>目前庫存</th>
+                            <th>最低庫存</th>
+                            <th>單價</th>
+                        </tr>
+                    </thead>
+                    <tbody id="low-stock-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 商品管理 -->
+            <div class="tab-content" id="products">
+                <button class="btn btn-primary" onclick="openProductModal()">新增商品</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>商品名稱</th>
+                            <th>網址</th>
+                            <th>目前庫存</th>
+                            <th>最低庫存</th>
+                            <th>單位</th>
+                            <th>進貨成本</th>
+                            <th>售價</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 套餐管理 -->
+            <div class="tab-content" id="combos">
+                <button class="btn btn-primary" onclick="openComboModal()">新增套餐</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>套餐名稱</th>
+                            <th>說明</th>
+                            <th>包含商品</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="combos-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 廠商管理 -->
+            <div class="tab-content" id="suppliers">
+                <button class="btn btn-primary" onclick="openSupplierModal()">新增廠商</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>廠商名稱</th>
+                            <th>電話</th>
+                            <th>地址</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliers-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 客戶管理 -->
+            <div class="tab-content" id="customers">
+                <button class="btn btn-primary" onclick="openCustomerModal()">新增客戶</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>客戶名稱</th>
+                            <th>電話</th>
+                            <th>地址</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 進貨作業 -->
+            <div class="tab-content" id="purchase">
+                <button class="btn btn-primary" onclick="openPurchaseModal()">新增進貨單</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>進貨日期</th>
+                            <th>廠商</th>
+                            <th>總金額</th>
+                            <th>備註</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchase-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 出貨作業 -->
+            <div class="tab-content" id="sales">
+                <button class="btn btn-primary" onclick="openSalesModal()">新增出貨單</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>出貨日期</th>
+                            <th>客戶</th>
+                            <th>含稅</th>
+                            <th>平台抽成</th>
+                            <th>運費</th>
+                            <th>總金額</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sales-table"></tbody>
+                </table>
+            </div>
+
+            <!-- 歷史記錄 -->
+            <div class="tab-content" id="history">
+                <h3>商品價格歷史查詢</h3>
+                <div class="form-group">
+                    <label>選擇商品</label>
+                    <select id="history-product-select" onchange="showPriceHistory()">
+                        <option value="">請選擇商品</option>
+                    </select>
+                </div>
+                <div id="price-history-content"></div>
+            </div>
+
+            <!-- 備份與還原 -->
+            <div class="tab-content" id="backup">
+                <button class="btn btn-success" onclick="backupData()">建立備份</button>
+                <button class="btn btn-warning" onclick="downloadBackup()">下載備份</button>
+                <button class="btn btn-primary" onclick="document.getElementById('upload-file').click()">上傳還原</button>
+                <input type="file" id="upload-file" accept=".json" style="display:none" onchange="restoreData(event)">
+                <h3 style="margin-top:30px">備份記錄</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>備份日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backups-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 商品 Modal -->
+    <div class="modal" id="product-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="product-modal-title">新增商品</h2>
+                <button class="close-btn" onclick="closeModal('product-modal')">&times;</button>
+            </div>
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="product-id">
+                <div class="form-group">
+                    <label>商品名稱 *</label>
+                    <input type="text" id="product-name" required>
+                </div>
+                <div class="form-group">
+                    <label>網址</label>
+                    <input type="url" id="product-url" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>目前庫存</label>
+                    <input type="number" id="product-stock" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>最低庫存</label>
+                    <input type="number" id="product-min-stock" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>單位</label>
+                    <input type="text" id="product-unit" placeholder="個/盒/組...">
+                </div>
+                <div class="form-group">
+                    <label>進貨成本</label>
+                    <input type="number" id="product-cost-price" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>售價</label>
+                    <input type="number" id="product-sale-price" value="0" min="0">
+                </div>
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('product-modal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 套餐 Modal -->
+    <div class="modal" id="combo-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="combo-modal-title">新增套餐</h2>
+                <button class="close-btn" onclick="closeModal('combo-modal')">&times;</button>
+            </div>
+            <form id="combo-form" onsubmit="saveCombo(event)">
+                <input type="hidden" id="combo-id">
+                <div class="form-group">
+                    <label>套餐名稱 *</label>
+                    <input type="text" id="combo-name" required>
+                </div>
+                <div class="form-group">
+                    <label>說明</label>
+                    <textarea id="combo-desc" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>包含商品</label>
+                    <div id="combo-items"></div>
+                    <button type="button" class="btn btn-primary" onclick="addComboItem()" style="margin-top:10px">+
+                        新增商品</button>
+                </div>
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('combo-modal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 廠商 Modal -->
+    <div class="modal" id="supplier-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="supplier-modal-title">新增廠商</h2>
+                <button class="close-btn" onclick="closeModal('supplier-modal')">&times;</button>
+            </div>
+            <form id="supplier-form" onsubmit="saveSupplier(event)">
+                <input type="hidden" id="supplier-id">
+                <div class="form-group">
+                    <label>廠商名稱 *</label>
+                    <input type="text" id="supplier-name" required>
+                </div>
+                <div class="form-group">
+                    <label>電話</label>
+                    <input type="text" id="supplier-phone">
+                </div>
+                <div class="form-group">
+                    <label>地址</label>
+                    <textarea id="supplier-address" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('supplier-modal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 客戶 Modal -->
+    <div class="modal" id="customer-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="customer-modal-title">新增客戶</h2>
+                <button class="close-btn" onclick="closeModal('customer-modal')">&times;</button>
+            </div>
+            <form id="customer-form" onsubmit="saveCustomer(event)">
+                <input type="hidden" id="customer-id">
+                <div class="form-group">
+                    <label>客戶名稱 *</label>
+                    <input type="text" id="customer-name" required>
+                </div>
+                <div class="form-group">
+                    <label>電話</label>
+                    <input type="text" id="customer-phone">
+                </div>
+                <div class="form-group">
+                    <label>地址</label>
+                    <textarea id="customer-address" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('customer-modal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 進貨 Modal -->
+    <div class="modal" id="purchase-modal">
+        <div class="modal-content" style="max-width:800px">
+            <div class="modal-header">
+                <h2>新增進貨單</h2>
+                <button class="close-btn" onclick="closeModal('purchase-modal')">&times;</button>
+            </div>
+            <form id="purchase-form" onsubmit="savePurchase(event)">
+                <div class="form-group">
+                    <label>廠商</label>
+                    <select id="purchase-supplier" required></select>
+                </div>
+                <div class="form-group">
+                    <label>進貨日期</label>
+                    <input type="datetime-local" id="purchase-date">
+                </div>
+                <div class="form-group">
+                    <label>進貨商品</label>
+                    <div id="purchase-items" class="order-items">
+                        <div class="order-item-row order-item-header">
+                            <span>商品</span>
+                            <span>數量</span>
+                            <span>進貨價格</span>
+                            <span>小計</span>
+                            <span style="width:80px"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addPurchaseItem()" style="margin-top:10px">+
+                        新增商品</button>
+                </div>
+                <div class="form-group">
+                    <label>總金額</label>
+                    <input type="number" id="purchase-total" value="0" readonly>
+                </div>
+                <div class="form-group">
+                    <label>備註</label>
+                    <textarea id="purchase-notes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('purchase-modal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 出貨 Modal -->
+    <div class="modal" id="sales-modal">
+        <div class="modal-content" style="max-width:800px">
+            <div class="modal-header">
+                <h2>新增出貨單</h2>
+                <button class="close-btn" onclick="closeModal('sales-modal')">&times;</button>
+            </div>
+            <form id="sales-form" onsubmit="saveSales(event)">
+                <div class="form-group">
+                    <label>客戶</label>
+                    <select id="sales-customer" required></select>
+                </div>
+                <div class="form-group">
+                    <label>出貨日期</label>
+                    <input type="datetime-local" id="sales-date">
+                </div>
+                <div class="form-group" style="display:flex;gap:20px">
+                    <div style="flex:1">
+                        <label>價格類型</label>
+                        <select id="sales-tax-type">
+                            <option value="false">未稅</option>
+                            <option value="true">含稅</option>
+                        </select>
+                    </div>
+                    <div style="flex:1">
+                        <label>平台抽成費用</label>
+                        <input type="number" id="sales-platform-fee" value="0" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>運費方式</label>
+                    <select id="sales-shipping" onchange="calculateSalesTotal()"></select>
+                </div>
+                <div class="form-group">
+                    <label>出貨商品/套餐</label>
+                    <div id="sales-items" class="order-items">
+                        <div class="order-item-row order-item-header">
+                            <span>商品/套餐</span>
+                            <span>數量</span>
+                            <span>售價</span>
+                            <span>小計</span>
+                            <span style="width:80px"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addSalesItem()" style="margin-top:10px">+
+                        新增商品</button>
+                    <button type="button" class="btn btn-success" onclick="addSalesCombo()" style="margin-top:10px">+
+                        新增套餐</button>
+                </div>
+                <div class="form-group">
+                    <label>商品總額</label>
+                    <input type="number" id="sales-subtotal" value="0" readonly>
+                </div>
+                <div class="form-group">
+                    <label>總金額</label>
+                    <input type="number" id="sales-total" value="0" readonly>
+                </div>
+                <div class="form-group">
+                    <label>備註</label>
+                    <textarea id="sales-notes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal('sales-modal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let products = [];
+        let combos = [];
+        let suppliers = [];
+        let customers = [];
+        let shippingOptions = [];
+
+        // 更新時間
+        function updateDateTime() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('zh-TW', options);
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // Tab 切換
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Modal 控制
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // 載入所有資料
+        async function loadAllData() {
+            await Promise.all([
+                loadProducts(),
+                loadCombos(),
+                loadSuppliers(),
+                loadCustomers(),
+                loadShippingOptions(),
+                loadPurchaseOrders(),
+                loadSalesOrders(),
+                loadBackups(),
+                loadDashboard()
+            ]);
+        }
+
+        // 載入商品
+        async function loadProducts() {
+            const { data, error } = await supabaseClient.from('stock_products').select('*').order('name');
+            if (error) { console.error(error); return; }
+            products = data;
+            renderProducts();
+            updateHistorySelect();
+        }
+
+        // 渲染商品列表
+        function renderProducts() {
+            const tbody = document.getElementById('products-table');
+            tbody.innerHTML = products.map(p => `
+                <tr class="${p.current_stock <= p.min_stock ? 'stock-low' : ''}">
+                    <td>${p.name}</td>
+                    <td>${p.url ? `<a class="product-link" href="${p.url}" target="_blank">開啟網站</a>` : '-'}</td>
+                    <td>${p.current_stock} ${p.unit || ''}</td>
+                    <td>${p.min_stock}</td>
+                    <td>${p.unit || '-'}</td>
+                    <td>${p.cost_price.toLocaleString()}</td>
+                    <td>${p.sale_price.toLocaleString()}</td>
+                    <td>
+                        <button class="action-btn" style="background:#667eea;color:white" onclick="editProduct('${p.id}')">編輯</button>
+                        <button class="action-btn" style="background:#f45c43;color:white" onclick="deleteProduct('${p.id}')">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 商品 Modal
+        function openProductModal(product = null) {
+            document.getElementById('product-modal-title').textContent = product ? '編輯商品' : '新增商品';
+            document.getElementById('product-id').value = product ? product.id : '';
+            document.getElementById('product-name').value = product ? product.name : '';
+            document.getElementById('product-url').value = product ? product.url : '';
+            document.getElementById('product-stock').value = product ? product.current_stock : 0;
+            document.getElementById('product-min-stock').value = product ? product.min_stock : 0;
+            document.getElementById('product-unit').value = product ? product.unit : '';
+            document.getElementById('product-cost-price').value = product ? product.cost_price : 0;
+            document.getElementById('product-sale-price').value = product ? product.sale_price : 0;
+            openModal('product-modal');
+        }
+
+        async function saveProduct(event) {
+            event.preventDefault();
+            const id = document.getElementById('product-id').value;
+            const product = {
+                name: document.getElementById('product-name').value,
+                url: document.getElementById('product-url').value || null,
+                current_stock: parseInt(document.getElementById('product-stock').value) || 0,
+                min_stock: parseInt(document.getElementById('product-min-stock').value) || 0,
+                unit: document.getElementById('product-unit').value || null,
+                cost_price: parseInt(document.getElementById('product-cost-price').value) || 0,
+                sale_price: parseInt(document.getElementById('product-sale-price').value) || 0
+            };
+
+            let result;
+            if (id) {
+                result = await supabaseClient.from('stock_products').update(product).eq('id', id);
+            } else {
+                result = await supabaseClient.from('stock_products').insert([product]);
+            }
+
+            if (result.error) { alert('儲存失敗: ' + result.error.message); return; }
+            closeModal('product-modal');
+            loadProducts();
+            loadDashboard();
+        }
+
+        async function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            openProductModal(product);
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('確定要刪除此商品嗎？')) return;
+            const { error } = await supabaseClient.from('stock_products').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadProducts();
+            loadDashboard();
+        }
+
+        // 載入套餐
+        async function loadCombos() {
+            const { data, error } = await supabaseClient.from('stock_combo_products').select('*, stock_combo_items(*)').order('combo_name');
+            if (error) { console.error(error); return; }
+            combos = data;
+            renderCombos();
+        }
+
+        function renderCombos() {
+            const tbody = document.getElementById('combos-table');
+            tbody.innerHTML = combos.map(c => {
+                const items = c.stock_combo_items || [];
+                const itemNames = items.map(i => {
+                    const p = products.find(p => p.id === i.product_id);
+                    return p ? `${p.name} x${i.quantity}` : '';
+                }).filter(Boolean).join(', ');
+                return `
+                    <tr>
+                        <td>${c.combo_name}</td>
+                        <td>${c.description || '-'}</td>
+                        <td>${itemNames || '-'}</td>
+                        <td>
+                            <button class="action-btn" style="background:#667eea;color:white" onclick="editCombo('${c.id}')">編輯</button>
+                            <button class="action-btn" style="background:#f45c43;color:white" onclick="deleteCombo('${c.id}')">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openComboModal(combo = null) {
+            document.getElementById('combo-modal-title').textContent = combo ? '編輯套餐' : '新增套餐';
+            document.getElementById('combo-id').value = combo ? combo.id : '';
+            document.getElementById('combo-name').value = combo ? combo.combo_name : '';
+            document.getElementById('combo-desc').value = combo ? combo.description : '';
+            document.getElementById('combo-items').innerHTML = '';
+            if (combo && combo.stock_combo_items) {
+                combo.stock_combo_items.forEach(item => addComboItem(item));
+            }
+            openModal('combo-modal');
+        }
+
+        function addComboItem(item = null) {
+            const div = document.createElement('div');
+            div.className = 'order-item-row';
+            div.innerHTML = `
+                <select class="combo-product-select">
+                    <option value="">請選擇商品</option>
+                    ${products.map(p => `<option value="${p.id}" ${item && item.product_id === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                </select>
+                <input type="number" class="combo-quantity" value="${item ? item.quantity : 1}" min="1">
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">刪除</button>
+            `;
+            document.getElementById('combo-items').appendChild(div);
+        }
+
+        async function saveCombo(event) {
+            event.preventDefault();
+            const id = document.getElementById('combo-id').value;
+            const comboName = document.getElementById('combo-name').value;
+            const description = document.getElementById('combo-desc').value;
+
+            const comboItems = [];
+            document.querySelectorAll('#combo-items .order-item-row').forEach(row => {
+                const productId = row.querySelector('.combo-product-select').value;
+                const quantity = parseInt(row.querySelector('.combo-quantity').value);
+                if (productId && quantity) {
+                    comboItems.push({ product_id: productId, quantity });
+                }
+            });
+
+            if (id) {
+                await supabaseClient.from('stock_combo_products').update({ combo_name: comboName, description }).eq('id', id);
+                await supabaseClient.from('stock_combo_items').delete().eq('combo_id', id);
+            } else {
+                const { data } = await supabaseClient.from('stock_combo_products').insert([{ combo_name: comboName, description }]).select();
+                if (data) {
+                    const newCombo = data[0];
+                    comboItems.forEach(item => item.combo_id = newCombo.id);
+                }
+            }
+
+            if (comboItems.length > 0) {
+                const comboId = id || (await supabaseClient.from('stock_combo_products').select('id').eq('combo_name', comboName).single()).data.id;
+                comboItems.forEach(item => item.combo_id = comboId);
+                await supabaseClient.from('stock_combo_items').insert(comboItems);
+            }
+
+            closeModal('combo-modal');
+            loadCombos();
+        }
+
+        async function editCombo(id) {
+            const combo = combos.find(c => c.id === id);
+            openComboModal(combo);
+        }
+
+        async function deleteCombo(id) {
+            if (!confirm('確定要刪除此套餐嗎？')) return;
+            const { error } = await supabaseClient.from('stock_combo_products').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadCombos();
+        }
+
+        // 廠商管理
+        async function loadSuppliers() {
+            const { data, error } = await supabaseClient.from('stock_suppliers').select('*').order('name');
+            if (error) { console.error(error); return; }
+            suppliers = data;
+            renderSuppliers();
+            updateSupplierSelect();
+        }
+
+        function renderSuppliers() {
+            const tbody = document.getElementById('suppliers-table');
+            tbody.innerHTML = suppliers.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.phone || '-'}</td>
+                    <td>${s.address || '-'}</td>
+                    <td>
+                        <button class="action-btn" style="background:#667eea;color:white" onclick="editSupplier('${s.id}')">編輯</button>
+                        <button class="action-btn" style="background:#f45c43;color:white" onclick="deleteSupplier('${s.id}')">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openSupplierModal(supplier = null) {
+            document.getElementById('supplier-modal-title').textContent = supplier ? '編輯廠商' : '新增廠商';
+            document.getElementById('supplier-id').value = supplier ? supplier.id : '';
+            document.getElementById('supplier-name').value = supplier ? supplier.name : '';
+            document.getElementById('supplier-phone').value = supplier ? supplier.phone : '';
+            document.getElementById('supplier-address').value = supplier ? supplier.address : '';
+            openModal('supplier-modal');
+        }
+
+        async function saveSupplier(event) {
+            event.preventDefault();
+            const id = document.getElementById('supplier-id').value;
+            const supplier = {
+                name: document.getElementById('supplier-name').value,
+                phone: document.getElementById('supplier-phone').value || null,
+                address: document.getElementById('supplier-address').value || null
+            };
+
+            let result;
+            if (id) {
+                result = await supabaseClient.from('stock_suppliers').update(supplier).eq('id', id);
+            } else {
+                result = await supabaseClient.from('stock_suppliers').insert([supplier]);
+            }
+
+            if (result.error) { alert('儲存失敗: ' + result.error.message); return; }
+            closeModal('supplier-modal');
+            loadSuppliers();
+        }
+
+        async function editSupplier(id) {
+            const supplier = suppliers.find(s => s.id === id);
+            openSupplierModal(supplier);
+        }
+
+        async function deleteSupplier(id) {
+            if (!confirm('確定要刪除此廠商嗎？')) return;
+            const { error } = await supabaseClient.from('stock_suppliers').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadSuppliers();
+        }
+
+        function updateSupplierSelect() {
+            const select = document.getElementById('purchase-supplier');
+            if (select) {
+                select.innerHTML = '<option value="">請選擇廠商</option>' + suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            }
+        }
+
+        // 客戶管理
+        async function loadCustomers() {
+            const { data, error } = await supabaseClient.from('stock_customers').select('*').order('name');
+            if (error) { console.error(error); return; }
+            customers = data;
+            renderCustomers();
+            updateCustomerSelect();
+        }
+
+        function renderCustomers() {
+            const tbody = document.getElementById('customers-table');
+            tbody.innerHTML = customers.map(c => `
+                <tr>
+                    <td>${c.name}</td>
+                    <td>${c.phone || '-'}</td>
+                    <td>${c.address || '-'}</td>
+                    <td>
+                        <button class="action-btn" style="background:#667eea;color:white" onclick="editCustomer('${c.id}')">編輯</button>
+                        <button class="action-btn" style="background:#f45c43;color:white" onclick="deleteCustomer('${c.id}')">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openCustomerModal(customer = null) {
+            document.getElementById('customer-modal-title').textContent = customer ? '編輯客戶' : '新增客戶';
+            document.getElementById('customer-id').value = customer ? customer.id : '';
+            document.getElementById('customer-name').value = customer ? customer.name : '';
+            document.getElementById('customer-phone').value = customer ? customer.phone : '';
+            document.getElementById('customer-address').value = customer ? customer.address : '';
+            openModal('customer-modal');
+        }
+
+        async function saveCustomer(event) {
+            event.preventDefault();
+            const id = document.getElementById('customer-id').value;
+            const customer = {
+                name: document.getElementById('customer-name').value,
+                phone: document.getElementById('customer-phone').value || null,
+                address: document.getElementById('customer-address').value || null
+            };
+
+            let result;
+            if (id) {
+                result = await supabaseClient.from('stock_customers').update(customer).eq('id', id);
+            } else {
+                result = await supabaseClient.from('stock_customers').insert([customer]);
+            }
+
+            if (result.error) { alert('儲存失敗: ' + result.error.message); return; }
+            closeModal('customer-modal');
+            loadCustomers();
+        }
+
+        async function editCustomer(id) {
+            const customer = customers.find(c => c.id === id);
+            openCustomerModal(customer);
+        }
+
+        async function deleteCustomer(id) {
+            if (!confirm('確定要刪除此客戶嗎？')) return;
+            const { error } = await supabaseClient.from('stock_customers').delete().eq('id', id);
+            if (error) { alert('刪除失敗: ' + error.message); return; }
+            loadCustomers();
+        }
+
+        function updateCustomerSelect() {
+            const select = document.getElementById('sales-customer');
+            if (select) {
+                select.innerHTML = '<option value="">請選擇客戶</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            }
+        }
+
+        // 運費選項
+        async function loadShippingOptions() {
+            const { data, error } = await supabaseClient.from('stock_shipping_options').select('*');
+            if (error) { console.error(error); return; }
+            shippingOptions = data;
+            updateShippingSelect();
+        }
+
+        function updateShippingSelect() {
+            const select = document.getElementById('sales-shipping');
+            if (select) {
+                select.innerHTML = shippingOptions.map(s => `<option value="${s.id}" data-fee="${s.fee}">${s.name} ($${s.fee})</option>`).join('');
+            }
+        }
+
+        // 進貨作業
+        async function loadPurchaseOrders() {
+            const { data, error } = await supabaseClient.from('stock_purchase_orders').select('*, stock_suppliers(name)').order('order_date', { ascending: false });
+            if (error) { console.error(error); return; }
+            renderPurchaseOrders(data);
+        }
+
+        function renderPurchaseOrders(orders) {
+            const tbody = document.getElementById('purchase-table');
+            tbody.innerHTML = orders.map(o => `
+                <tr>
+                    <td>${new Date(o.order_date).toLocaleString('zh-TW')}</td>
+                    <td>${o.stock_suppliers ? o.stock_suppliers.name : '-'}</td>
+                    <td>$${o.total_amount.toLocaleString()}</td>
+                    <td>${o.notes || '-'}</td>
+                    <td>
+                        <button class="action-btn" style="background:#667eea;color:white" onclick="viewPurchaseDetail('${o.id}')">查看</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openPurchaseModal() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('purchase-date').value = now.toISOString().slice(0, 16);
+            const purchaseItems = document.getElementById('purchase-items');
+            const header = purchaseItems.querySelector('.order-item-header');
+            purchaseItems.innerHTML = '';
+            if (header) purchaseItems.appendChild(header);
+            document.getElementById('purchase-total').value = 0;
+            document.getElementById('purchase-notes').value = '';
+            addPurchaseItem();
+            openModal('purchase-modal');
+        }
+
+        function addPurchaseItem() {
+            const div = document.createElement('div');
+            div.className = 'order-item-row';
+            div.innerHTML = `
+                <select class="purchase-product-select" onchange="updatePurchasePrice(this)">
+                    <option value="">請選擇商品</option>
+                    ${products.map(p => `<option value="${p.id}" data-price="${p.cost_price}">${p.name}</option>`).join('')}
+                </select>
+                <input type="number" class="purchase-quantity" value="1" min="1" onchange="calculatePurchaseTotal()">
+                <input type="number" class="purchase-price" value="0" min="0" onchange="calculatePurchaseTotal()">
+                <input type="number" class="purchase-subtotal" value="0" readonly>
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove(); calculatePurchaseTotal()">刪除</button>
+            `;
+            document.getElementById('purchase-items').appendChild(div);
+        }
+
+        function updatePurchasePrice(select) {
+            const row = select.parentElement;
+            const price = select.options[select.selectedIndex].dataset.price || 0;
+            row.querySelector('.purchase-price').value = price;
+            calculatePurchaseTotal();
+        }
+
+        function calculatePurchaseTotal() {
+            let total = 0;
+            document.querySelectorAll('#purchase-items .order-item-row').forEach(row => {
+                if (row.classList.contains('order-item-header')) return;
+                const quantityInput = row.querySelector('.purchase-quantity');
+                const priceInput = row.querySelector('.purchase-price');
+                const subtotalInput = row.querySelector('.purchase-subtotal');
+                if (!quantityInput || !priceInput || !subtotalInput) return;
+                const quantity = parseInt(quantityInput.value) || 0;
+                const price = parseInt(priceInput.value) || 0;
+                const subtotal = quantity * price;
+                subtotalInput.value = subtotal;
+                total += subtotal;
+            });
+            document.getElementById('purchase-total').value = total;
+        }
+
+        async function savePurchase(event) {
+            event.preventDefault();
+            const supplierId = document.getElementById('purchase-supplier').value;
+            const orderDate = document.getElementById('purchase-date').value;
+            const totalAmount = parseInt(document.getElementById('purchase-total').value) || 0;
+            const notes = document.getElementById('purchase-notes').value;
+
+            const items = [];
+            document.querySelectorAll('#purchase-items .order-item-row').forEach(row => {
+                if (row.classList.contains('order-item-header')) return;
+                const productSelect = row.querySelector('.purchase-product-select');
+                const quantityInput = row.querySelector('.purchase-quantity');
+                const priceInput = row.querySelector('.purchase-price');
+                if (!productSelect || !quantityInput || !priceInput) return;
+                const productId = productSelect.value;
+                const quantity = parseInt(quantityInput.value);
+                const unitPrice = parseInt(priceInput.value);
+                if (productId && quantity && unitPrice) {
+                    items.push({ product_id: productId, quantity, unit_price: unitPrice, total_price: quantity * unitPrice });
+                }
+            });
+
+            if (items.length === 0) { alert('請至少新增一項商品'); return; }
+
+            const { data: order, error: orderError } = await supabaseClient.from('stock_purchase_orders').insert([{
+                supplier_id: supplierId,
+                order_date: orderDate,
+                total_amount: totalAmount,
+                notes
+            }]).select();
+
+            if (orderError) { alert('儲存失敗: ' + orderError.message); return; }
+
+            const orderId = order[0].id;
+            items.forEach(item => item.purchase_order_id = orderId);
+            await supabaseClient.from('stock_purchase_items').insert(items);
+
+            // 更新庫存
+            for (const item of items) {
+                const product = products.find(p => p.id === item.product_id);
+                if (product) {
+                    await supabaseClient.from('stock_products').update({
+                        current_stock: product.current_stock + item.quantity
+                    }).eq('id', item.product_id);
+                }
+            }
+
+            closeModal('purchase-modal');
+            loadProducts();
+            loadPurchaseOrders();
+            loadDashboard();
+        }
+
+        async function viewPurchaseDetail(id) {
+            const { data, error } = await supabaseClient.from('stock_purchase_orders').select('*, stock_purchase_items(*), stock_suppliers(name)').eq('id', id).single();
+            if (error) { alert('載入失敗'); return; }
+            alert('廠商: ' + (data.stock_suppliers ? data.stock_suppliers.name : '-') + '\n' +
+                '日期: ' + new Date(data.order_date).toLocaleString('zh-TW') + '\n' +
+                '總額: $' + data.total_amount.toLocaleString() + '\n' +
+                '備註: ' + (data.notes || '-'));
+        }
+
+        // 出貨作業
+        async function loadSalesOrders() {
+            const { data, error } = await supabaseClient.from('stock_sales_orders').select('*, stock_customers(name)').order('order_date', { ascending: false });
+            if (error) { console.error(error); return; }
+            renderSalesOrders(data);
+        }
+
+        function renderSalesOrders(orders) {
+            const tbody = document.getElementById('sales-table');
+            tbody.innerHTML = orders.map(o => `
+                <tr>
+                    <td>${new Date(o.order_date).toLocaleString('zh-TW')}</td>
+                    <td>${o.stock_customers ? o.stock_customers.name : '-'}</td>
+                    <td>${o.is_tax_included ? '含稅' : '未稅'}</td>
+                    <td>$${o.platform_fee.toLocaleString()}</td>
+                    <td>$${o.shipping_fee.toLocaleString()}</td>
+                    <td>$${o.total_amount.toLocaleString()}</td>
+                    <td>
+                        <button class="action-btn" style="background:#667eea;color:white" onclick="viewSalesDetail('${o.id}')">查看</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openSalesModal() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('sales-date').value = now.toISOString().slice(0, 16);
+            document.getElementById('sales-tax-type').value = 'false';
+            document.getElementById('sales-platform-fee').value = 0;
+            const salesItems = document.getElementById('sales-items');
+            const header = salesItems.querySelector('.order-item-header');
+            salesItems.innerHTML = '';
+            if (header) salesItems.appendChild(header);
+            document.getElementById('sales-subtotal').value = 0;
+            document.getElementById('sales-total').value = 0;
+            document.getElementById('sales-notes').value = '';
+            addSalesItem();
+            openModal('sales-modal');
+        }
+
+        function addSalesItem() {
+            const div = document.createElement('div');
+            div.className = 'order-item-row';
+            div.dataset.type = 'product';
+            div.innerHTML = `
+                <select class="sales-item-select" onchange="updateSalesPrice(this)">
+                    <option value="">請選擇商品</option>
+                    ${products.map(p => `<option value="${p.id}" data-price="${p.sale_price}" data-stock="${p.current_stock}">${p.name} (庫存: ${p.current_stock})</option>`).join('')}
+                </select>
+                <input type="number" class="sales-quantity" value="1" min="1" onchange="calculateSalesTotal()">
+                <input type="number" class="sales-price" value="0" min="0" onchange="calculateSalesTotal()">
+                <input type="number" class="sales-subtotal" value="0" readonly>
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove(); calculateSalesTotal()">刪除</button>
+            `;
+            document.getElementById('sales-items').appendChild(div);
+        }
+
+        function addSalesCombo() {
+            const div = document.createElement('div');
+            div.className = 'order-item-row';
+            div.dataset.type = 'combo';
+            div.innerHTML = `
+                <select class="sales-combo-select" onchange="updateSalesComboPrice(this)">
+                    <option value="">請選擇套餐</option>
+                    ${combos.map(c => `<option value="${c.id}">${c.combo_name}</option>`).join('')}
+                </select>
+                <input type="number" class="sales-quantity" value="1" min="1" onchange="calculateSalesTotal()">
+                <input type="number" class="sales-price" value="0" min="0" onchange="calculateSalesTotal()">
+                <input type="number" class="sales-subtotal" value="0" readonly>
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove(); calculateSalesTotal()">刪除</button>
+            `;
+            document.getElementById('sales-items').appendChild(div);
+        }
+
+        function updateSalesPrice(select) {
+            const row = select.parentElement;
+            const price = select.options[select.selectedIndex].dataset.price || 0;
+            row.querySelector('.sales-price').value = price;
+            calculateSalesTotal();
+        }
+
+        function updateSalesComboPrice(select) {
+            const row = select.parentElement;
+            let total = 0;
+            const combo = combos.find(c => c.id === select.value);
+            if (combo && combo.stock_combo_items) {
+                combo.stock_combo_items.forEach(item => {
+                    const product = products.find(p => p.id === item.product_id);
+                    if (product) total += product.sale_price * item.quantity;
+                });
+            }
+            row.querySelector('.sales-price').value = total;
+            calculateSalesTotal();
+        }
+
+        function calculateSalesTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('#sales-items .order-item-row').forEach(row => {
+                if (row.classList.contains('order-item-header')) return;
+                const quantityInput = row.querySelector('.sales-quantity');
+                const priceInput = row.querySelector('.sales-price');
+                const subtotalInput = row.querySelector('.sales-subtotal');
+                if (!quantityInput || !priceInput || !subtotalInput) return;
+                const quantity = parseInt(quantityInput.value) || 0;
+                const price = parseInt(priceInput.value) || 0;
+                const itemSubtotal = quantity * price;
+                subtotalInput.value = itemSubtotal;
+                subtotal += itemSubtotal;
+            });
+
+            const platformFee = parseInt(document.getElementById('sales-platform-fee').value) || 0;
+            const shippingSelect = document.getElementById('sales-shipping');
+            const shippingFee = shippingSelect ? parseInt(shippingSelect.options[shippingSelect.selectedIndex].dataset.fee) || 0 : 0;
+
+            document.getElementById('sales-subtotal').value = subtotal;
+            document.getElementById('sales-total').value = subtotal + platformFee + shippingFee;
+        }
+
+        async function saveSales(event) {
+            event.preventDefault();
+            const customerId = document.getElementById('sales-customer').value;
+            const orderDate = document.getElementById('sales-date').value;
+            const isTaxIncluded = document.getElementById('sales-tax-type').value === 'true';
+            const platformFee = parseInt(document.getElementById('sales-platform-fee').value) || 0;
+            const shippingSelect = document.getElementById('sales-shipping');
+            const shippingFee = shippingSelect ? parseInt(shippingSelect.options[shippingSelect.selectedIndex].dataset.fee) || 0 : 0;
+            const shippingMethod = shippingSelect ? shippingSelect.options[shippingSelect.selectedIndex].text : '';
+            const subtotal = parseInt(document.getElementById('sales-subtotal').value) || 0;
+            const totalAmount = parseInt(document.getElementById('sales-total').value) || 0;
+            const notes = document.getElementById('sales-notes').value;
+
+            const items = [];
+            const stockUpdates = [];
+
+            const rows = document.querySelectorAll('#sales-items .order-item-row');
+            for (const row of rows) {
+                if (row.classList.contains('order-item-header')) continue;
+                const type = row.dataset.type;
+                const quantityInput = row.querySelector('.sales-quantity');
+                const priceInput = row.querySelector('.sales-price');
+                if (!quantityInput || !priceInput) continue;
+                const quantity = parseInt(quantityInput.value);
+                const unitPrice = parseInt(priceInput.value);
+
+                if (type === 'product') {
+                    const productSelect = row.querySelector('.sales-item-select');
+                    if (!productSelect) continue;
+                    const productId = productSelect.value;
+                    if (productId && quantity && unitPrice) {
+                        const product = products.find(p => p.id === productId);
+                        if (product && product.current_stock < quantity) {
+                            alert('商品 ' + product.name + ' 庫存不足！');
+                            return;
+                        }
+                        items.push({ product_id: productId, quantity, unit_price: unitPrice, total_price: quantity * unitPrice });
+                        stockUpdates.push({ productId, change: -quantity });
+                    }
+                } else if (type === 'combo') {
+                    const comboSelect = row.querySelector('.sales-combo-select');
+                    if (!comboSelect) continue;
+                    const comboId = comboSelect.value;
+                    if (comboId && quantity && unitPrice) {
+                        const combo = combos.find(c => c.id === comboId);
+                        if (combo && combo.stock_combo_items) {
+                            for (const ci of combo.stock_combo_items) {
+                                const product = products.find(p => p.id === ci.product_id);
+                                if (product && product.current_stock < ci.quantity * quantity) {
+                                    alert('套餐內商品 ' + product.name + ' 庫存不足！');
+                                    return;
+                                }
+                                stockUpdates.push({ productId: ci.product_id, change: -ci.quantity * quantity });
+                            }
+                        }
+                        items.push({ combo_id: comboId, quantity, unit_price: unitPrice, total_price: quantity * unitPrice });
+                    }
+                }
+            }
+
+            if (items.length === 0) { alert('請至少新增一項商品'); return; }
+
+            const { data: order, error: orderError } = await supabaseClient.from('stock_sales_orders').insert([{
+                customer_id: customerId,
+                order_date: orderDate,
+                is_tax_included: isTaxIncluded,
+                platform_fee: platformFee,
+                shipping_fee: shippingFee,
+                shipping_method: shippingMethod,
+                total_amount: totalAmount,
+                notes
+            }]).select();
+
+            if (orderError) { alert('儲存失敗: ' + orderError.message); return; }
+
+            const orderId = order[0].id;
+            items.forEach(item => item.sales_order_id = orderId);
+            await supabaseClient.from('stock_sales_items').insert(items);
+
+            // 更新庫存
+            for (const update of stockUpdates) {
+                const product = products.find(p => p.id === update.productId);
+                if (product) {
+                    await supabaseClient.from('stock_products').update({
+                        current_stock: product.current_stock + update.change
+                    }).eq('id', update.productId);
+                }
+            }
+
+            closeModal('sales-modal');
+            loadProducts();
+            loadSalesOrders();
+            loadDashboard();
+        }
+
+        async function viewSalesDetail(id) {
+            const { data, error } = await supabaseClient.from('stock_sales_orders').select('*, stock_sales_items(*), stock_customers(name)').eq('id', id).single();
+            if (error) { alert('載入失敗'); return; }
+            alert('客戶: ' + (data.stock_customers ? data.stock_customers.name : '-') + '\n' +
+                '日期: ' + new Date(data.order_date).toLocaleString('zh-TW') + '\n' +
+                '價格類型: ' + (data.is_tax_included ? '含稅' : '未稅') + '\n' +
+                '平台抽成: $' + data.platform_fee.toLocaleString() + '\n' +
+                '運費: $' + data.shipping_fee.toLocaleString() + '\n' +
+                '總額: $' + data.total_amount.toLocaleString() + '\n' +
+                '備註: ' + (data.notes || '-'));
+        }
+
+        // 儀表板
+        async function loadDashboard() {
+            const lowStockProducts = products.filter(p => p.current_stock <= p.min_stock);
+            const totalProducts = products.length;
+            const totalValue = products.reduce((sum, p) => sum + (p.current_stock * p.cost_price), 0);
+
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card">
+                    <h3>商品數量</h3>
+                    <div class="value">${totalProducts}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>庫存總值</h3>
+                    <div class="value">$${totalValue.toLocaleString()}</div>
+                </div>
+                <div class="stat-card ${lowStockProducts.length > 0 ? 'warning' : ''}">
+                    <h3>低庫存商品</h3>
+                    <div class="value">${lowStockProducts.length}</div>
+                </div>
+            `;
+
+            const alertDiv = document.getElementById('low-stock-alert');
+            if (lowStockProducts.length > 0) {
+                alertDiv.innerHTML = '<div class="alert alert-danger">⚠️ 有 ' + lowStockProducts.length + ' 項商品庫存不足！</div>';
+            } else {
+                alertDiv.innerHTML = '';
+            }
+
+            const tbody = document.getElementById('low-stock-table');
+            tbody.innerHTML = lowStockProducts.map(p => `
+                <tr class="stock-low">
+                    <td>${p.name}</td>
+                    <td>${p.current_stock}</td>
+                    <td>${p.min_stock}</td>
+                    <td>$${p.sale_price.toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 歷史價格
+        function updateHistorySelect() {
+            const select = document.getElementById('history-product-select');
+            if (select) {
+                select.innerHTML = '<option value="">請選擇商品</option>' + products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            }
+        }
+
+        async function showPriceHistory() {
+            const productId = document.getElementById('history-product-select').value;
+            const content = document.getElementById('price-history-content');
+            if (!productId) { content.innerHTML = ''; return; }
+
+            const [purchaseData, salesData] = await Promise.all([
+                supabaseClient.from('stock_purchase_items').select('*, stock_purchase_orders(order_date)').eq('product_id', productId),
+                supabaseClient.from('stock_sales_items').select('*, stock_sales_orders(order_date)').eq('product_id', productId)
+            ]);
+
+            const history = [];
+            if (purchaseData.data) {
+                purchaseData.data.forEach(item => {
+                    if (item.stock_purchase_orders) {
+                        history.push({
+                            type: '進貨',
+                            date: item.stock_purchase_orders.order_date,
+                            price: item.unit_price,
+                            quantity: item.quantity
+                        });
+                    }
+                });
+            }
+            if (salesData.data) {
+                salesData.data.forEach(item => {
+                    if (item.stock_sales_orders) {
+                        history.push({
+                            type: '出貨',
+                            date: item.stock_sales_orders.order_date,
+                            price: item.unit_price,
+                            quantity: item.quantity
+                        });
+                    }
+                });
+            }
+
+            history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            content.innerHTML = `
+                <div class="price-history">
+                    <h4>價格歷史記錄</h4>
+                    ${history.length === 0 ? '<p>無歷史記錄</p>' : history.map(h => `
+                        <div class="price-history-item">
+                            <strong>[${h.type}]</strong> ${new Date(h.date).toLocaleDateString('zh-TW')} - 
+                            數量: ${h.quantity}, 單價: $${h.price.toLocaleString()}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 備份與還原
+        async function loadBackups() {
+            const { data, error } = await supabaseClient.from('stock_backups').select('*').order('created_at', { ascending: false });
+            if (error) { console.error(error); return; }
+            renderBackups(data);
+        }
+
+        function renderBackups(backups) {
+            const tbody = document.getElementById('backups-table');
+            tbody.innerHTML = backups.map(b => `
+                <tr>
+                    <td>${new Date(b.created_at).toLocaleString('zh-TW')}</td>
+                    <td>
+                        <button class="action-btn" style="background:#667eea;color:white" onclick="restoreFromBackup('${b.id}')">還原</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function backupData() {
+            if (!confirm('確定要建立備份嗎？')) return;
+
+            const [productsData, combosData, comboItemsData, suppliersData, customersData,
+                purchaseOrdersData, purchaseItemsData, salesOrdersData, salesItemsData, shippingData] = await Promise.all([
+                    supabaseClient.from('stock_products').select('*'),
+                    supabaseClient.from('stock_combo_products').select('*'),
+                    supabaseClient.from('stock_combo_items').select('*'),
+                    supabaseClient.from('stock_suppliers').select('*'),
+                    supabaseClient.from('stock_customers').select('*'),
+                    supabaseClient.from('stock_purchase_orders').select('*'),
+                    supabaseClient.from('stock_purchase_items').select('*'),
+                    supabaseClient.from('stock_sales_orders').select('*'),
+                    supabaseClient.from('stock_sales_items').select('*'),
+                    supabaseClient.from('stock_shipping_options').select('*')
+                ]);
+
+            const backupData = {
+                products: productsData.data,
+                combos: combosData.data,
+                combo_items: comboItemsData.data,
+                suppliers: suppliersData.data,
+                customers: customersData.data,
+                purchase_orders: purchaseOrdersData.data,
+                purchase_items: purchaseItemsData.data,
+                sales_orders: salesOrdersData.data,
+                sales_items: salesItemsData.data,
+                shipping_options: shippingData.data
+            };
+
+            await supabaseClient.from('stock_backups').insert([{ backup_data: backupData }]);
+            alert('備份完成！');
+            loadBackups();
+        }
+
+        async function downloadBackup() {
+            const [productsData, combosData, comboItemsData, suppliersData, customersData,
+                purchaseOrdersData, purchaseItemsData, salesOrdersData, salesItemsData, shippingData] = await Promise.all([
+                    supabaseClient.from('stock_products').select('*'),
+                    supabaseClient.from('stock_combo_products').select('*'),
+                    supabaseClient.from('stock_combo_items').select('*'),
+                    supabaseClient.from('stock_suppliers').select('*'),
+                    supabaseClient.from('stock_customers').select('*'),
+                    supabaseClient.from('stock_purchase_orders').select('*'),
+                    supabaseClient.from('stock_purchase_items').select('*'),
+                    supabaseClient.from('stock_sales_orders').select('*'),
+                    supabaseClient.from('stock_sales_items').select('*'),
+                    supabaseClient.from('stock_shipping_options').select('*')
+                ]);
+
+            const backupData = {
+                products: productsData.data,
+                combos: combosData.data,
+                combo_items: comboItemsData.data,
+                suppliers: suppliersData.data,
+                customers: customersData.data,
+                purchase_orders: purchaseOrdersData.data,
+                purchase_items: purchaseItemsData.data,
+                sales_orders: salesOrdersData.data,
+                sales_items: salesItemsData.data,
+                shipping_options: shippingData.data,
+                backup_date: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'inventory_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm('還原會覆蓋目前所有資料，確定要還原嗎？')) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    await doRestore(data);
+                } catch (err) {
+                    alert('檔案格式錯誤！');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function restoreFromBackup(id) {
+            if (!confirm('還原會覆蓋目前所有資料，確定要還原嗎？')) return;
+
+            const { data, error } = await supabaseClient.from('stock_backups').select('*').eq('id', id).single();
+            if (error) { alert('載入失敗'); return; }
+
+            await doRestore(data.backup_data);
+        }
+
+        async function doRestore(data) {
+            // 清空所有資料表
+            await Promise.all([
+                supabaseClient.from('stock_sales_items').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_sales_orders').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_purchase_items').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_purchase_orders').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_combo_items').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_combo_products').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_products').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_suppliers').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                supabaseClient.from('stock_customers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+            ]);
+
+            // 插入資料
+            if (data.products && data.products.length) await supabaseClient.from('stock_products').insert(data.products);
+            if (data.suppliers && data.suppliers.length) await supabaseClient.from('stock_suppliers').insert(data.suppliers);
+            if (data.customers && data.customers.length) await supabaseClient.from('stock_customers').insert(data.customers);
+            if (data.combos && data.combos.length) await supabaseClient.from('stock_combo_products').insert(data.combos);
+            if (data.combo_items && data.combo_items.length) await supabaseClient.from('stock_combo_items').insert(data.combo_items);
+            if (data.purchase_orders && data.purchase_orders.length) await supabaseClient.from('stock_purchase_orders').insert(data.purchase_orders);
+            if (data.purchase_items && data.purchase_items.length) await supabaseClient.from('stock_purchase_items').insert(data.purchase_items);
+            if (data.sales_orders && data.sales_orders.length) await supabaseClient.from('stock_sales_orders').insert(data.sales_orders);
+            if (data.sales_items && data.sales_items.length) await supabaseClient.from('stock_sales_items').insert(data.sales_items);
+
+            alert('還原完成！');
+            loadAllData();
+        }
+
+        // 初始化
+        loadAllData();
+    </script>
+</body>
+
+</html>
