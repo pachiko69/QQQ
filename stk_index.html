@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>進銷存系統 - 前台</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f0f2f5; color: #333; }
+
+/* 頂部導航 */
+.header { background: #fff; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+.header h1 { font-size: 20px; }
+.tabs { display: flex; gap: 4px; }
+.tab { padding: 8px 20px; cursor: pointer; border-radius: 6px; font-size: 14px; transition: 0.2s; }
+.tab:hover { background: #f0f0f0; }
+.tab.active { background: #1890ff; color: #fff; }
+.time-display { font-size: 14px; color: #666; }
+
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+.card h2 { font-size: 18px; margin-bottom: 16px; }
+
+/* 按鈕 */
+.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+.btn-primary { background: #1890ff; color: #fff; }
+.btn-primary:hover { background: #40a9ff; }
+.btn-danger { background: #ff4d4f; color: #fff; }
+.btn-danger:hover { background: #ff7875; }
+.btn-default { background: #fff; color: #333; border: 1px solid #d9d9d9; }
+.btn-default:hover { border-color: #1890ff; color: #1890ff; }
+.btn-success { background: #52c41a; color: #fff; }
+.btn-success:hover { background: #73d13d; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-lg { padding: 12px 32px; font-size: 16px; }
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+th { background: #fafafa; font-weight: 600; font-size: 13px; color: #666; }
+tr:hover { background: #fafafa; }
+
+/* 搜尋列 */
+.toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+.toolbar input:focus, .toolbar select:focus { outline: none; border-color: #1890ff; }
+
+/* 標籤 */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.tag-success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.tag-warning { background: #fffbe6; color: #faad14; border: 1px solid #ffe58f; }
+.tag-danger { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+.tag-blue { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+.tag-purple { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+
+/* 連結 */
+a.link { color: #1890ff; text-decoration: none; }
+a.link:hover { text-decoration: underline; }
+
+/* 統計列 */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.stat-card .label { font-size: 14px; color: #666; margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 600; color: #333; }
+.stat-card.warning .value { color: #faad14; }
+.stat-card.danger .value { color: #ff4d4f; }
+
+/* 出貨單區域 */
+.order-layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+.order-items { min-height: 300px; }
+.order-summary { position: sticky; top: 80px; }
+
+/* 表單 */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: #333; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1890ff; }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
+
+/* 新增商品列 */
+.add-item-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end; }
+.add-item-row select { flex: 2; padding: 8px; border: 1px solid #d9d9d9; border-radius: 4px; }
+.add-item-row input { flex: 1; padding: 8px; border: 1px solid #d9d9d9; border-radius: 4px; }
+.add-item-row .btn { flex-shrink: 0; }
+
+/* 購物車商品列 */
+.cart-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #f0f0f0; gap: 10px; }
+.cart-item .info { flex: 1; }
+.cart-item .name { font-weight: 500; margin-bottom: 4px; }
+.cart-item .sku { font-size: 12px; color: #999; }
+.cart-item .qty-control { display: flex; align-items: center; gap: 8px; }
+.cart-item .qty-control button { width: 28px; height: 28px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; cursor: pointer; }
+.cart-item .qty-control input { width: 50px; text-align: center; padding: 4px; border: 1px solid #d9d9d9; border-radius: 4px; }
+.cart-item .price { width: 100px; text-align: right; font-weight: 600; }
+.cart-item .remove { color: #ff4d4f; cursor: pointer; padding: 4px 8px; }
+
+/* 金額明細 */
+.amount-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+.amount-row.total { font-size: 20px; font-weight: 700; color: #ff4d4f; padding-top: 12px; border-top: 2px solid #f0f0f0; margin-top: 8px; }
+.amount-row.label-muted { color: #666; }
+
+/* 稅別切換 */
+.tax-toggle { display: flex; gap: 0; border: 1px solid #d9d9d9; border-radius: 4px; overflow: hidden; }
+.tax-toggle button { flex: 1; padding: 8px; border: none; background: #fff; cursor: pointer; font-size: 13px; }
+.tax-toggle button.active { background: #1890ff; color: #fff; }
+
+/* 頁面 */
+.page { display: none; }
+.page.active { display: block; }
+
+.empty-state { text-align: center; padding: 40px; color: #999; }
+
+/* 低庫存警示橫幅 */
+.alert-banner { background: #fff2e8; border: 1px solid #ffbb96; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.alert-banner .icon { font-size: 20px; }
+.alert-banner .text { flex: 1; color: #d46b08; }
+.alert-banner .count { font-weight: 700; font-size: 18px; color: #fa541c; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📦 進銷存系統 - 前台</h1>
+    <div class="tabs">
+        <div class="tab active" data-tab="stock">庫存查詢</div>
+        <div class="tab" data-tab="order">建立出貨單</div>
+        <div class="tab" data-tab="history">出貨紀錄</div>
+    </div>
+    <div class="time-display" id="currentTime"></div>
+</div>
+
+<div class="container">
+
+    <!-- 庫存查詢 -->
+    <div id="tab-stock" class="page active">
+        <div id="lowStockBanner" class="alert-banner hidden">
+            <span class="icon">⚠️</span>
+            <span class="text">目前有 <span class="count" id="lowStockCount">0</span> 項商品低於安全庫存，請儘快補貨</span>
+            <button class="btn btn-sm btn-default" onclick="document.getElementById('filterLowStock').checked=true;loadStock()">查看低庫存</button>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card"><div class="label">商品總數</div><div class="value" id="totalProducts">-</div></div>
+            <div class="stat-card"><div class="label">庫存總量</div><div class="value" id="totalStockQty">-</div></div>
+            <div class="stat-card warning"><div class="label">低庫存數</div><div class="value" id="totalLowStock">-</div></div>
+            <div class="stat-card"><div class="label">套餐數</div><div class="value" id="totalBundles">-</div></div>
+        </div>
+
+        <div class="card">
+            <h2>庫存明細</h2>
+            <div class="toolbar">
+                <input type="text" id="stockSearch" placeholder="搜尋商品名稱 / SKU..." oninput="loadStock()" style="width:300px;">
+                <select id="stockType" onchange="loadStock()">
+                    <option value="all">全部類型</option>
+                    <option value="single">僅單品</option>
+                    <option value="bundle">僅套餐</option>
+                </select>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;">
+                    <input type="checkbox" id="filterLowStock" onchange="loadStock()"> 只看低庫存
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;">
+                    <input type="checkbox" id="filterActive" checked onchange="loadStock()"> 僅顯示啟用
+                </label>
+            </div>
+            <div id="stockTable"></div>
+        </div>
+    </div>
+
+    <!-- 建立出貨單 -->
+    <div id="tab-order" class="page">
+        <div class="order-layout">
+            <div>
+                <div class="card">
+                    <h2>客戶資訊</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>客戶 *</label>
+                            <select id="orderCustomer" onchange="updateCustomerInfo()">
+                                <option value="">請選擇客戶</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>出貨日期</label>
+                            <input type="date" id="orderDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card order-items">
+                    <h2>商品明細</h2>
+                    <div class="add-item-row">
+                        <select id="addProductSelect">
+                            <option value="">選擇商品 / 套餐...</option>
+                        </select>
+                        <input type="number" id="addProductQty" value="1" min="1" placeholder="數量" style="width:100px;">
+                        <button class="btn btn-primary" onclick="addOrderItem()">加入</button>
+                    </div>
+                    <div id="cartItems" style="margin-top:12px;">
+                        <div class="empty-state">尚未加入商品</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>備註</h2>
+                    <textarea id="orderRemark" rows="2" style="width:100%;padding:8px;border:1px solid #d9d9d9;border-radius:4px;" placeholder="訂單備註..."></textarea>
+                </div>
+            </div>
+
+            <div>
+                <div class="card order-summary">
+                    <h2>訂單摘要</h2>
+
+                    <div class="form-group">
+                        <label>計價方式</label>
+                        <div class="tax-toggle">
+                            <button id="taxBtnNo" class="active" onclick="setTaxMode(false)">未稅</button>
+                            <button id="taxBtnYes" onclick="setTaxMode(true)">含稅</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>稅率 (%)</label>
+                        <input type="number" id="taxRate" value="5" min="0" oninput="recalculateOrder()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>平台抽成費用</label>
+                        <input type="number" id="platformFee" value="0" min="0" oninput="recalculateOrder()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>運費方案</label>
+                        <select id="shippingSelect" onchange="recalculateOrder()"></select>
+                        <div id="shippingHint" style="font-size:12px;color:#999;margin-top:4px;"></div>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <div class="amount-row label-muted"><span>商品小計 (未稅)</span><span id="sumSubtotal">$0</span></div>
+                        <div class="amount-row label-muted"><span>稅額</span><span id="sumTax">$0</span></div>
+                        <div class="amount-row label-muted"><span>商品總計</span><span id="sumTotal">$0</span></div>
+                        <div class="amount-row label-muted"><span>平台抽成</span><span id="sumPlatform">$0</span></div>
+                        <div class="amount-row label-muted"><span>運費</span><span id="sumShipping">$0</span></div>
+                        <div class="amount-row total"><span>應收總計</span><span id="sumGrand">$0</span></div>
+                    </div>
+
+                    <button class="btn btn-success btn-lg" style="width:100%;margin-top:20px;" onclick="submitOrder()">
+                        ✅ 確認出貨
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 出貨紀錄 -->
+    <div id="tab-history" class="page">
+        <div class="card">
+            <h2>出貨紀錄</h2>
+            <div class="toolbar">
+                <input type="text" id="historySearch" placeholder="搜尋訂單編號 / 客戶..." oninput="loadHistory()" style="width:300px;">
+            </div>
+            <div id="historyTable"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ==================== Supabase 設定 ====================
+const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ==================== 全域狀態 ====================
+let cart = []; // { id, name, sku, unit_price, qty, is_bundle, stock_qty }
+let isTaxIncluded = false;
+let allProducts = [];
+let allShipping = [];
+
+// ==================== 工具函式 ====================
+function fmtMoney(n) { return '$' + parseInt(n || 0).toLocaleString('zh-TW'); }
+function todayLocal() { return new Date().toISOString().split('T')[0]; }
+
+function updateTime() {
+    document.getElementById('currentTime').textContent = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// ==================== 分頁切換 ====================
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'stock') loadStock();
+        if (tab.dataset.tab === 'order') initOrderPage();
+        if (tab.dataset.tab === 'history') loadHistory();
+    });
+});
+
+// ==================== 庫存查詢 ====================
+async function loadStock() {
+    const search = document.getElementById('stockSearch').value.toLowerCase();
+    const type = document.getElementById('stockType').value;
+    const onlyLow = document.getElementById('filterLowStock').checked;
+    const onlyActive = document.getElementById('filterActive').checked;
+
+    // 查詢商品 (簡化關聯，確保穩定載入)
+    let query = sb.from('stk_products').select('*, stk_suppliers(name)');
+    if (onlyActive) query = query.eq('is_active', true);
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) console.error('載入庫存失敗:', error);
+    allProducts = data || [];
+
+    let filtered = allProducts;
+    if (type === 'single') filtered = filtered.filter(p => !p.is_bundle);
+    if (type === 'bundle') filtered = filtered.filter(p => p.is_bundle);
+    if (onlyLow) filtered = filtered.filter(p => !p.is_bundle && p.stock_qty < p.safety_stock);
+    if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search));
+
+    // 統計
+    const activeProducts = allProducts.filter(p => p.is_active && !p.is_bundle);
+    const totalStock = activeProducts.reduce((s, p) => s + (p.stock_qty || 0), 0);
+    const lowStock = activeProducts.filter(p => p.stock_qty < p.safety_stock);
+    const bundles = allProducts.filter(p => p.is_bundle && p.is_active);
+
+    document.getElementById('totalProducts').textContent = activeProducts.length;
+    document.getElementById('totalStockQty').textContent = totalStock.toLocaleString('zh-TW');
+    document.getElementById('totalLowStock').textContent = lowStock.length;
+    document.getElementById('totalBundles').textContent = bundles.length;
+
+    // 警示橫幅
+    if (lowStock.length > 0) {
+        document.getElementById('lowStockBanner').classList.remove('hidden');
+        document.getElementById('lowStockCount').textContent = lowStock.length;
+    } else {
+        document.getElementById('lowStockBanner').classList.add('hidden');
+    }
+
+    // 表格
+    const html = filtered.length ? `
+        <table>
+            <thead><tr>
+                <th>SKU</th><th>商品名稱</th><th>類型</th><th>分類</th>
+                <th>售價</th><th>庫存</th><th>安全庫存</th>
+                <th>供應商</th><th>網址</th>
+            </tr></thead>
+            <tbody>
+                ${filtered.map(p => {
+                    const isLow = !p.is_bundle && p.stock_qty < p.safety_stock;
+                    return `
+                    <tr>
+                        <td>${p.sku}</td>
+                        <td style="font-weight:500;">${p.name}</td>
+                        <td>${p.is_bundle ? '<span class="tag tag-purple">套餐</span>' : '<span class="tag tag-blue">單品</span>'}</td>
+                        <td>${p.category || '-'}</td>
+                        <td>${fmtMoney(p.sale_price)}</td>
+                        <td style="${isLow ? 'color:#ff4d4f;font-weight:700;' : ''}">
+                            ${isLow ? '⚠️ ' : ''}${p.is_bundle ? '—' : p.stock_qty + ' ' + p.unit}
+                        </td>
+                        <td>${p.is_bundle ? '—' : p.safety_stock}</td>
+                        <td>${p.stk_suppliers?.name || '-'}</td>
+                        <td>${p.website_url ? `<a class="link" href="${p.website_url}" target="_blank">開啟 🔗</a>` : '-'}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">無符合條件的商品</div>';
+    document.getElementById('stockTable').innerHTML = html;
+}
+
+// ==================== 出貨單初始化 ====================
+async function initOrderPage() {
+    // 載入客戶選項
+    const { data: customers } = await sb.from('stk_customers').select('id, name, code').eq('is_active', true).order('name');
+    const custSel = document.getElementById('orderCustomer');
+    custSel.innerHTML = '<option value="">請選擇客戶</option>' + (customers || []).map(c => `<option value="${c.id}">${c.name} (${c.code})</option>`).join('');
+
+    // 載入商品選項
+    const { data: products } = await sb.from('stk_products').select('id, sku, name, sale_price, stock_qty, unit, is_bundle').eq('is_active', true).order('name');
+    const prodSel = document.getElementById('addProductSelect');
+    prodSel.innerHTML = '<option value="">選擇商品 / 套餐...</option>' + (products || []).map(p => `
+        <option value="${p.id}" data-price="${p.sale_price}" data-stock="${p.stock_qty}" data-bundle="${p.is_bundle}" data-sku="${p.sku}" data-name="${p.name}">
+            ${p.is_bundle ? '[套餐]' : ''} ${p.sku} - ${p.name} $${p.sale_price} ${p.is_bundle ? '' : '(庫存' + p.stock_qty + ')'}
+        </option>
+    `).join('');
+
+    // 載入運費
+    const { data: shipping } = await sb.from('stk_shipping_rates').select('*').eq('is_active', true).order('sort_order');
+    allShipping = shipping || [];
+    const shipSel = document.getElementById('shippingSelect');
+    shipSel.innerHTML = (shipping || []).map(s => `<option value="${s.id}">${s.name} - $${s.base_fee}${s.free_threshold ? ' (滿$' + s.free_threshold + '免運)' : ''}</option>`).join('');
+
+    // 預設日期
+    document.getElementById('orderDate').value = todayLocal();
+    recalculateOrder();
+}
+
+function addOrderItem() {
+    const sel = document.getElementById('addProductSelect');
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt.value) { alert('請選擇商品'); return; }
+
+    const qty = parseInt(document.getElementById('addProductQty').value) || 1;
+    const existing = cart.find(c => c.id === opt.value);
+    if (existing) {
+        existing.qty += qty;
+    } else {
+        cart.push({
+            id: opt.value,
+            name: opt.dataset.name,
+            sku: opt.dataset.sku,
+            unit_price: parseInt(opt.dataset.price) || 0,
+            qty: qty,
+            is_bundle: opt.dataset.bundle === 'true',
+            stock_qty: parseInt(opt.dataset.stock) || 0
+        });
+    }
+    renderCart();
+    sel.value = '';
+    document.getElementById('addProductQty').value = 1;
+}
+
+function renderCart() {
+    const container = document.getElementById('cartItems');
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="empty-state">尚未加入商品</div>';
+        recalculateOrder();
+        return;
+    }
+    container.innerHTML = cart.map((item, idx) => `
+        <div class="cart-item">
+            <div class="info">
+                <div class="name">
+                    ${item.is_bundle ? '<span class="tag tag-purple">套餐</span> ' : ''}
+                    ${item.name}
+                </div>
+                <div class="sku">${item.sku} ${item.is_bundle ? '' : ' | 庫存: ' + item.stock_qty}</div>
+            </div>
+            <div class="qty-control">
+                <button onclick="changeQty(${idx}, -1)">−</button>
+                <input type="number" value="${item.qty}" min="1" onchange="setQty(${idx}, this.value)">
+                <button onclick="changeQty(${idx}, 1)">+</button>
+            </div>
+            <div class="price">${fmtMoney(item.unit_price * item.qty)}</div>
+            <div class="remove" onclick="removeItem(${idx})">✕</div>
+        </div>
+    `).join('');
+    recalculateOrder();
+}
+
+function changeQty(idx, delta) {
+    cart[idx].qty = Math.max(1, cart[idx].qty + delta);
+    renderCart();
+}
+function setQty(idx, val) {
+    cart[idx].qty = Math.max(1, parseInt(val) || 1);
+    renderCart();
+}
+function removeItem(idx) {
+    cart.splice(idx, 1);
+    renderCart();
+}
+
+// ==================== 稅別切換 ====================
+function setTaxMode(included) {
+    isTaxIncluded = included;
+    document.getElementById('taxBtnNo').classList.toggle('active', !included);
+    document.getElementById('taxBtnYes').classList.toggle('active', included);
+    recalculateOrder();
+}
+
+// ==================== 計算金額 ====================
+function recalculateOrder() {
+    const subtotal = cart.reduce((s, i) => s + i.unit_price * i.qty, 0); // 未稅小計
+    const taxRate = parseInt(document.getElementById('taxRate').value) || 0;
+    const platformFee = parseInt(document.getElementById('platformFee').value) || 0;
+
+    // 商品售價永遠為未稅價，稅額一律外加計算
+    const untaxedSubtotal = subtotal;
+    const taxAmount = Math.round(subtotal * taxRate / 100);
+    const taxedTotal = subtotal + taxAmount; // 含稅商品總計
+
+    // 依模式決定商品總計顯示與應收金額
+    const goodsTotal = isTaxIncluded ? taxedTotal : untaxedSubtotal;
+
+    // 運費計算 (免運門檻以含稅商品總計比較)
+    let shippingFee = 0;
+    const shipId = document.getElementById('shippingSelect').value;
+    const ship = allShipping.find(s => s.id === shipId);
+    if (ship) {
+        if (ship.free_threshold && taxedTotal >= ship.free_threshold) {
+            shippingFee = 0;
+            document.getElementById('shippingHint').textContent = `✅ 已達免運門檻 $${ship.free_threshold.toLocaleString('zh-TW')}`;
+        } else {
+            shippingFee = ship.base_fee;
+            document.getElementById('shippingHint').textContent = ship.free_threshold ? `滿 $${ship.free_threshold.toLocaleString('zh-TW')} 免運` : '';
+        }
+    }
+
+    // 應收總計：含稅模式含稅，未稅模式不含稅
+    const grandTotal = goodsTotal + platformFee + shippingFee;
+
+    document.getElementById('sumSubtotal').textContent = fmtMoney(untaxedSubtotal);
+    document.getElementById('sumTax').textContent = fmtMoney(taxAmount);
+    document.getElementById('sumTotal').textContent = fmtMoney(goodsTotal) + (isTaxIncluded ? '' : ' (未稅)');
+    document.getElementById('sumPlatform').textContent = fmtMoney(platformFee);
+    document.getElementById('sumShipping').textContent = fmtMoney(shippingFee);
+    document.getElementById('sumGrand').textContent = fmtMoney(grandTotal);
+
+    return { subtotal: untaxedSubtotal, taxAmount, goodsTotal, shippingFee, grandTotal, platformFee, taxedTotal };
+}
+
+function updateCustomerInfo() {
+    // 可擴充：帶入客戶預設資訊
+}
+
+// ==================== 送出出貨單 ====================
+async function submitOrder() {
+    if (cart.length === 0) { alert('請至少加入一項商品'); return; }
+    const customerId = document.getElementById('orderCustomer').value;
+    if (!customerId) { alert('請選擇客戶'); return; }
+
+    // 檢查庫存
+    for (const item of cart) {
+        if (!item.is_bundle && item.qty > item.stock_qty) {
+            if (!confirm(`商品「${item.name}」庫存僅剩 ${item.stock_qty}，不足 ${item.qty}，是否仍要出貨？`)) return;
+            break;
+        }
+        if (item.is_bundle) {
+            // 套餐：檢查每個單品庫存
+            const { data: bundleItems } = await sb.from('stk_bundle_items').select('product_id, qty').eq('bundle_id', item.id);
+            for (const bi of bundleItems || []) {
+                const { data: prod } = await sb.from('stk_products').select('name, stock_qty').eq('id', bi.product_id).single();
+                const needed = bi.qty * item.qty;
+                if (needed > (prod?.stock_qty || 0)) {
+                    if (!confirm(`套餐「${item.name}」內含品項「${prod?.name}」庫存僅剩 ${prod?.stock_qty || 0}，需要 ${needed}，是否仍要出貨？`)) return;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!confirm('確認建立出貨單並扣減庫存？')) return;
+
+    const amounts = recalculateOrder();
+    const taxRate = parseInt(document.getElementById('taxRate').value) || 0;
+    const platformFee = parseInt(document.getElementById('platformFee').value) || 0;
+    const shippingId = document.getElementById('shippingSelect').value;
+    const ship = allShipping.find(s => s.id === shippingId);
+
+    // 取得客戶名稱
+    const { data: cust } = await sb.from('stk_customers').select('name').eq('id', customerId).single();
+
+    // 產生單號
+    const dateStr = document.getElementById('orderDate').value.replace(/-/g, '');
+    const { data: existing } = await sb.from('stk_orders').select('order_no').like('order_no', 'SO' + dateStr + '%');
+    const seq = (existing || []).length + 1;
+    const orderNo = 'SO' + dateStr + String(seq).padStart(4, '0');
+
+    // 建立訂單
+    const { data: order } = await sb.from('stk_orders').insert({
+        order_no: orderNo,
+        customer_id: customerId,
+        customer_name: cust?.name,
+        order_date: document.getElementById('orderDate').value,
+        is_tax_included: isTaxIncluded,
+        tax_rate: taxRate,
+        platform_fee: platformFee,
+        shipping_id: shippingId || null,
+        shipping_fee: amounts.shippingFee,
+        subtotal: amounts.subtotal,
+        tax_amount: amounts.taxAmount,
+        total_amount: amounts.goodsTotal,
+        grand_total: amounts.grandTotal,
+        status: 'shipped',
+        remark: document.getElementById('orderRemark').value
+    }).select().single();
+
+    // 寫入明細 & 扣庫存
+    for (const item of cart) {
+        // 寫入訂單明細
+        await sb.from('stk_order_items').insert({
+            order_id: order.id,
+            product_id: item.id,
+            product_name: item.name,
+            sku: item.sku,
+            unit_price: item.unit_price,
+            qty: item.qty,
+            subtotal: item.unit_price * item.qty,
+            is_bundle: item.is_bundle
+        });
+
+        if (item.is_bundle) {
+            // 套餐：扣每個單品的庫存
+            const { data: bundleItems } = await sb.from('stk_bundle_items').select('product_id, qty').eq('bundle_id', item.id);
+            for (const bi of bundleItems || []) {
+                // 查詢單品目前庫存
+                const { data: prod } = await sb.from('stk_products').select('stock_qty').eq('id', bi.product_id).single();
+                const deductQty = bi.qty * item.qty;
+                const newStock = (prod?.stock_qty || 0) - deductQty;
+                await sb.from('stk_products').update({ stock_qty: newStock }).eq('id', bi.product_id);
+                await sb.from('stk_stock_logs').insert({
+                    product_id: bi.product_id,
+                    change_qty: -deductQty,
+                    balance_after: newStock,
+                    ref_type: 'order',
+                    ref_id: order.id,
+                    remark: `出貨扣庫存 (套餐: ${item.name})`
+                });
+            }
+        } else {
+            // 單品：直接扣庫存
+            const newStock = item.stock_qty - item.qty;
+            await sb.from('stk_products').update({ stock_qty: newStock }).eq('id', item.id);
+            await sb.from('stk_stock_logs').insert({
+                product_id: item.id,
+                change_qty: -item.qty,
+                balance_after: newStock,
+                ref_type: 'order',
+                ref_id: order.id,
+                remark: '出貨扣庫存'
+            });
+        }
+    }
+
+    alert(`出貨單 ${orderNo} 建立成功！庫存已更新。`);
+    cart = [];
+    renderCart();
+    document.getElementById('orderRemark').value = '';
+    loadStock();
+}
+
+// ==================== 出貨紀錄 ====================
+async function loadHistory() {
+    const search = document.getElementById('historySearch').value.toLowerCase();
+    const { data } = await sb.from('stk_orders').select('*').order('created_at', { ascending: false }).limit(100);
+    const filtered = (data || []).filter(o => !search || o.order_no.toLowerCase().includes(search) || (o.customer_name || '').toLowerCase().includes(search));
+
+    document.getElementById('historyTable').innerHTML = filtered.length ? `
+        <table>
+            <thead><tr>
+                <th>訂單編號</th><th>客戶</th><th>出貨日期</th>
+                <th>小計</th><th>稅額</th><th>運費</th><th>平台費</th>
+                <th>總計</th><th>稅別</th><th>狀態</th>
+            </tr></thead>
+            <tbody>
+                ${filtered.map(o => `
+                <tr>
+                    <td style="font-weight:600;">${o.order_no}</td>
+                    <td>${o.customer_name || '-'}</td>
+                    <td>${o.order_date}</td>
+                    <td>${fmtMoney(o.subtotal)}</td>
+                    <td>${fmtMoney(o.tax_amount)}</td>
+                    <td>${fmtMoney(o.shipping_fee)}</td>
+                    <td>${fmtMoney(o.platform_fee)}</td>
+                    <td style="font-weight:700;color:#ff4d4f;">${fmtMoney(o.grand_total)}</td>
+                    <td>${o.is_tax_included ? '<span class="tag tag-blue">含稅</span>' : '<span class="tag tag-success">未稅</span>'}</td>
+                    <td><span class="tag tag-success">已出貨</span></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無出貨紀錄</div>';
+}
+
+// ==================== 初始化 ====================
+loadStock();
+</script>
+</body>
+</html>

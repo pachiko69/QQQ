@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>進銷存系統 - 後台管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f0f2f5; color: #333; }
+
+/* 佈局 */
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: #001529; color: #fff; flex-shrink: 0; }
+.sidebar h2 { padding: 20px; font-size: 18px; border-bottom: 1px solid #1f3a57; }
+.nav-item { padding: 14px 20px; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
+.nav-item:hover, .nav-item.active { background: #1890ff; border-left-color: #fff; }
+.main { flex: 1; padding: 24px; overflow-x: auto; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.page-header h1 { font-size: 22px; }
+
+/* 按鈕 */
+.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+.btn-primary { background: #1890ff; color: #fff; }
+.btn-primary:hover { background: #40a9ff; }
+.btn-danger { background: #ff4d4f; color: #fff; }
+.btn-danger:hover { background: #ff7875; }
+.btn-default { background: #fff; color: #333; border: 1px solid #d9d9d9; }
+.btn-default:hover { border-color: #1890ff; color: #1890ff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+th { background: #fafafa; font-weight: 600; font-size: 13px; color: #666; }
+tr:hover { background: #fafafa; }
+
+/* 搜尋列 */
+.toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+.toolbar input:focus, .toolbar select:focus { outline: none; border-color: #1890ff; }
+
+/* Modal */
+.modal-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+.modal-mask.show { display: flex; }
+.modal { background: #fff; border-radius: 8px; width: 600px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+.modal-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; font-size: 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #f0f0f0; text-align: right; display: flex; gap: 10px; justify-content: flex-end; }
+.close-btn { cursor: pointer; font-size: 20px; color: #999; }
+
+/* 表單 */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: #333; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1890ff; }
+.form-row { display: flex; gap: 16px; }
+.form-row .form-group { flex: 1; }
+
+/* 標籤 */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.tag-success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.tag-warning { background: #fffbe6; color: #faad14; border: 1px solid #ffe58f; }
+.tag-danger { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+.tag-blue { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+
+/* 連結 */
+a.link { color: #1890ff; text-decoration: none; }
+a.link:hover { text-decoration: underline; }
+
+/* 統計卡片 */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.stat-card .label { font-size: 14px; color: #666; margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 600; color: #333; }
+.stat-card.warning .value { color: #faad14; }
+.stat-card.danger .value { color: #ff4d4f; }
+
+/* 套餐明細 */
+.bundle-items-list { margin-top: 12px; }
+.bundle-item-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.bundle-item-row select { flex: 2; }
+.bundle-item-row input { flex: 1; }
+
+.hidden { display: none !important; }
+.empty-state { text-align: center; padding: 40px; color: #999; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+    <!-- 側邊欄 -->
+    <div class="sidebar">
+        <h2>📦 進銷存系統</h2>
+        <div class="nav-item active" data-page="dashboard">📊 儀表板</div>
+        <div class="nav-item" data-page="products">🏷️ 商品管理</div>
+        <div class="nav-item" data-page="bundles">🎁 套餐管理</div>
+        <div class="nav-item" data-page="suppliers">🏭 廠商管理</div>
+        <div class="nav-item" data-page="customers">👥 客戶管理</div>
+        <div class="nav-item" data-page="shipping">🚚 運費設定</div>
+        <div class="nav-item" data-page="purchase">📥 進貨管理</div>
+        <div class="nav-item" data-page="orders">📤 出貨管理</div>
+        <div class="nav-item" data-page="backup">💾 資料備份</div>
+    </div>
+
+    <!-- 主內容 -->
+    <div class="main">
+        <!-- 儀表板 -->
+        <div id="page-dashboard" class="page">
+            <div class="page-header"><h1>儀表板</h1><span id="currentTime"></span></div>
+            <div class="stats">
+                <div class="stat-card"><div class="label">商品總數</div><div class="value" id="statProducts">-</div></div>
+                <div class="stat-card"><div class="label">庫存總量</div><div class="value" id="statStock">-</div></div>
+                <div class="stat-card warning"><div class="label">低庫存警示</div><div class="value" id="statLowStock">-</div></div>
+                <div class="stat-card"><div class="label">本月出貨單</div><div class="value" id="statOrders">-</div></div>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom:16px;">⚠️ 低庫存商品</h3>
+                <div id="lowStockTable"></div>
+            </div>
+        </div>
+
+        <!-- 商品管理 -->
+        <div id="page-products" class="page hidden">
+            <div class="page-header">
+                <h1>商品管理</h1>
+                <button class="btn btn-primary" onclick="openProductModal()">+ 新增商品</button>
+            </div>
+            <div class="card">
+                <div class="toolbar">
+                    <input type="text" id="productSearch" placeholder="搜尋商品名稱 / SKU..." oninput="loadProducts()">
+                    <select id="productFilter" onchange="loadProducts()">
+                        <option value="all">全部狀態</option>
+                        <option value="active">啟用中</option>
+                        <option value="inactive">已停用</option>
+                    </select>
+                </div>
+                <div id="productsTable"></div>
+            </div>
+        </div>
+
+        <!-- 套餐管理 -->
+        <div id="page-bundles" class="page hidden">
+            <div class="page-header">
+                <h1>套餐管理</h1>
+                <button class="btn btn-primary" onclick="openBundleModal()">+ 新增套餐</button>
+            </div>
+            <div class="card">
+                <p style="margin-bottom:16px;color:#666;">套餐為多個單品組合，出貨時會自動從庫存扣除對應單品數量</p>
+                <div id="bundlesTable"></div>
+            </div>
+        </div>
+
+        <!-- 廠商管理 -->
+        <div id="page-suppliers" class="page hidden">
+            <div class="page-header">
+                <h1>廠商管理</h1>
+                <button class="btn btn-primary" onclick="openSupplierModal()">+ 新增廠商</button>
+            </div>
+            <div class="card">
+                <div class="toolbar">
+                    <input type="text" id="supplierSearch" placeholder="搜尋廠商..." oninput="loadSuppliers()">
+                </div>
+                <div id="suppliersTable"></div>
+            </div>
+        </div>
+
+        <!-- 客戶管理 -->
+        <div id="page-customers" class="page hidden">
+            <div class="page-header">
+                <h1>客戶管理</h1>
+                <button class="btn btn-primary" onclick="openCustomerModal()">+ 新增客戶</button>
+            </div>
+            <div class="card">
+                <div class="toolbar">
+                    <input type="text" id="customerSearch" placeholder="搜尋客戶..." oninput="loadCustomers()">
+                </div>
+                <div id="customersTable"></div>
+            </div>
+        </div>
+
+        <!-- 運費設定 -->
+        <div id="page-shipping" class="page hidden">
+            <div class="page-header">
+                <h1>運費設定</h1>
+                <button class="btn btn-primary" onclick="openShippingModal()">+ 新增運費方案</button>
+            </div>
+            <div class="card">
+                <p style="margin-bottom:16px;color:#666;">設定出貨時可選擇的運費方案，含免運門檻</p>
+                <div id="shippingTable"></div>
+            </div>
+        </div>
+
+        <!-- 進貨管理 -->
+        <div id="page-purchase" class="page hidden">
+            <div class="page-header">
+                <h1>進貨管理</h1>
+                <button class="btn btn-primary" onclick="openPurchaseModal()">+ 新增進貨單</button>
+            </div>
+            <div class="card">
+                <div id="purchaseTable"></div>
+            </div>
+        </div>
+
+        <!-- 出貨管理 -->
+        <div id="page-orders" class="page hidden">
+            <div class="page-header">
+                <h1>出貨管理</h1>
+            </div>
+            <div class="card">
+                <div class="toolbar">
+                    <input type="text" id="orderSearch" placeholder="搜尋訂單編號 / 客戶名稱..." oninput="loadAdminOrders()">
+                    <select id="orderStatusFilter" onchange="loadAdminOrders()">
+                        <option value="all">全部狀態</option>
+                        <option value="completed">已出貨</option>
+                        <option value="cancelled">已作廢</option>
+                    </select>
+                </div>
+                <div id="ordersTable"></div>
+            </div>
+        </div>
+
+        <!-- 資料備份 -->
+        <div id="page-backup" class="page hidden">
+            <div class="page-header">
+                <h1>資料備份與還原</h1>
+            </div>
+            <div class="card" style="margin-bottom:20px;">
+                <h3 style="margin-bottom:16px;">📤 匯出備份</h3>
+                <p style="margin-bottom:16px;color:#666;">將所有資料表匯出為 JSON 檔案，可下載保存至本機</p>
+                <button class="btn btn-primary" onclick="exportBackup()">📥 匯出全部資料 (JSON)</button>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom:16px;">📥 還原備份</h3>
+                <p style="margin-bottom:16px;color:#666;">選擇之前匯出的 JSON 備份檔案，還原會覆蓋目前所有資料，請謹慎操作</p>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <input type="file" id="backupFile" accept=".json" style="flex:1;">
+                    <button class="btn btn-danger" onclick="importBackup()">⚠️ 還原資料</button>
+                </div>
+                <p style="margin-top:12px;font-size:12px;color:#ff4d4f;">警告：還原作業不可逆，建議還原前先匯出目前資料做備份</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 商品 Modal -->
+<div class="modal-mask" id="productModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span id="productModalTitle">新增商品</span>
+            <span class="close-btn" onclick="closeModal('productModal')">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="productId">
+            <div class="form-row">
+                <div class="form-group"><label>SKU 編號 *</label><input type="text" id="productSku"></div>
+                <div class="form-group"><label>商品名稱 *</label><input type="text" id="productName"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>分類</label><input type="text" id="productCategory"></div>
+                <div class="form-group"><label>單位</label><input type="text" id="productUnit" value="個"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>進貨成本 (未稅)</label><input type="number" id="productCost" value="0" min="0"></div>
+                <div class="form-group"><label>售價 (未稅)</label><input type="number" id="productPrice" value="0" min="0"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>目前庫存</label><input type="number" id="productStock" value="0" min="0"></div>
+                <div class="form-group"><label>安全庫存</label><input type="number" id="productSafety" value="0" min="0"></div>
+            </div>
+            <div class="form-group"><label>商品網址</label><input type="url" id="productUrl" placeholder="https://..."></div>
+            <div class="form-group"><label>供應商</label><select id="productSupplier"></select></div>
+            <div class="form-group"><label>備註</label><textarea id="productRemark" rows="2"></textarea></div>
+            <div class="form-group"><label><input type="checkbox" id="productActive" checked> 啟用</label></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal('productModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveProduct()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 套餐 Modal -->
+<div class="modal-mask" id="bundleModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span id="bundleModalTitle">新增套餐</span>
+            <span class="close-btn" onclick="closeModal('bundleModal')">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="bundleId">
+            <div class="form-row">
+                <div class="form-group"><label>套餐 SKU *</label><input type="text" id="bundleSku"></div>
+                <div class="form-group"><label>套餐名稱 *</label><input type="text" id="bundleName"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>套餐售價 (未稅)</label><input type="number" id="bundlePrice" value="0" min="0"></div>
+                <div class="form-group"><label>安全庫存</label><input type="number" id="bundleSafety" value="0" min="0"></div>
+            </div>
+            <div class="form-group"><label>套餐網址</label><input type="url" id="bundleUrl" placeholder="https://..."></div>
+            <div class="form-group">
+                <label>套餐內容 (單品組合)</label>
+                <div id="bundleItemsList" class="bundle-items-list"></div>
+                <button class="btn btn-default btn-sm" onclick="addBundleItemRow()">+ 加入品項</button>
+            </div>
+            <div class="form-group"><label>備註</label><textarea id="bundleRemark" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal('bundleModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveBundle()">儲存套餐</button>
+        </div>
+    </div>
+</div>
+
+<!-- 廠商 Modal -->
+<div class="modal-mask" id="supplierModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span id="supplierModalTitle">新增廠商</span>
+            <span class="close-btn" onclick="closeModal('supplierModal')">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="supplierId">
+            <div class="form-row">
+                <div class="form-group"><label>廠商代碼 *</label><input type="text" id="supplierCode"></div>
+                <div class="form-group"><label>廠商名稱 *</label><input type="text" id="supplierName"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>聯絡人</label><input type="text" id="supplierContact"></div>
+                <div class="form-group"><label>電話</label><input type="text" id="supplierPhone"></div>
+            </div>
+            <div class="form-group"><label>Email</label><input type="email" id="supplierEmail"></div>
+            <div class="form-group"><label>地址</label><input type="text" id="supplierAddress"></div>
+            <div class="form-group"><label>網站</label><input type="url" id="supplierWebsite"></div>
+            <div class="form-group"><label>備註</label><textarea id="supplierRemark" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal('supplierModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveSupplier()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 客戶 Modal -->
+<div class="modal-mask" id="customerModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span id="customerModalTitle">新增客戶</span>
+            <span class="close-btn" onclick="closeModal('customerModal')">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="customerId">
+            <div class="form-row">
+                <div class="form-group"><label>客戶代碼 *</label><input type="text" id="customerCode"></div>
+                <div class="form-group"><label>客戶名稱 *</label><input type="text" id="customerName"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>聯絡人</label><input type="text" id="customerContact"></div>
+                <div class="form-group"><label>電話</label><input type="text" id="customerPhone"></div>
+            </div>
+            <div class="form-group"><label>Email</label><input type="email" id="customerEmail"></div>
+            <div class="form-group"><label>地址</label><input type="text" id="customerAddress"></div>
+            <div class="form-group"><label>統一編號</label><input type="text" id="customerTaxId"></div>
+            <div class="form-group"><label>備註</label><textarea id="customerRemark" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal('customerModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveCustomer()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 運費 Modal -->
+<div class="modal-mask" id="shippingModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span id="shippingModalTitle">新增運費方案</span>
+            <span class="close-btn" onclick="closeModal('shippingModal')">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="shippingId">
+            <div class="form-row">
+                <div class="form-group"><label>方案名稱 *</label><input type="text" id="shippingName"></div>
+                <div class="form-group"><label>物流商</label><input type="text" id="shippingCarrier"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>基本運費</label><input type="number" id="shippingBaseFee" value="0" min="0"></div>
+                <div class="form-group"><label>免運門檻 (0=無)</label><input type="number" id="shippingThreshold" value="0" min="0"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>排序</label><input type="number" id="shippingSort" value="0"></div>
+                <div class="form-group"><label><input type="checkbox" id="shippingActive" checked> 啟用</label></div>
+            </div>
+            <div class="form-group"><label>備註</label><textarea id="shippingRemark" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal('shippingModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveShipping()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 進貨 Modal -->
+<div class="modal-mask" id="purchaseModal">
+    <div class="modal" style="width:700px;">
+        <div class="modal-header">
+            <span>新增進貨單</span>
+            <span class="close-btn" onclick="closeModal('purchaseModal')">✕</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group"><label>供應商 *</label><select id="purchaseSupplier"></select></div>
+                <div class="form-group"><label>進貨日期</label><input type="date" id="purchaseDate"></div>
+            </div>
+            <div class="form-group">
+                <label>進貨明細</label>
+                <div id="purchaseItemsList"></div>
+                <button class="btn btn-default btn-sm" onclick="addPurchaseItemRow()">+ 加入品項</button>
+            </div>
+            <div class="form-group"><label>備註</label><textarea id="purchaseRemark" rows="2"></textarea></div>
+            <div style="text-align:right;font-size:16px;font-weight:600;margin-top:12px;">
+                進貨總計: $<span id="purchaseTotal">0</span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal('purchaseModal')">取消</button>
+            <button class="btn btn-primary" onclick="savePurchase()">建立進貨單</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== Supabase 設定 ====================
+const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ==================== 工具函式 ====================
+function fmtMoney(n) { return parseInt(n || 0).toLocaleString('zh-TW'); }
+function nowLocal() { return new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }); }
+function todayLocal() { return new Date().toISOString().split('T')[0]; }
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+
+// 更新時間
+function updateTime() {
+    document.getElementById('currentTime').textContent = nowLocal();
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// ==================== 頁面切換 ====================
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const page = item.dataset.page;
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById('page-' + page).classList.remove('hidden');
+        loadPageData(page);
+    });
+});
+
+function loadPageData(page) {
+    switch(page) {
+        case 'dashboard': loadDashboard(); break;
+        case 'products': loadProducts(); loadSupplierOptions('productSupplier'); break;
+        case 'bundles': loadBundles(); break;
+        case 'suppliers': loadSuppliers(); break;
+        case 'customers': loadCustomers(); break;
+        case 'shipping': loadShipping(); break;
+        case 'purchase': loadPurchases(); loadSupplierOptions('purchaseSupplier'); break;
+        case 'orders': loadAdminOrders(); break;
+        case 'backup': break;
+    }
+}
+
+// ==================== 儀表板 ====================
+async function loadDashboard() {
+    // 商品總數
+    const { count: pCount } = await sb.from('stk_products').select('*', { count: 'exact', head: true }).eq('is_active', true);
+    document.getElementById('statProducts').textContent = pCount || 0;
+
+    // 庫存總量
+    const { data: stockData } = await sb.from('stk_products').select('stock_qty').eq('is_active', true).eq('is_bundle', false);
+    const totalStock = (stockData || []).reduce((s, p) => s + (p.stock_qty || 0), 0);
+    document.getElementById('statStock').textContent = fmtMoney(totalStock);
+
+    // 低庫存 (前端過濾)
+    const { data: allActive } = await sb.from('stk_products').select('*').eq('is_active', true).order('stock_qty', { ascending: true });
+    const lowStock = (allActive || []).filter(p => p.stock_qty < p.safety_stock);
+    document.getElementById('statLowStock').textContent = lowStock.length;
+
+    // 本月出貨單
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { count: oCount } = await sb.from('stk_orders').select('*', { count: 'exact', head: true }).gte('created_at', monthStart);
+    document.getElementById('statOrders').textContent = oCount || 0;
+
+    // 低庫存表格
+    const tbody = (lowStock || []).map(p => `
+        <tr>
+            <td>${p.sku}</td>
+            <td>${p.name}</td>
+            <td class="${p.stock_qty <= 0 ? 'tag-danger' : 'tag-warning'}" style="font-weight:600;">${p.stock_qty} ${p.unit}</td>
+            <td>${p.safety_stock} ${p.unit}</td>
+            <td>${p.website_url ? `<a class="link" href="${p.website_url}" target="_blank">連結</a>` : '-'}</td>
+        </tr>
+    `).join('');
+    document.getElementById('lowStockTable').innerHTML = (lowStock && lowStock.length) ? `
+        <table><thead><tr><th>SKU</th><th>商品名稱</th><th>目前庫存</th><th>安全庫存</th><th>網址</th></tr></thead><tbody>${tbody}</tbody></table>
+    ` : '<div class="empty-state">✅ 目前無低庫存商品</div>';
+}
+
+// ==================== 商品管理 ====================
+async function loadProducts() {
+    const search = document.getElementById('productSearch').value.toLowerCase();
+    const filter = document.getElementById('productFilter').value;
+
+    let query = sb.from('stk_products').select('*, stk_suppliers(name)').eq('is_bundle', false);
+    if (filter === 'active') query = query.eq('is_active', true);
+    if (filter === 'inactive') query = query.eq('is_active', false);
+
+    const { data } = await query.order('created_at', { ascending: false });
+    const filtered = (data || []).filter(p => !search || p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search));
+
+    const html = filtered.length ? `
+        <table>
+            <thead><tr><th>SKU</th><th>商品名稱</th><th>分類</th><th>成本</th><th>售價</th><th>庫存</th><th>安全庫存</th><th>供應商</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody>
+                ${filtered.map(p => `
+                <tr>
+                    <td>${p.sku}</td>
+                    <td>${p.name}${p.website_url ? ` <a class="link" href="${p.website_url}" target="_blank">🔗</a>` : ''}</td>
+                    <td>${p.category || '-'}</td>
+                    <td>$${fmtMoney(p.cost_price)}</td>
+                    <td>$${fmtMoney(p.sale_price)}</td>
+                    <td class="${p.stock_qty < p.safety_stock ? 'tag-danger' : ''}" style="${p.stock_qty < p.safety_stock ? 'color:#ff4d4f;font-weight:600;' : ''}">${p.stock_qty} ${p.unit}</td>
+                    <td>${p.safety_stock}</td>
+                    <td>${p.stk_suppliers?.name || '-'}</td>
+                    <td>${p.is_active ? '<span class="tag tag-success">啟用</span>' : '<span class="tag tag-warning">停用</span>'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-default" onclick="editProduct('${p.id}')">編輯</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">刪除</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無商品資料</div>';
+    document.getElementById('productsTable').innerHTML = html;
+}
+
+function openProductModal() {
+    document.getElementById('productModalTitle').textContent = '新增商品';
+    ['productId','productSku','productName','productCategory','productUrl','productRemark'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('productUnit').value = '個';
+    document.getElementById('productCost').value = 0;
+    document.getElementById('productPrice').value = 0;
+    document.getElementById('productStock').value = 0;
+    document.getElementById('productSafety').value = 0;
+    document.getElementById('productActive').checked = true;
+    openModal('productModal');
+}
+
+async function editProduct(id) {
+    const { data } = await sb.from('stk_products').select('*').eq('id', id).single();
+    if (!data) return;
+    document.getElementById('productModalTitle').textContent = '編輯商品';
+    document.getElementById('productId').value = data.id;
+    document.getElementById('productSku').value = data.sku;
+    document.getElementById('productName').value = data.name;
+    document.getElementById('productCategory').value = data.category || '';
+    document.getElementById('productUnit').value = data.unit || '個';
+    document.getElementById('productCost').value = data.cost_price;
+    document.getElementById('productPrice').value = data.sale_price;
+    document.getElementById('productStock').value = data.stock_qty;
+    document.getElementById('productSafety').value = data.safety_stock;
+    document.getElementById('productUrl').value = data.website_url || '';
+    document.getElementById('productSupplier').value = data.supplier_id || '';
+    document.getElementById('productRemark').value = data.remark || '';
+    document.getElementById('productActive').checked = data.is_active;
+    openModal('productModal');
+}
+
+async function saveProduct() {
+    const id = document.getElementById('productId').value;
+    const payload = {
+        sku: document.getElementById('productSku').value.trim(),
+        name: document.getElementById('productName').value.trim(),
+        category: document.getElementById('productCategory').value.trim(),
+        unit: document.getElementById('productUnit').value.trim() || '個',
+        cost_price: parseInt(document.getElementById('productCost').value) || 0,
+        sale_price: parseInt(document.getElementById('productPrice').value) || 0,
+        stock_qty: parseInt(document.getElementById('productStock').value) || 0,
+        safety_stock: parseInt(document.getElementById('productSafety').value) || 0,
+        website_url: document.getElementById('productUrl').value.trim(),
+        supplier_id: document.getElementById('productSupplier').value || null,
+        remark: document.getElementById('productRemark').value,
+        is_active: document.getElementById('productActive').checked,
+        is_bundle: false
+    };
+    if (!payload.sku || !payload.name) { alert('請填寫 SKU 和商品名稱'); return; }
+
+    if (id) {
+        const { error: updErr } = await sb.from('stk_products').update(payload).eq('id', id);
+        if (updErr) { alert('儲存失敗：' + updErr.message); return; }
+    } else {
+        const { error } = await sb.from('stk_products').insert(payload);
+        if (error) {
+            if (error.code === '23505' || error.message?.includes('unique')) {
+                alert('新增失敗：SKU 已存在，請更換其他 SKU');
+            } else {
+                alert('新增失敗：' + error.message);
+            }
+            return;
+        }
+    }
+    closeModal('productModal');
+    loadProducts();
+    loadDashboard();
+}
+
+async function deleteProduct(id) {
+    if (!confirm('確定要刪除此商品？')) return;
+    await sb.from('stk_products').delete().eq('id', id);
+    loadProducts();
+    loadDashboard();
+}
+
+// ==================== 供應商選項 ====================
+async function loadSupplierOptions(selectId) {
+    const { data } = await sb.from('stk_suppliers').select('id, name').eq('is_active', true).order('name');
+    const sel = document.getElementById(selectId);
+    sel.innerHTML = '<option value="">請選擇</option>' + (data || []).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+// ==================== 套餐管理 ====================
+async function loadBundles() {
+    // 查詢套餐 (簡化查詢，避開巢狀關聯問題)
+    const { data: bundles, error: bErr } = await sb.from('stk_products').select('*').eq('is_bundle', true).order('created_at', { ascending: false });
+    if (bErr) { console.error('載入套餐失敗:', bErr); alert('載入失敗：' + bErr.message); }
+
+    // 查詢所有套餐明細，前端統計品項數
+    const { data: allItems } = await sb.from('stk_bundle_items').select('bundle_id, product_id');
+    const itemCountMap = {};
+    (allItems || []).forEach(item => {
+        itemCountMap[item.bundle_id] = (itemCountMap[item.bundle_id] || 0) + 1;
+    });
+
+    const html = (bundles && bundles.length) ? `
+        <table>
+            <thead><tr><th>SKU</th><th>套餐名稱</th><th>售價</th><th>品項數</th><th>網址</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody>
+                ${bundles.map(b => `
+                <tr>
+                    <td>${b.sku}</td>
+                    <td>${b.name}</td>
+                    <td>$${fmtMoney(b.sale_price)}</td>
+                    <td>${itemCountMap[b.id] || 0} 項</td>
+                    <td>${b.website_url ? `<a class="link" href="${b.website_url}" target="_blank">連結</a>` : '-'}</td>
+                    <td>${b.is_active ? '<span class="tag tag-success">啟用</span>' : '<span class="tag tag-warning">停用</span>'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-default" onclick="editBundle('${b.id}')">編輯</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProduct('${b.id}')">刪除</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無套餐資料</div>';
+    document.getElementById('bundlesTable').innerHTML = html;
+}
+
+async function openBundleModal() {
+    document.getElementById('bundleModalTitle').textContent = '新增套餐';
+    ['bundleId','bundleSku','bundleName','bundleUrl','bundleRemark'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('bundlePrice').value = 0;
+    document.getElementById('bundleSafety').value = 0;
+    document.getElementById('bundleItemsList').innerHTML = '';
+    addBundleItemRow();
+    openModal('bundleModal');
+}
+
+async function addBundleItemRow(productId = '', qty = 1) {
+    const { data: products } = await sb.from('stk_products').select('id, sku, name, unit').eq('is_bundle', false).eq('is_active', true).order('name');
+    const row = document.createElement('div');
+    row.className = 'bundle-item-row';
+    row.innerHTML = `
+        <select class="bundle-product">
+            <option value="">選擇單品</option>
+            ${(products || []).map(p => `<option value="${p.id}" ${p.id===productId?'selected':''}>${p.sku} - ${p.name} (${p.unit})</option>`).join('')}
+        </select>
+        <input type="number" class="bundle-qty" value="${qty}" min="1" placeholder="數量" style="width:100px;">
+        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
+    `;
+    document.getElementById('bundleItemsList').appendChild(row);
+}
+
+async function editBundle(id) {
+    const { data: bundle } = await sb.from('stk_products').select('*').eq('id', id).single();
+    const { data: items } = await sb.from('stk_bundle_items').select('*').eq('bundle_id', id);
+    if (!bundle) return;
+
+    document.getElementById('bundleModalTitle').textContent = '編輯套餐';
+    document.getElementById('bundleId').value = bundle.id;
+    document.getElementById('bundleSku').value = bundle.sku;
+    document.getElementById('bundleName').value = bundle.name;
+    document.getElementById('bundlePrice').value = bundle.sale_price;
+    document.getElementById('bundleSafety').value = bundle.safety_stock;
+    document.getElementById('bundleUrl').value = bundle.website_url || '';
+    document.getElementById('bundleRemark').value = bundle.remark || '';
+    
+    document.getElementById('bundleItemsList').innerHTML = '';
+    if (items && items.length) {
+        items.forEach(item => addBundleItemRow(item.product_id, item.qty));
+    } else {
+        addBundleItemRow();
+    }
+    openModal('bundleModal');
+}
+
+async function saveBundle() {
+    const id = document.getElementById('bundleId').value;
+    const sku = document.getElementById('bundleSku').value.trim();
+    const name = document.getElementById('bundleName').value.trim();
+    if (!sku || !name) { alert('請填寫 SKU 和套餐名稱'); return; }
+
+    const itemRows = document.querySelectorAll('#bundleItemsList .bundle-item-row');
+    const bundleItems = [];
+    itemRows.forEach(row => {
+        const pid = row.querySelector('.bundle-product').value;
+        const qty = parseInt(row.querySelector('.bundle-qty').value) || 0;
+        if (pid && qty > 0) bundleItems.push({ product_id: pid, qty });
+    });
+    if (bundleItems.length === 0) { alert('請至少加入一個套餐品項'); return; }
+
+    const payload = {
+        sku, name,
+        sale_price: parseInt(document.getElementById('bundlePrice').value) || 0,
+        safety_stock: parseInt(document.getElementById('bundleSafety').value) || 0,
+        website_url: document.getElementById('bundleUrl').value.trim(),
+        remark: document.getElementById('bundleRemark').value,
+        is_bundle: true,
+        is_active: true,
+        unit: '組',
+        stock_qty: 0
+    };
+
+    let bundleId = id;
+    if (id) {
+        const { error: updErr } = await sb.from('stk_products').update(payload).eq('id', id);
+        if (updErr) { alert('儲存失敗：' + updErr.message); return; }
+        await sb.from('stk_bundle_items').delete().eq('bundle_id', id);
+    } else {
+        const { data, error } = await sb.from('stk_products').insert(payload).select().single();
+        if (error || !data) {
+            if (error?.code === '23505' || error?.message?.includes('unique')) {
+                alert('新增失敗：SKU 已存在，請更換其他 SKU');
+            } else {
+                alert('新增失敗：' + (error?.message || '未知錯誤'));
+            }
+            return;
+        }
+        bundleId = data.id;
+    }
+
+    const itemsWithBundle = bundleItems.map(i => ({ ...i, bundle_id: bundleId }));
+    await sb.from('stk_bundle_items').insert(itemsWithBundle);
+
+    closeModal('bundleModal');
+    loadBundles();
+}
+
+// ==================== 廠商管理 ====================
+async function loadSuppliers() {
+    const search = document.getElementById('supplierSearch').value.toLowerCase();
+    const { data } = await sb.from('stk_suppliers').select('*').order('created_at', { ascending: false });
+    const filtered = (data || []).filter(s => !search || s.name.toLowerCase().includes(search) || s.code.toLowerCase().includes(search));
+
+    document.getElementById('suppliersTable').innerHTML = filtered.length ? `
+        <table>
+            <thead><tr><th>代碼</th><th>廠商名稱</th><th>聯絡人</th><th>電話</th><th>Email</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody>
+                ${filtered.map(s => `
+                <tr>
+                    <td>${s.code}</td>
+                    <td>${s.name}${s.website ? ` <a class="link" href="${s.website}" target="_blank">🔗</a>` : ''}</td>
+                    <td>${s.contact_person || '-'}</td>
+                    <td>${s.phone || '-'}</td>
+                    <td>${s.email || '-'}</td>
+                    <td>${s.is_active ? '<span class="tag tag-success">啟用</span>' : '<span class="tag tag-warning">停用</span>'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-default" onclick="editSupplier('${s.id}')">編輯</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSupplier('${s.id}')">刪除</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無廠商資料</div>';
+}
+
+function openSupplierModal() {
+    document.getElementById('supplierModalTitle').textContent = '新增廠商';
+    ['supplierId','supplierCode','supplierName','supplierContact','supplierPhone','supplierEmail','supplierAddress','supplierWebsite','supplierRemark'].forEach(id => document.getElementById(id).value = '');
+    openModal('supplierModal');
+}
+
+async function editSupplier(id) {
+    const { data } = await sb.from('stk_suppliers').select('*').eq('id', id).single();
+    if (!data) return;
+    document.getElementById('supplierModalTitle').textContent = '編輯廠商';
+    document.getElementById('supplierId').value = data.id;
+    document.getElementById('supplierCode').value = data.code;
+    document.getElementById('supplierName').value = data.name;
+    document.getElementById('supplierContact').value = data.contact_person || '';
+    document.getElementById('supplierPhone').value = data.phone || '';
+    document.getElementById('supplierEmail').value = data.email || '';
+    document.getElementById('supplierAddress').value = data.address || '';
+    document.getElementById('supplierWebsite').value = data.website || '';
+    document.getElementById('supplierRemark').value = data.remark || '';
+    openModal('supplierModal');
+}
+
+async function saveSupplier() {
+    const id = document.getElementById('supplierId').value;
+    const payload = {
+        code: document.getElementById('supplierCode').value.trim(),
+        name: document.getElementById('supplierName').value.trim(),
+        contact_person: document.getElementById('supplierContact').value.trim(),
+        phone: document.getElementById('supplierPhone').value.trim(),
+        email: document.getElementById('supplierEmail').value.trim(),
+        address: document.getElementById('supplierAddress').value.trim(),
+        website: document.getElementById('supplierWebsite').value.trim(),
+        remark: document.getElementById('supplierRemark').value
+    };
+    if (!payload.code || !payload.name) { alert('請填寫代碼和廠商名稱'); return; }
+
+    if (id) {
+        await sb.from('stk_suppliers').update(payload).eq('id', id);
+    } else {
+        await sb.from('stk_suppliers').insert(payload);
+    }
+    closeModal('supplierModal');
+    loadSuppliers();
+}
+
+async function deleteSupplier(id) {
+    if (!confirm('確定要刪除此廠商？')) return;
+    await sb.from('stk_suppliers').delete().eq('id', id);
+    loadSuppliers();
+}
+
+// ==================== 客戶管理 ====================
+async function loadCustomers() {
+    const search = document.getElementById('customerSearch').value.toLowerCase();
+    const { data } = await sb.from('stk_customers').select('*').order('created_at', { ascending: false });
+    const filtered = (data || []).filter(c => !search || c.name.toLowerCase().includes(search) || c.code.toLowerCase().includes(search));
+
+    document.getElementById('customersTable').innerHTML = filtered.length ? `
+        <table>
+            <thead><tr><th>代碼</th><th>客戶名稱</th><th>聯絡人</th><th>電話</th><th>Email</th><th>統編</th><th>操作</th></tr></thead>
+            <tbody>
+                ${filtered.map(c => `
+                <tr>
+                    <td>${c.code}</td>
+                    <td>${c.name}</td>
+                    <td>${c.contact_person || '-'}</td>
+                    <td>${c.phone || '-'}</td>
+                    <td>${c.email || '-'}</td>
+                    <td>${c.tax_id || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-default" onclick="editCustomer('${c.id}')">編輯</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')">刪除</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無客戶資料</div>';
+}
+
+function openCustomerModal() {
+    document.getElementById('customerModalTitle').textContent = '新增客戶';
+    ['customerId','customerCode','customerName','customerContact','customerPhone','customerEmail','customerAddress','customerTaxId','customerRemark'].forEach(id => document.getElementById(id).value = '');
+    openModal('customerModal');
+}
+
+async function editCustomer(id) {
+    const { data } = await sb.from('stk_customers').select('*').eq('id', id).single();
+    if (!data) return;
+    document.getElementById('customerModalTitle').textContent = '編輯客戶';
+    document.getElementById('customerId').value = data.id;
+    document.getElementById('customerCode').value = data.code;
+    document.getElementById('customerName').value = data.name;
+    document.getElementById('customerContact').value = data.contact_person || '';
+    document.getElementById('customerPhone').value = data.phone || '';
+    document.getElementById('customerEmail').value = data.email || '';
+    document.getElementById('customerAddress').value = data.address || '';
+    document.getElementById('customerTaxId').value = data.tax_id || '';
+    document.getElementById('customerRemark').value = data.remark || '';
+    openModal('customerModal');
+}
+
+async function saveCustomer() {
+    const id = document.getElementById('customerId').value;
+    const payload = {
+        code: document.getElementById('customerCode').value.trim(),
+        name: document.getElementById('customerName').value.trim(),
+        contact_person: document.getElementById('customerContact').value.trim(),
+        phone: document.getElementById('customerPhone').value.trim(),
+        email: document.getElementById('customerEmail').value.trim(),
+        address: document.getElementById('customerAddress').value.trim(),
+        tax_id: document.getElementById('customerTaxId').value.trim(),
+        remark: document.getElementById('customerRemark').value
+    };
+    if (!payload.code || !payload.name) { alert('請填寫代碼和客戶名稱'); return; }
+
+    if (id) {
+        await sb.from('stk_customers').update(payload).eq('id', id);
+    } else {
+        await sb.from('stk_customers').insert(payload);
+    }
+    closeModal('customerModal');
+    loadCustomers();
+}
+
+async function deleteCustomer(id) {
+    if (!confirm('確定要刪除此客戶？')) return;
+    await sb.from('stk_customers').delete().eq('id', id);
+    loadCustomers();
+}
+
+// ==================== 運費設定 ====================
+async function loadShipping() {
+    const { data } = await sb.from('stk_shipping_rates').select('*').order('sort_order');
+    document.getElementById('shippingTable').innerHTML = (data && data.length) ? `
+        <table>
+            <thead><tr><th>方案名稱</th><th>物流商</th><th>基本運費</th><th>免運門檻</th><th>排序</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody>
+                ${data.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.carrier || '-'}</td>
+                    <td>$${fmtMoney(s.base_fee)}</td>
+                    <td>${s.free_threshold ? '滿 $' + fmtMoney(s.free_threshold) + ' 免運' : '-'}</td>
+                    <td>${s.sort_order}</td>
+                    <td>${s.is_active ? '<span class="tag tag-success">啟用</span>' : '<span class="tag tag-warning">停用</span>'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-default" onclick="editShipping('${s.id}')">編輯</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteShipping('${s.id}')">刪除</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無運費方案</div>';
+}
+
+function openShippingModal() {
+    document.getElementById('shippingModalTitle').textContent = '新增運費方案';
+    ['shippingId','shippingName','shippingCarrier','shippingRemark'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('shippingBaseFee').value = 0;
+    document.getElementById('shippingThreshold').value = 0;
+    document.getElementById('shippingSort').value = 0;
+    document.getElementById('shippingActive').checked = true;
+    openModal('shippingModal');
+}
+
+async function editShipping(id) {
+    const { data } = await sb.from('stk_shipping_rates').select('*').eq('id', id).single();
+    if (!data) return;
+    document.getElementById('shippingModalTitle').textContent = '編輯運費方案';
+    document.getElementById('shippingId').value = data.id;
+    document.getElementById('shippingName').value = data.name;
+    document.getElementById('shippingCarrier').value = data.carrier || '';
+    document.getElementById('shippingBaseFee').value = data.base_fee;
+    document.getElementById('shippingThreshold').value = data.free_threshold || 0;
+    document.getElementById('shippingSort').value = data.sort_order || 0;
+    document.getElementById('shippingActive').checked = data.is_active;
+    document.getElementById('shippingRemark').value = data.remark || '';
+    openModal('shippingModal');
+}
+
+async function saveShipping() {
+    const id = document.getElementById('shippingId').value;
+    const threshold = parseInt(document.getElementById('shippingThreshold').value) || 0;
+    const payload = {
+        name: document.getElementById('shippingName').value.trim(),
+        carrier: document.getElementById('shippingCarrier').value.trim(),
+        base_fee: parseInt(document.getElementById('shippingBaseFee').value) || 0,
+        free_threshold: threshold > 0 ? threshold : null,
+        sort_order: parseInt(document.getElementById('shippingSort').value) || 0,
+        is_active: document.getElementById('shippingActive').checked,
+        remark: document.getElementById('shippingRemark').value
+    };
+    if (!payload.name) { alert('請填寫方案名稱'); return; }
+
+    if (id) {
+        await sb.from('stk_shipping_rates').update(payload).eq('id', id);
+    } else {
+        await sb.from('stk_shipping_rates').insert(payload);
+    }
+    closeModal('shippingModal');
+    loadShipping();
+}
+
+async function deleteShipping(id) {
+    if (!confirm('確定要刪除此運費方案？')) return;
+    await sb.from('stk_shipping_rates').delete().eq('id', id);
+    loadShipping();
+}
+
+// ==================== 進貨管理 ====================
+async function loadPurchases() {
+    const { data } = await sb.from('stk_purchase_orders').select('*, stk_suppliers(name)').order('created_at', { ascending: false }).limit(50);
+    document.getElementById('purchaseTable').innerHTML = (data && data.length) ? `
+        <table>
+            <thead><tr><th>進貨單號</th><th>供應商</th><th>進貨日期</th><th>金額</th><th>狀態</th><th>備註</th></tr></thead>
+            <tbody>
+                ${data.map(p => `
+                <tr>
+                    <td>${p.purchase_no}</td>
+                    <td>${p.stk_suppliers?.name || p.supplier_name || '-'}</td>
+                    <td>${p.purchase_date}</td>
+                    <td>$${fmtMoney(p.total_amount)}</td>
+                    <td><span class="tag tag-blue">${p.status === 'completed' ? '已入庫' : '處理中'}</span></td>
+                    <td>${p.remark || '-'}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無進貨記錄</div>';
+}
+
+function openPurchaseModal() {
+    document.getElementById('purchaseDate').value = todayLocal();
+    document.getElementById('purchaseRemark').value = '';
+    document.getElementById('purchaseItemsList').innerHTML = '';
+    document.getElementById('purchaseTotal').textContent = '0';
+    addPurchaseItemRow();
+    openModal('purchaseModal');
+}
+
+async function addPurchaseItemRow() {
+    const { data: products } = await sb.from('stk_products').select('id, sku, name, unit, cost_price').eq('is_bundle', false).eq('is_active', true).order('name');
+    const row = document.createElement('div');
+    row.className = 'bundle-item-row';
+    row.innerHTML = `
+        <select class="pi-product" onchange="updatePurchaseTotal()">
+            <option value="">選擇商品</option>
+            ${(products || []).map(p => `<option value="${p.id}" data-price="${p.cost_price}">${p.sku} - ${p.name} (成本$${p.cost_price})</option>`).join('')}
+        </select>
+        <input type="number" class="pi-qty" value="1" min="1" placeholder="數量" style="width:100px;" oninput="updatePurchaseTotal()">
+        <input type="number" class="pi-price" value="0" min="0" placeholder="單價" style="width:100px;" oninput="updatePurchaseTotal()">
+        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove();updatePurchaseTotal()">✕</button>
+    `;
+    // 預設帶入成本
+    row.querySelector('.pi-product').addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        row.querySelector('.pi-price').value = opt.dataset.price || 0;
+        updatePurchaseTotal();
+    });
+    document.getElementById('purchaseItemsList').appendChild(row);
+}
+
+function updatePurchaseTotal() {
+    let total = 0;
+    document.querySelectorAll('#purchaseItemsList .bundle-item-row').forEach(row => {
+        const qty = parseInt(row.querySelector('.pi-qty').value) || 0;
+        const price = parseInt(row.querySelector('.pi-price').value) || 0;
+        total += qty * price;
+    });
+    document.getElementById('purchaseTotal').textContent = fmtMoney(total);
+}
+
+async function savePurchase() {
+    const supplierId = document.getElementById('purchaseSupplier').value;
+    if (!supplierId) { alert('請選擇供應商'); return; }
+
+    const items = [];
+    document.querySelectorAll('#purchaseItemsList .bundle-item-row').forEach(row => {
+        const pid = row.querySelector('.pi-product').value;
+        const qty = parseInt(row.querySelector('.pi-qty').value) || 0;
+        const price = parseInt(row.querySelector('.pi-price').value) || 0;
+        if (pid && qty > 0) items.push({ product_id: pid, qty, unit_price: price });
+    });
+    if (items.length === 0) { alert('請至少加入一個進貨品項'); return; }
+
+    // 取得供應商名稱
+    const { data: sup } = await sb.from('stk_suppliers').select('name').eq('id', supplierId).single();
+    const totalAmount = items.reduce((s, i) => s + i.qty * i.unit_price, 0);
+
+    // 產生單號
+    const dateStr = document.getElementById('purchaseDate').value.replace(/-/g, '');
+    const { data: existing } = await sb.from('stk_purchase_orders').select('purchase_no').like('purchase_no', 'PO' + dateStr + '%');
+    const seq = (existing || []).length + 1;
+    const purchaseNo = 'PO' + dateStr + String(seq).padStart(4, '0');
+
+    // 建立進貨單
+    const { data: po } = await sb.from('stk_purchase_orders').insert({
+        purchase_no: purchaseNo,
+        supplier_id: supplierId,
+        supplier_name: sup?.name,
+        purchase_date: document.getElementById('purchaseDate').value,
+        total_amount: totalAmount,
+        status: 'completed',
+        remark: document.getElementById('purchaseRemark').value
+    }).select().single();
+
+    // 寫入明細 & 更新庫存
+    for (const item of items) {
+        const { data: prod } = await sb.from('stk_products').select('name, sku, stock_qty').eq('id', item.product_id).single();
+        await sb.from('stk_purchase_items').insert({
+            purchase_id: po.id,
+            product_id: item.product_id,
+            product_name: prod.name,
+            unit_price: item.unit_price,
+            qty: item.qty,
+            subtotal: item.qty * item.unit_price
+        });
+        // 更新庫存
+        const newStock = (prod.stock_qty || 0) + item.qty;
+        await sb.from('stk_products').update({ stock_qty: newStock }).eq('id', item.product_id);
+        // 庫存紀錄
+        await sb.from('stk_stock_logs').insert({
+            product_id: item.product_id,
+            change_qty: item.qty,
+            balance_after: newStock,
+            ref_type: 'purchase',
+            ref_id: po.id,
+            remark: '進貨入庫'
+        });
+    }
+
+    closeModal('purchaseModal');
+    loadPurchases();
+    loadDashboard();
+    alert('進貨單建立成功，庫存已更新！');
+}
+
+// ==================== 出貨管理 ====================
+async function loadAdminOrders() {
+    const search = (document.getElementById('orderSearch')?.value || '').toLowerCase();
+    const statusFilter = document.getElementById('orderStatusFilter')?.value || 'all';
+
+    let query = sb.from('stk_orders').select('*').order('created_at', { ascending: false }).limit(100);
+    if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+
+    const { data, error } = await query;
+    if (error) { console.error(error); document.getElementById('ordersTable').innerHTML = '<div class="empty-state">載入失敗</div>'; return; }
+
+    const filtered = (data || []).filter(o =>
+        !search || o.order_no?.toLowerCase().includes(search) || o.customer_name?.toLowerCase().includes(search)
+    );
+
+    const html = filtered.length ? `
+        <table>
+            <thead><tr><th>訂單編號</th><th>客戶</th><th>出貨日期</th><th>小計</th><th>稅額</th><th>運費</th><th>平台費</th><th>總計</th><th>稅別</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody>
+                ${filtered.map(o => `
+                <tr>
+                    <td><strong>${o.order_no}</strong></td>
+                    <td>${o.customer_name || '-'}</td>
+                    <td>${o.order_date || '-'}</td>
+                    <td>$${fmtMoney(o.subtotal)}</td>
+                    <td>$${fmtMoney(o.tax_amount)}</td>
+                    <td>$${fmtMoney(o.shipping_fee)}</td>
+                    <td>$${fmtMoney(o.platform_fee)}</td>
+                    <td><strong>$${fmtMoney(o.grand_total)}</strong></td>
+                    <td>${o.is_tax_included ? '<span class="tag tag-blue">含稅</span>' : '<span class="tag tag-warning">未稅</span>'}</td>
+                    <td>${o.status === 'cancelled' ? '<span class="tag tag-danger">已作廢</span>' : '<span class="tag tag-success">已出貨</span>'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-default" onclick="viewOrderDetail('${o.id}')">明細</button>
+                        <button class="btn btn-sm btn-default" onclick="editOrder('${o.id}')" ${o.status === 'cancelled' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>編輯</button>
+                        <button class="btn btn-sm btn-danger" onclick="cancelOrder('${o.id}')" ${o.status === 'cancelled' ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>作廢</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    ` : '<div class="empty-state">尚無出貨記錄</div>';
+    document.getElementById('ordersTable').innerHTML = html;
+}
+
+async function viewOrderDetail(orderId) {
+    const { data: order } = await sb.from('stk_orders').select('*').eq('id', orderId).single();
+    const { data: items } = await sb.from('stk_order_items').select('*').eq('order_id', orderId);
+    if (!order) return;
+
+    const itemsHtml = (items || []).map(i => `
+        <tr>
+            <td>${i.is_bundle ? '🎁 ' : ''}${i.product_name}</td>
+            <td>${i.sku || '-'}</td>
+            <td>$${fmtMoney(i.unit_price)}</td>
+            <td>${i.qty}</td>
+            <td>$${fmtMoney(i.subtotal)}</td>
+        </tr>
+    `).join('');
+
+    const modalHtml = `
+        <div class="modal-mask show" id="detailModal" onclick="if(event.target===this)closeModal('detailModal')">
+            <div class="modal" style="width:700px;">
+                <div class="modal-header">
+                    <span>出貨單明細 - ${order.order_no}</span>
+                    <span class="close-btn" onclick="closeModal('detailModal')">✕</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>客戶</label><div>${order.customer_name || '-'}</div></div>
+                        <div class="form-group"><label>出貨日期</label><div>${order.order_date || '-'}</div></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>稅別</label><div>${order.is_tax_included ? '含稅' : '未稅'} (稅率 ${order.tax_rate || 5}%)</div></div>
+                        <div class="form-group"><label>狀態</label><div>${order.status === 'cancelled' ? '已作廢' : '已出貨'}</div></div>
+                    </div>
+                    <div class="form-group"><label>備註</label><div>${order.remark || '-'}</div></div>
+                    <h4 style="margin:16px 0 8px;">商品明細</h4>
+                    <table>
+                        <thead><tr><th>品名</th><th>SKU</th><th>單價</th><th>數量</th><th>小計</th></tr></thead>
+                        <tbody>${itemsHtml || '<tr><td colspan="5" style="text-align:center;color:#999;">無明細</td></tr>'}</tbody>
+                    </table>
+                    <div style="text-align:right;margin-top:16px;line-height:1.8;">
+                        <div>商品小計 (未稅): $${fmtMoney(order.subtotal)}</div>
+                        <div>稅額: $${fmtMoney(order.tax_amount)}</div>
+                        <div>運費: $${fmtMoney(order.shipping_fee)}</div>
+                        <div>平台抽成: $${fmtMoney(order.platform_fee)}</div>
+                        <div style="font-size:18px;font-weight:600;color:#ff4d4f;">應收總計: $${fmtMoney(order.grand_total)}</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" onclick="closeModal('detailModal')">關閉</button>
+                </div>
+            </div>
+        </div>
+    `;
+    // 移除舊的
+    const old = document.getElementById('detailModal');
+    if (old) old.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function editOrder(orderId) {
+    const { data: order } = await sb.from('stk_orders').select('*').eq('id', orderId).single();
+    if (!order) return;
+    if (order.status === 'cancelled') { alert('已作廢的訂單無法編輯'); return; }
+
+    const modalHtml = `
+        <div class="modal-mask show" id="editOrderModal" onclick="if(event.target===this)closeModal('editOrderModal')">
+            <div class="modal">
+                <div class="modal-header">
+                    <span>編輯出貨單 - ${order.order_no}</span>
+                    <span class="close-btn" onclick="closeModal('editOrderModal')">✕</span>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editOrderId" value="${order.id}">
+                    <div class="form-group"><label>客戶名稱</label><input type="text" id="editCustName" value="${order.customer_name || ''}"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>出貨日期</label><input type="date" id="editOrderDate" value="${order.order_date || ''}"></div>
+                        <div class="form-group"><label>狀態</label>
+                            <select id="editOrderStatus">
+                                <option value="completed" ${order.status==='completed'?'selected':''}>已出貨</option>
+                                <option value="cancelled" ${order.status==='cancelled'?'selected':''}>已作廢</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>運費</label><input type="number" id="editShippingFee" value="${order.shipping_fee || 0}" min="0"></div>
+                        <div class="form-group"><label>平台抽成</label><input type="number" id="editPlatformFee" value="${order.platform_fee || 0}" min="0"></div>
+                    </div>
+                    <div class="form-group"><label>備註</label><textarea id="editOrderRemark" rows="3">${order.remark || ''}</textarea></div>
+                    <p style="font-size:12px;color:#999;margin-top:8px;">⚠️ 僅可修改不影響庫存的欄位；如需修改商品明細，請先作廢再重新建立出貨單</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" onclick="closeModal('editOrderModal')">取消</button>
+                    <button class="btn btn-primary" onclick="saveEditOrder()">儲存</button>
+                </div>
+            </div>
+        </div>
+    `;
+    const old = document.getElementById('editOrderModal');
+    if (old) old.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function saveEditOrder() {
+    const id = document.getElementById('editOrderId').value;
+    const newStatus = document.getElementById('editOrderStatus').value;
+
+    // 取得原始訂單
+    const { data: orig } = await sb.from('stk_orders').select('*').eq('id', id).single();
+    if (!orig) return;
+
+    // 如果狀態從 completed 改為 cancelled，執行作廢流程（退回庫存）
+    if (orig.status === 'completed' && newStatus === 'cancelled') {
+        const confirmed = confirm('將狀態改為「已作廢」會自動退回庫存，確定？');
+        if (!confirmed) return;
+        await cancelOrder(id, true);
+        closeModal('editOrderModal');
+        loadAdminOrders();
+        return;
+    }
+
+    // 重新計算總金額
+    const newShipping = parseInt(document.getElementById('editShippingFee').value) || 0;
+    const newPlatform = parseInt(document.getElementById('editPlatformFee').value) || 0;
+    const newGrandTotal = (orig.subtotal || 0) + (orig.tax_amount || 0) + newShipping + newPlatform;
+
+    const { error } = await sb.from('stk_orders').update({
+        customer_name: document.getElementById('editCustName').value.trim(),
+        order_date: document.getElementById('editOrderDate').value,
+        status: newStatus,
+        shipping_fee: newShipping,
+        platform_fee: newPlatform,
+        grand_total: newGrandTotal,
+        remark: document.getElementById('editOrderRemark').value
+    }).eq('id', id);
+
+    if (error) { alert('儲存失敗：' + error.message); return; }
+    closeModal('editOrderModal');
+    loadAdminOrders();
+    alert('儲存成功！');
+}
+
+async function cancelOrder(orderId, silent = false) {
+    if (!silent) {
+        const confirmed = confirm('確定要作廢此出貨單嗎？\n\n作廢後：\n✅ 庫存會自動退回\n✅ 保留審計軌跡（狀態改為已作廢）\n\n此操作不可逆');
+        if (!confirmed) return;
+    }
+
+    // 取得訂單與明細
+    const { data: order } = await sb.from('stk_orders').select('*').eq('id', orderId).single();
+    const { data: items } = await sb.from('stk_order_items').select('*').eq('order_id', orderId);
+    if (!order) return;
+
+    // 逐筆退回庫存
+    for (const item of (items || [])) {
+        if (item.is_bundle) {
+            // 套餐：查詢套餐明細後逐個退回單品庫存
+            const { data: bundleItems } = await sb.from('stk_bundle_items').select('*').eq('bundle_id', item.product_id);
+            for (const bi of (bundleItems || [])) {
+                const returnQty = bi.qty * item.qty;
+                const { data: prod } = await sb.from('stk_products').select('stock_qty').eq('id', bi.product_id).single();
+                const newStock = (prod?.stock_qty || 0) + returnQty;
+                await sb.from('stk_products').update({ stock_qty: newStock }).eq('id', bi.product_id);
+                await sb.from('stk_stock_logs').insert({
+                    product_id: bi.product_id,
+                    change_qty: returnQty,
+                    balance_after: newStock,
+                    ref_type: 'order_cancel',
+                    ref_id: orderId,
+                    remark: '出貨作廢退回 - ' + item.product_name
+                });
+            }
+        } else {
+            // 單品：直接退回
+            const returnQty = item.qty;
+            const { data: prod } = await sb.from('stk_products').select('stock_qty').eq('id', item.product_id).single();
+            const newStock = (prod?.stock_qty || 0) + returnQty;
+            await sb.from('stk_products').update({ stock_qty: newStock }).eq('id', item.product_id);
+            await sb.from('stk_stock_logs').insert({
+                product_id: item.product_id,
+                change_qty: returnQty,
+                balance_after: newStock,
+                ref_type: 'order_cancel',
+                ref_id: orderId,
+                remark: '出貨作廢退回'
+            });
+        }
+    }
+
+    // 更新訂單狀態
+    await sb.from('stk_orders').update({ status: 'cancelled' }).eq('id', orderId);
+
+    if (!silent) {
+        alert('出貨單已作廢，庫存已退回！');
+        loadAdminOrders();
+        loadDashboard();
+    }
+}
+
+// ==================== 資料備份與還原 ====================
+const BACKUP_TABLES = [
+    'stk_suppliers', 'stk_customers', 'stk_products', 'stk_bundle_items',
+    'stk_shipping_rates', 'stk_orders', 'stk_order_items',
+    'stk_purchase_orders', 'stk_purchase_items', 'stk_stock_logs'
+];
+
+async function exportBackup() {
+    if (!confirm('確定要匯出全部資料為 JSON 備份檔？')) return;
+
+    const result = { version: 1, exportTime: new Date().toISOString(), tables: {} };
+    for (const table of BACKUP_TABLES) {
+        const { data, error } = await sb.from(table).select('*');
+        if (error) { console.error('匯出 ' + table + ' 失敗:', error); continue; }
+        result.tables[table] = data || [];
+    }
+
+    // 產生檔名
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const fname = `stk_backup_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;
+
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('備份匯出成功：' + fname);
+}
+
+async function importBackup() {
+    const fileInput = document.getElementById('backupFile');
+    if (!fileInput.files || !fileInput.files[0]) { alert('請先選擇備份 JSON 檔案'); return; }
+
+    const confirmed = confirm('⚠️ 警告：還原會覆蓋目前所有資料！\n\n建議還原前先匯出目前資料做備份。\n\n確定要繼續還原嗎？');
+    if (!confirmed) return;
+
+    const file = fileInput.files[0];
+    const text = await file.text();
+    let backup;
+    try {
+        backup = JSON.parse(text);
+    } catch(e) {
+        alert('檔案格式錯誤，不是有效的 JSON 檔案');
+        return;
+    }
+    if (!backup.tables || typeof backup.tables !== 'object') {
+        alert('備份檔案格式不正確');
+        return;
+    }
+
+    // 刪除順序（子表先）
+    const deleteOrder = [
+        'stk_stock_logs', 'stk_purchase_items', 'stk_purchase_orders',
+        'stk_order_items', 'stk_orders', 'stk_bundle_items',
+        'stk_products', 'stk_customers', 'stk_suppliers', 'stk_shipping_rates'
+    ];
+    // 插入順序（父表先）
+    const insertOrder = [
+        'stk_suppliers', 'stk_customers', 'stk_shipping_rates', 'stk_products',
+        'stk_bundle_items', 'stk_orders', 'stk_order_items',
+        'stk_purchase_orders', 'stk_purchase_items', 'stk_stock_logs'
+    ];
+
+    try {
+        // 步驟1：清空所有表
+        console.log('開始清空舊資料...');
+        for (const table of deleteOrder) {
+            if (backup.tables[table] !== undefined) {
+                // 用 1=1 刪除全部（RLS 需允許）
+                const { error } = await sb.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                if (error) console.warn('清空 ' + table + ' 警告:', error.message);
+            }
+        }
+
+        // 步驟2：插入新資料
+        console.log('開始還原新資料...');
+        for (const table of insertOrder) {
+            const rows = backup.tables[table];
+            if (rows && rows.length > 0) {
+                // 分批插入（Supabase 單次限制）
+                const batchSize = 500;
+                for (let i = 0; i < rows.length; i += batchSize) {
+                    const batch = rows.slice(i, i + batchSize);
+                    const { error } = await sb.from(table).insert(batch);
+                    if (error) {
+                        console.error(table + ' 插入失敗:', error);
+                        throw new Error(table + ' 還原失敗：' + error.message);
+                    }
+                }
+            }
+        }
+
+        alert('✅ 資料還原成功！\n頁面將重新整理。');
+        location.reload();
+    } catch(e) {
+        alert('還原失敗：' + e.message + '\n\n部分資料可能已被變更，建議重新整理頁面確認。');
+    }
+}
+
+// ==================== 初始化 ====================
+loadPageData('dashboard');
+</script>
+</body>
+</html>
