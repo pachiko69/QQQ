@@ -354,6 +354,7 @@
             <button class="nav-tab" data-tab="combos">套餐管理</button>
             <button class="nav-tab" data-tab="suppliers">廠商管理</button>
             <button class="nav-tab" data-tab="customers">客戶管理</button>
+            <button class="nav-tab" data-tab="shipping">運費管理</button>
             <button class="nav-tab" data-tab="purchase">進貨作業</button>
             <button class="nav-tab" data-tab="sales">出貨作業</button>
             <button class="nav-tab" data-tab="history">歷史記錄</button>
@@ -446,6 +447,43 @@
                     <tbody id="customers-table"></tbody>
                 </table>
             </div>
+<!-- 運費管理分頁 -->
+<div class="tab-content" id="shipping">
+    <button class="btn btn-primary" onclick="openShippingModal()">新增運費選項</button>
+    <table>
+        <thead>
+            <tr>
+                <th>運費名稱</th>
+                <th>費用金額</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="shipping-table"></tbody>
+    </table>
+</div>
+
+<!-- 運費 Modal -->
+<div class="modal" id="shipping-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="shipping-modal-title">新增運費選項</h2>
+            <button class="close-btn" onclick="closeModal('shipping-modal')">&times;</button>
+        </div>
+        <form id="shipping-form" onsubmit="saveShippingOption(event)">
+            <input type="hidden" id="shipping-id">
+            <div class="form-group">
+                <label>運費名稱 *</label>
+                <input type="text" id="shipping-name" required placeholder="例如：宅配、超商取貨">
+            </div>
+            <div class="form-group">
+                <label>費用金額 *</label>
+                <input type="number" id="shipping-fee" value="0" min="0" required>
+            </div>
+            <button type="submit" class="btn btn-primary">儲存</button>
+            <button type="button" class="btn btn-danger" onclick="closeModal('shipping-modal')">取消</button>
+        </form>
+    </div>
+</div>
 
             <!-- 進貨作業 -->
             <div class="tab-content" id="purchase">
@@ -1141,14 +1179,74 @@ async function loadAllData() {
                 select.innerHTML = '<option value="">請選擇客戶</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             }
         }
+// 渲染運費列表
+function renderShippingOptions() {
+    const tbody = document.getElementById('shipping-table');
+    tbody.innerHTML = shippingOptions.map(s => `
+        <tr>
+            <td>${s.name}</td>
+            <td>$${s.fee.toLocaleString()}</td>
+            <td>
+                <button class="action-btn" style="background:#667eea;color:white" onclick="editShippingOption('${s.id}')">編輯</button>
+                <button class="action-btn" style="background:#f45c43;color:white" onclick="deleteShippingOption('${s.id}')">刪除</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// 開啟運費 Modal
+function openShippingModal(option = null) {
+    document.getElementById('shipping-modal-title').textContent = option ? '編輯運費選項' : '新增運費選項';
+    document.getElementById('shipping-id').value = option ? option.id : '';
+    document.getElementById('shipping-name').value = option ? option.name : '';
+    document.getElementById('shipping-fee').value = option ? option.fee : 0;
+    openModal('shipping-modal');
+}
+
+// 儲存運費選項
+async function saveShippingOption(event) {
+    event.preventDefault();
+    const id = document.getElementById('shipping-id').value;
+    const option = {
+        name: document.getElementById('shipping-name').value,
+        fee: parseInt(document.getElementById('shipping-fee').value) || 0
+    };
+
+    let result;
+    if (id) {
+        result = await supabaseClient.from('stock_shipping_options').update(option).eq('id', id);
+    } else {
+        result = await supabaseClient.from('stock_shipping_options').insert([option]);
+    }
+
+    if (result.error) { alert('儲存失敗: ' + result.error.message); return; }
+    closeModal('shipping-modal');
+    loadShippingOptions(); // 重新載入資料並更新出貨單的下拉選單
+}
+
+// 編輯運費
+function editShippingOption(id) {
+    const option = shippingOptions.find(s => s.id === id);
+    openShippingModal(option);
+}
+
+// 刪除運費
+async function deleteShippingOption(id) {
+    if (!confirm('確定要刪除此運費選項嗎？')) return;
+    const { error } = await supabaseClient.from('stock_shipping_options').delete().eq('id', id);
+    if (error) { alert('刪除失敗: ' + error.message); return; }
+    loadShippingOptions();
+}
 
         // 運費選項
         async function loadShippingOptions() {
-            const { data, error } = await supabaseClient.from('stock_shipping_options').select('*');
-            if (error) { console.error(error); return; }
-            shippingOptions = data;
-            updateShippingSelect();
-        }
+    const { data, error } = await supabaseClient.from('stock_shipping_options').select('*').order('name');
+    if (error) { console.error(error); return; }
+    shippingOptions = data;
+    updateShippingSelect();   // 更新出貨單下拉選單
+    renderShippingOptions(); // 更新運費管理列表
+}
+
 
         function updateShippingSelect() {
             const select = document.getElementById('sales-shipping');
@@ -1419,7 +1517,7 @@ async function deletePurchase(id) {
             const shippingSelect = document.getElementById('sales-shipping');
                if (shippingSelect) {
                    for (let i = 0; i < shippingSelect.options.length; i++) {
-                     if (shippingSelect.options[i].text.includes('蝦皮$45')) {
+                     if (shippingSelect.options[i].text.includes('蝦皮-貨到付款')) {
                         shippingSelect.selectedIndex = i;
                         break;
                      }
