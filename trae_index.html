@@ -704,14 +704,14 @@
                 <div class="form-group" style="display:flex;gap:20px">
                     <div style="flex:1">
                         <label>價格類型</label>
-                        <select id="sales-tax-type">
+                        <select id="sales-tax-type" onchange="calculateSalesTotal()">
                             <option value="false">未稅</option>
                             <option value="true">含稅</option>
                         </select>
                     </div>
                     <div style="flex:1">
                         <label>平台抽成費用</label>
-                        <input type="number" id="sales-platform-fee" value="0" min="0">
+                        <input type="number" id="sales-platform-fee" value="0" min="0" oninput="calculateSalesTotal()">
                     </div>
                 </div>
                 <div class="form-group">
@@ -791,20 +791,24 @@
             document.getElementById(id).classList.remove('active');
         }
 
-        // 載入所有資料
-        async function loadAllData() {
-            await Promise.all([
-                loadProducts(),
-                loadCombos(),
-                loadSuppliers(),
-                loadCustomers(),
-                loadShippingOptions(),
-                loadPurchaseOrders(),
-                loadSalesOrders(),
-                loadBackups(),
-                loadDashboard()
-            ]);
-        }
+        // 修改後的載入邏輯
+async function loadAllData() {
+    // 先並行載入所有基礎資料
+    await Promise.all([
+        loadProducts(),
+        loadCombos(),
+        loadSuppliers(),
+        loadCustomers(),
+        loadShippingOptions(),
+        loadPurchaseOrders(),
+        loadSalesOrders(),
+        loadBackups()
+    ]);
+    
+    // 確定資料都到齊後，再執行儀表板渲染
+    await loadDashboard();
+}
+
 
         // 載入商品
         async function loadProducts() {
@@ -1169,7 +1173,9 @@
                     <td>$${o.total_amount.toLocaleString()}</td>
                     <td>${o.notes || '-'}</td>
                     <td>
-                        <button class="action-btn" style="background:#667eea;color:white" onclick="viewPurchaseDetail('${o.id}')">查看</button>
+                        <button class="action-btn" style="background:#667eea;color:white" 							onclick="viewPurchaseDetail('${o.id}')">查看</button>
+			<button class="action-btn" style="background:#f45c43;color:white" 
+			onclick="deletePurchase('${o.id}')">刪除</button>
                     </td>
                 </tr>
             `).join('');
@@ -1283,13 +1289,82 @@
         }
 
         async function viewPurchaseDetail(id) {
-            const { data, error } = await supabaseClient.from('stock_purchase_orders').select('*, stock_purchase_items(*), stock_suppliers(name)').eq('id', id).single();
-            if (error) { alert('載入失敗'); return; }
-            alert('廠商: ' + (data.stock_suppliers ? data.stock_suppliers.name : '-') + '\n' +
-                '日期: ' + new Date(data.order_date).toLocaleString('zh-TW') + '\n' +
-                '總額: $' + data.total_amount.toLocaleString() + '\n' +
-                '備註: ' + (data.notes || '-'));
+    // 取得進貨單主檔、明細以及廠商名稱
+    const { data, error } = await supabaseClient.from('stock_purchase_orders')
+        .select('*, stock_purchase_items(*), stock_suppliers(name)')
+        .eq('id', id)
+        .single();
+
+    if (error) { alert('載入失敗'); return; }
+
+    // 格式化商品明細
+    let itemsDetail = "\n\n--- 商品細項 ---\n";
+    if (data.stock_purchase_items && data.stock_purchase_items.length > 0) {
+        data.stock_purchase_items.forEach((item, index) => {
+            // 從已載入的 products 陣列中找商品名稱
+            const product = products.find(p => p.id === item.product_id);
+            const productName = product ? product.name : "未知商品";
+            
+            // 修正欄位名稱：使用 unit_price 與 total_price
+            const qty = item.quantity || 0;
+            const unitPrice = item.unit_price || 0;
+            const totalPrice = item.total_price || (qty * unitPrice);
+            
+            itemsDetail += `${index + 1}. ${productName}\n` +
+                           `   數量: ${qty} | 單價: $${unitPrice.toLocaleString()} | 小計: $${totalPrice.toLocaleString()}\n`;
+        });
+    } else {
+        itemsDetail += "無商品明細";
+    }
+
+    // 顯示完整資訊
+    alert('廠商: ' + (data.stock_suppliers ? data.stock_suppliers.name : '-') + '\n' +
+        '日期: ' + new Date(data.order_date).toLocaleString('zh-TW') + '\n' +
+        '總額: $' + (data.total_amount || 0).toLocaleString() + '\n' +
+        '備註: ' + (data.notes || '-') +
+        itemsDetail);
+}
+async function deletePurchase(id) {
+    if (!confirm('確定要刪除此進貨單嗎？刪除後將會自動扣除對應的商品庫存。')) return;
+
+    // 1. 取得該進貨單的所有明細，以便還原庫存
+    const { data: items, error: fetchError } = await supabaseClient
+        .from('stock_purchase_items')
+        .select('*')
+        .eq('purchase_order_id', id);
+
+    if (fetchError) { alert('讀取明細失敗: ' + fetchError.message); return; }
+
+    // 2. 還原庫存 (進貨是加庫存，所以刪除要減庫存)
+    for (const item of items) {
+        // 先抓取目前最新的商品資料
+        const { data: product } = await supabaseClient
+            .from('stock_products')
+            .select('current_stock')
+            .eq('id', item.product_id)
+            .single();
+
+        if (product) {
+            await supabaseClient.from('stock_products')
+                .update({ current_stock: product.current_stock - item.quantity })
+                .eq('id', item.product_id);
         }
+    }
+
+    // 3. 刪除進貨單 (由於資料庫通常有級聯刪除，明細會自動被刪除；若無則需先手動刪除明細)
+    // 這裡保險起見先刪明細再刪主單
+    await supabaseClient.from('stock_purchase_items').delete().eq('purchase_order_id', id);
+    const { error: deleteError } = await supabaseClient.from('stock_purchase_orders').delete().eq('id', id);
+
+    if (deleteError) {
+        alert('刪除失敗: ' + deleteError.message);
+    } else {
+        alert('刪除成功，庫存已同步更新');
+        loadProducts();       // 重新載入商品以更新介面庫存
+        loadPurchaseOrders(); // 重新載入進貨列表
+        loadDashboard();      // 更新儀表板
+    }
+}
 
         // 出貨作業
         async function loadSalesOrders() {
@@ -1310,6 +1385,7 @@
                     <td>$${o.total_amount.toLocaleString()}</td>
                     <td>
                         <button class="action-btn" style="background:#667eea;color:white" onclick="viewSalesDetail('${o.id}')">查看</button>
+<button class="action-btn" style="background:#f45c43;color:white" onclick="deleteSales('${o.id}')">刪除</button>
                     </td>
                 </tr>
             `).join('');
@@ -1329,6 +1405,27 @@
             document.getElementById('sales-total').value = 0;
             document.getElementById('sales-notes').value = '';
             addSalesItem();
+            // 設定預設出貨客戶
+            const customerSelect = document.getElementById('sales-customer');
+               if (customerSelect) {
+                  for (let i = 0; i < customerSelect.options.length; i++) {
+                  if (customerSelect.options[i].text === '蝦皮') {
+                      customerSelect.selectedIndex = i;
+                      break;
+                     }
+                  }
+               }
+            // 設定預設物流運費
+            const shippingSelect = document.getElementById('sales-shipping');
+               if (shippingSelect) {
+                   for (let i = 0; i < shippingSelect.options.length; i++) {
+                     if (shippingSelect.options[i].text.includes('蝦皮$45')) {
+                        shippingSelect.selectedIndex = i;
+                        break;
+                     }
+               }
+            }
+            calculateSalesTotal(); // 重新計算包含運費的總額
             openModal('sales-modal');
         }
 
@@ -1386,7 +1483,7 @@
             row.querySelector('.sales-price').value = total;
             calculateSalesTotal();
         }
-
+	//計算出貨單總價
         function calculateSalesTotal() {
             let subtotal = 0;
             document.querySelectorAll('#sales-items .order-item-row').forEach(row => {
@@ -1405,9 +1502,13 @@
             const platformFee = parseInt(document.getElementById('sales-platform-fee').value) || 0;
             const shippingSelect = document.getElementById('sales-shipping');
             const shippingFee = shippingSelect ? parseInt(shippingSelect.options[shippingSelect.selectedIndex].dataset.fee) || 0 : 0;
-
+            const isTaxIncluded = document.getElementById('sales-tax-type').value === 'true';
+            const amountBeforeTax = subtotal ;
+            const totalAmount = isTaxIncluded
+                  ? Math.round(amountBeforeTax * 1.05)
+                  : amountBeforeTax;
             document.getElementById('sales-subtotal').value = subtotal;
-            document.getElementById('sales-total').value = subtotal + platformFee + shippingFee;
+            document.getElementById('sales-total').value = totalAmount - platformFee + shippingFee;
         }
 
         async function saveSales(event) {
@@ -1516,45 +1617,94 @@
                 '總額: $' + data.total_amount.toLocaleString() + '\n' +
                 '備註: ' + (data.notes || '-'));
         }
+async function deleteSales(id) {
+    if (!confirm('確定要刪除此出貨單嗎？刪除後將會自動還原（增加）對應的商品庫存。')) return;
+
+    // 1. 取得該出貨單的所有明細
+    const { data: items, error: fetchError } = await supabaseClient
+        .from('stock_sales_items')
+        .select('*')
+        .eq('sales_order_id', id);
+
+    if (fetchError) { alert('讀取明細失敗: ' + fetchError.message); return; }
+
+    // 2. 還原庫存 (出貨是減庫存，所以刪除要加回庫存)
+    for (const item of items) {
+        if (item.product_id) {
+            // 單一商品：直接加回數量
+            const { data: product } = await supabaseClient.from('stock_products').select('current_stock').eq('id', item.product_id).single();
+            if (product) {
+                await supabaseClient.from('stock_products').update({ current_stock: product.current_stock + item.quantity }).eq('id', item.product_id);
+            }
+        } else if (item.combo_id) {
+            // 套餐商品：需要加回套餐內所有項目的數量
+            const combo = combos.find(c => c.id === item.combo_id);
+            if (combo && combo.stock_combo_items) {
+                for (const comboItem of combo.stock_combo_items) {
+                    const { data: product } = await supabaseClient.from('stock_products').select('current_stock').eq('id', comboItem.product_id).single();
+                    if (product) {
+                        await supabaseClient.from('stock_products').update({ current_stock: product.current_stock + (comboItem.quantity * item.quantity) }).eq('id', comboItem.product_id);
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. 刪除出貨單 (先刪明細再刪主單)
+    await supabaseClient.from('stock_sales_items').delete().eq('sales_order_id', id);
+    const { error: deleteError } = await supabaseClient.from('stock_sales_orders').delete().eq('id', id);
+
+    if (deleteError) {
+        alert('刪除失敗: ' + deleteError.message);
+    } else {
+        alert('刪除成功，庫存已還原');
+        loadProducts();    // 更新介面庫存數字
+        loadSalesOrders(); // 重新載入出貨列表
+        loadDashboard();   // 更新儀表板
+    }
+}
+
 
         // 儀表板
         async function loadDashboard() {
-            const lowStockProducts = products.filter(p => p.current_stock <= p.min_stock);
-            const totalProducts = products.length;
-            const totalValue = products.reduce((sum, p) => sum + (p.current_stock * p.cost_price), 0);
+    // 如果資料還沒準備好，先不執行計算
+    if (!products || products.length === 0) {
+        // 如果是因為真的沒商品，則顯示 0；如果是還在載入，則稍後會被 loadAllData 再次呼叫
+        renderDashboard(0, 0, []); 
+    }
 
-            document.getElementById('stats-grid').innerHTML = `
-                <div class="stat-card">
-                    <h3>商品數量</h3>
-                    <div class="value">${totalProducts}</div>
-                </div>
-                <div class="stat-card">
-                    <h3>庫存總值</h3>
-                    <div class="value">$${totalValue.toLocaleString()}</div>
-                </div>
-                <div class="stat-card ${lowStockProducts.length > 0 ? 'warning' : ''}">
-                    <h3>低庫存商品</h3>
-                    <div class="value">${lowStockProducts.length}</div>
-                </div>
-            `;
+    const lowStockProducts = products.filter(p => p.current_stock <= p.min_stock);
+    const totalProducts = products.length;
+    const totalValue = products.reduce((sum, p) => sum + (p.current_stock * p.cost_price), 0);
 
-            const alertDiv = document.getElementById('low-stock-alert');
-            if (lowStockProducts.length > 0) {
-                alertDiv.innerHTML = '<div class="alert alert-danger">⚠️ 有 ' + lowStockProducts.length + ' 項商品庫存不足！</div>';
-            } else {
-                alertDiv.innerHTML = '';
-            }
+    // 渲染統計卡片
+    document.getElementById('stats-grid').innerHTML = `
+        <div class="stat-card">
+            <h3>商品數量</h3>
+            <div class="value">${totalProducts}</div>
+        </div>
+        <div class="stat-card">
+            <h3>庫存總值</h3>
+            <div class="value">$${totalValue.toLocaleString()}</div>
+        </div>
+        <div class="stat-card ${lowStockProducts.length > 0 ? 'warning' : ''}">
+            <h3>低庫存商品</h3>
+            <div class="value">${lowStockProducts.length}</div>
+        </div>
+    `;
 
-            const tbody = document.getElementById('low-stock-table');
-            tbody.innerHTML = lowStockProducts.map(p => `
-                <tr class="stock-low">
-                    <td>${p.name}</td>
-                    <td>${p.current_stock}</td>
-                    <td>${p.min_stock}</td>
-                    <td>$${p.sale_price.toLocaleString()}</td>
-                </tr>
-            `).join('');
-        }
+    // 渲染低庫存列表... (保留原本的邏輯)
+    const tbody = document.getElementById('low-stock-table');
+    tbody.innerHTML = lowStockProducts.map(p => `
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.current_stock}</td>
+            <td>${p.min_stock}</td>
+            <td>$${p.sale_price.toLocaleString()}</td>
+        </tr>
+    `).join('');
+}
+
 
         // 歷史價格
         function updateHistorySelect() {
@@ -1565,55 +1715,91 @@
         }
 
         async function showPriceHistory() {
-            const productId = document.getElementById('history-product-select').value;
-            const content = document.getElementById('price-history-content');
-            if (!productId) { content.innerHTML = ''; return; }
+    const productId = document.getElementById('history-product-select').value;
+    const content = document.getElementById('price-history-content');
+    if (!productId) { content.innerHTML = ''; return; }
 
-            const [purchaseData, salesData] = await Promise.all([
-                supabaseClient.from('stock_purchase_items').select('*, stock_purchase_orders(order_date)').eq('product_id', productId),
-                supabaseClient.from('stock_sales_items').select('*, stock_sales_orders(order_date)').eq('product_id', productId)
-            ]);
+    // 1. 調整查詢：加入關聯的廠商/客戶名稱與主單據備註
+    const [purchaseData, salesData] = await Promise.all([
+        supabaseClient.from('stock_purchase_items')
+            .select('*, stock_purchase_orders(order_date, notes, stock_suppliers(name))')
+            .eq('product_id', productId),
+        supabaseClient.from('stock_sales_items')
+            .select('*, stock_sales_orders(order_date, notes, stock_customers(name))')
+            .eq('product_id', productId)
+    ]);
 
-            const history = [];
-            if (purchaseData.data) {
-                purchaseData.data.forEach(item => {
-                    if (item.stock_purchase_orders) {
-                        history.push({
-                            type: '進貨',
-                            date: item.stock_purchase_orders.order_date,
-                            price: item.unit_price,
-                            quantity: item.quantity
-                        });
-                    }
+    const history = [];
+    
+    // 2. 處理進貨歷史
+    if (purchaseData.data) {
+        purchaseData.data.forEach(item => {
+            const order = item.stock_purchase_orders;
+            if (order) {
+                history.push({
+                    type: '進貨',
+                    date: order.order_date,
+                    target: order.stock_suppliers ? order.stock_suppliers.name : '-',
+                    price: item.unit_price || 0,
+                    quantity: item.quantity || 0,
+                    notes: order.notes || '-'
                 });
             }
-            if (salesData.data) {
-                salesData.data.forEach(item => {
-                    if (item.stock_sales_orders) {
-                        history.push({
-                            type: '出貨',
-                            date: item.stock_sales_orders.order_date,
-                            price: item.unit_price,
-                            quantity: item.quantity
-                        });
-                    }
+        });
+    }
+
+    // 3. 處理出貨歷史
+    if (salesData.data) {
+        salesData.data.forEach(item => {
+            const order = item.stock_sales_orders;
+            if (order) {
+                history.push({
+                    type: '出貨',
+                    date: order.order_date,
+                    target: order.stock_customers ? order.stock_customers.name : '-',
+                    price: item.unit_price || 0,
+                    quantity: item.quantity || 0,
+                    notes: order.notes || '-'
                 });
             }
+        });
+    }
 
-            history.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // 按日期排序
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            content.innerHTML = `
-                <div class="price-history">
-                    <h4>價格歷史記錄</h4>
-                    ${history.length === 0 ? '<p>無歷史記錄</p>' : history.map(h => `
-                        <div class="price-history-item">
-                            <strong>[${h.type}]</strong> ${new Date(h.date).toLocaleDateString('zh-TW')} - 
-                            數量: ${h.quantity}, 單價: $${h.price.toLocaleString()}
-                        </div>
+    // 4. 更新顯示格式 (改用表格或更清晰的佈局)
+    content.innerHTML = `
+        <div class="price-history">
+            <h4>價格歷史記錄</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>類型</th>
+                        <th>廠商/客戶</th>
+                        <th>數量</th>
+                        <th>單價</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${history.length === 0 ? '<tr><td colspan="6" style="text-align:center">無歷史記錄</td></tr>' : history.map(h => `
+                        <tr>
+                            <td>${new Date(h.date).toLocaleDateString('zh-TW')}</td>
+                            <td><strong style="color:${h.type === '進貨' ? '#11998e' : '#667eea'}">[${h.type}]</strong></td>
+                            <td>${h.target}</td>
+                            <td>${h.quantity}</td>
+                            <td>$${h.price.toLocaleString()}</td>
+                            <td style="font-size:12px; color:#666">${h.notes}</td>
+                        </tr>
                     `).join('')}
-                </div>
-            `;
-        }
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
 
         // 備份與還原
         async function loadBackups() {
@@ -1702,7 +1888,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'inventory_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.download = 'stock_backup_' + new Date().toISOString().slice(0, 10) + '.json';
             a.click();
             URL.revokeObjectURL(url);
         }
