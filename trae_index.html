@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進銷存管理系統</title>
+    <title>濱線露店-進銷存管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -344,7 +344,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>進銷存管理系統</h1>
+            <h1>濱線露店-進銷存管理系統</h1>
             <div class="datetime" id="datetime"></div>
         </div>
 
@@ -373,7 +373,7 @@
                             <th>商品名稱</th>
                             <th>目前庫存</th>
                             <th>最低庫存</th>
-                            <th>單價</th>
+                            <th>成本單價</th>
                         </tr>
                     </thead>
                     <tbody id="low-stock-table"></tbody>
@@ -407,8 +407,8 @@
                     <thead>
                         <tr>
                             <th>套餐名稱</th>
-                            <th>說明</th>
                             <th>包含商品</th>
+                            <th>說明</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -522,16 +522,21 @@
             </div>
 
             <!-- 歷史記錄 -->
-            <div class="tab-content" id="history">
-                <h3>商品價格歷史查詢</h3>
-                <div class="form-group">
-                    <label>選擇商品</label>
-                    <select id="history-product-select" onchange="showPriceHistory()">
-                        <option value="">請選擇商品</option>
-                    </select>
-                </div>
-                <div id="price-history-content"></div>
-            </div>
+            <!-- 尋找 <div class="tab-content" id="history"> 部分 -->
+<div class="tab-content" id="history">
+    <h3>商品價格歷史查詢</h3>
+    <div class="form-group">
+        <label>搜尋並選擇商品</label>
+        <!-- 新增搜尋框 -->
+        <input type="text" id="history-product-search" placeholder="輸入商品名稱關鍵字..." oninput="filterHistoryProducts()" style="margin-bottom: 10px;">
+        
+        <select id="history-product-select" onchange="showPriceHistory()">
+            <option value="">請選擇商品</option>
+        </select>
+    </div>
+    <div id="price-history-content"></div>
+</div>
+
 
             <!-- 備份與還原 -->
             <div class="tab-content" id="backup">
@@ -609,13 +614,12 @@
                     <label>套餐名稱 *</label>
                     <input type="text" id="combo-name" required>
                 </div>
-                <div class="form-group">
-                    <label>說明</label>
-                    <textarea id="combo-desc" rows="3"></textarea>
-                </div>
+                
                 <div class="form-group">
                     <label>包含商品</label>
                     <div id="combo-items"></div>
+                    <label>說明</label>
+                    <textarea id="combo-desc" rows="3"></textarea>
                     <button type="button" class="btn btn-primary" onclick="addComboItem()" style="margin-top:10px">+
                         新增商品</button>
                 </div>
@@ -831,21 +835,26 @@
             document.getElementById(id).classList.remove('active');
         }
 
-        // 修改後的載入邏輯
+        // 套餐管理修改後的載入邏輯
 async function loadAllData() {
-    // 先並行載入所有基礎資料
+    // 1. 必須先載入基礎資料（商品、廠商、客戶等）
     await Promise.all([
         loadProducts(),
-        loadCombos(),
         loadSuppliers(),
         loadCustomers(),
         loadShippingOptions(),
-        loadPurchaseOrders(),
-        loadSalesOrders(),
         loadBackups()
     ]);
     
-    // 確定資料都到齊後，再執行儀表板渲染
+    // 2. 確定有商品資料後，再載入套餐、進貨單、出貨單
+    // 因為這些資料的渲染都需要用到 products 陣列來對照名稱
+    await Promise.all([
+        loadCombos(),
+        loadPurchaseOrders(),
+        loadSalesOrders()
+    ]);
+    
+    // 3. 最後更新儀表板
     await loadDashboard();
 }
 
@@ -951,8 +960,8 @@ async function loadAllData() {
                 return `
                     <tr>
                         <td>${c.combo_name}</td>
-                        <td>${c.description || '-'}</td>
                         <td>${itemNames || '-'}</td>
+                        <td>${c.description || '-'}</td>
                         <td>
                             <button class="action-btn" style="background:#667eea;color:white" onclick="editCombo('${c.id}')">編輯</button>
                             <button class="action-btn" style="background:#f45c43;color:white" onclick="deleteCombo('${c.id}')">刪除</button>
@@ -1879,19 +1888,44 @@ async function deleteSales(id) {
             <td>${p.name}</td>
             <td>${p.current_stock}</td>
             <td>${p.min_stock}</td>
-            <td>$${p.sale_price.toLocaleString()}</td>
+            <td>$${p.cost_price.toLocaleString()}</td>
         </tr>
     `).join('');
 }
 
 
         // 歷史價格
-        function updateHistorySelect() {
-            const select = document.getElementById('history-product-select');
-            if (select) {
-                select.innerHTML = '<option value="">請選擇商品</option>' + products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            }
-        }
+        // 1. 修改原本的 updateHistorySelect，讓它能支援傳入過濾後的商品
+function updateHistorySelect(filteredProducts = products) {
+    const select = document.getElementById('history-product-select');
+    if (select) {
+        select.innerHTML = '<option value="">請選擇商品</option>' + 
+            filteredProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+}
+
+// 2. 新增模糊搜尋過濾函式
+function filterHistoryProducts() {
+    const keyword = document.getElementById('history-product-search').value.toLowerCase();
+    
+    // 根據關鍵字過濾商品陣列
+    const filtered = products.filter(p => 
+        p.name.toLowerCase().includes(keyword)
+    );
+    
+    // 更新下拉選單
+    updateHistorySelect(filtered);
+    
+    // 如果過濾後只有一個商品，可以考慮自動選中（可選功能）
+    /*
+    const select = document.getElementById('history-product-select');
+    if (filtered.length === 1) {
+        select.selectedIndex = 1;
+        showPriceHistory();
+    }
+    */
+}
+
 
         async function showPriceHistory() {
     const productId = document.getElementById('history-product-select').value;
