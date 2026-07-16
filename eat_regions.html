@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美食地圖 - 地區管理</title>
+    <title>我的美食地圖 - 地區管理</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
     <nav class="bg-blue-600 p-4 text-white shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
+            <h1 class="text-2xl font-bold">我的美食地圖 🍜</h1>
             <div class="space-x-4">
                 <a href="eat_index.html" class="hover:underline">首頁</a>
                 <a href="eat_categories.html" class="hover:underline">分類管理</a>
@@ -26,7 +26,16 @@
             <h2 class="text-xl font-semibold mb-4">新增/編輯美食地區</h2>
             <div class="flex gap-4 mb-6">
                 <input type="hidden" id="regionId">
-                <input type="text" id="regionName" placeholder="例如：漢神巨蛋、鼓山區" class="border p-2 rounded flex-grow">
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">地區名稱</label>
+                    <input type="text" id="regionName" placeholder="例如：漢神巨蛋、鼓山區" class="border p-2 rounded w-full">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">排序 (數字越小越前面)</label>
+                    <input type="number" id="regionSortOrder" value="0" class="border p-2 rounded w-full">
+                </div>
+
                 <button id="saveBtn" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">儲存</button>
                 <button id="cancelBtn" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">取消</button>
             </div>
@@ -51,14 +60,15 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function fetchRegions() {
-            const { data, error } = await supabaseClient.from('eat_regions').select('*').order('name');
+            const { data, error } = await supabaseClient.from('eat_regions').select('*').order('sort_order').order('name');
             if (error) return alert(error.message);
             const tbody = document.getElementById('regionTable');
             tbody.innerHTML = data.map(reg => `
                 <tr>
                     <td class="border p-2">${reg.name}</td>
+                    <td class="border p-2 text-center">${reg.sort_order}</td>
                     <td class="border p-2 text-center">
-                        <button onclick="editRegion('${reg.id}', '${reg.name}')" class="text-blue-500 hover:underline mr-2">編輯</button>
+                        <button onclick="editRegion('${reg.id}', '${reg.name}', ${reg.sort_order})" class="text-blue-500 hover:underline mr-2">編輯</button>
                         <button onclick="deleteRegion('${reg.id}')" class="text-red-500 hover:underline">刪除</button>
                     </td>
                 </tr>
@@ -68,13 +78,14 @@
         async function saveRegion() {
             const id = document.getElementById('regionId').value;
             const name = document.getElementById('regionName').value;
+            const sort_order = parseInt(document.getElementById('regionSortOrder').value) || 0;
             if (!name) return alert('請輸入名稱');
 
             let result;
             if (id) {
-                result = await supabaseClient.from('eat_regions').update({ name }).eq('id', id);
+                result = await supabaseClient.from('eat_regions').update({ name, sort_order }).eq('id', id);
             } else {
-                result = await supabaseClient.from('eat_regions').insert([{ name }]);
+                result = await supabaseClient.from('eat_regions').insert([{ name, sort_order }]);
             }
 
             if (result.error) alert(result.error.message);
@@ -91,15 +102,17 @@
             else fetchRegions();
         }
 
-        function editRegion(id, name) {
+        function editRegion(id, name, sort_order) {
             document.getElementById('regionId').value = id;
             document.getElementById('regionName').value = name;
+            document.getElementById('regionSortOrder').value = sort_order;
             document.getElementById('saveBtn').innerText = '更新';
         }
 
         function resetForm() {
             document.getElementById('regionId').value = '';
             document.getElementById('regionName').value = '';
+            document.getElementById('regionSortOrder').value = 0;
             document.getElementById('saveBtn').innerText = '儲存';
         }
 
