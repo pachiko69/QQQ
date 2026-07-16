@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美食地圖 - 主儀表板</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .card { transition: transform 0.2s; }
+        .card:hover { transform: scale(1.02); }
+        .checkbox-item:hover { background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
+            <div class="space-x-4">
+                <a href="eat_index.html" class="hover:underline">首頁</a>
+                <a href="eat_categories.html" class="hover:underline">分類管理</a>
+                <a href="eat_regions.html" class="hover:underline">地區管理</a>
+                <a href="eat_establishments.html" class="hover:underline">店家管理</a>
+                <a href="eat_records.html" class="hover:underline">品嚐記錄</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-6">
+        <!-- 搜尋與篩選區 -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4">搜尋美食</h2>
+            
+            <!-- 第一排：關鍵字與地區 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">關鍵字搜尋</label>
+                    <input type="text" id="searchKeyword" placeholder="搜尋店家名稱、地址、特色..." class="border p-2 rounded w-full">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">地區篩選</label>
+                    <select id="filterRegion" class="border p-2 rounded w-full">
+                        <option value="">所有地區</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 第二排：獨立的分類篩選區 -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2 font-bold text-blue-600">美食分類篩選 (可多選)</label>
+                <div id="filterCategoryCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4 border rounded-md bg-gray-50">
+                    <!-- Checkboxes 將由 JS 動態載入 -->
+                </div>
+            </div>
+
+            <!-- 按鈕組 -->
+            <div class="flex gap-4">
+                <button onclick="fetchData()" class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-md transition duration-200">執行搜尋</button>
+                <button onclick="clearSearch()" class="bg-gray-200 text-gray-700 px-8 py-2 rounded-lg hover:bg-gray-300 font-bold transition duration-200">清空搜尋</button>
+            </div>
+        </section>
+
+        <!-- 儀表板統計 -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-2">📊 分類統計</h2>
+                <div id="categoryStats" class="grid grid-cols-2 gap-x-8 gap-y-2">
+                    <!-- 分類統計內容 -->
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-2">📍 地區統計</h2>
+                <div id="regionStats" class="grid grid-cols-2 gap-x-8 gap-y-2">
+                    <!-- 地區統計內容 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 店家列表 -->
+        <section>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">推薦店家</h2>
+                <span id="resultCount" class="text-gray-500 font-medium"></span>
+            </div>
+            <div id="establishmentList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 店家卡片 -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function init() {
+            await Promise.all([loadCategories(), loadRegions()]);
+            fetchData();
+        }
+
+        async function loadCategories() {
+            const { data } = await supabaseClient.from('eat_categories').select('*').order('sort_order').order('name');
+            const container = document.getElementById('filterCategoryCheckboxes');
+            container.innerHTML = data.map(cat => `
+                <label class="checkbox-item flex items-center space-x-2 p-2 rounded cursor-pointer transition duration-150">
+                    <input type="checkbox" name="filterCategories" value="${cat.id}" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                    <span class="text-sm text-gray-700">${cat.name}</span>
+                </label>
+            `).join('');
+            window.allCategories = data;
+        }
+
+        async function loadRegions() {
+            const { data } = await supabaseClient.from('eat_regions').select('*').order('name');
+            const select = document.getElementById('filterRegion');
+            data.forEach(reg => {
+                select.add(new Option(reg.name, reg.id));
+            });
+        }
+
+        async function fetchData() {
+            const keyword = document.getElementById('searchKeyword').value;
+            const region = document.getElementById('filterRegion').value;
+            const selectedCategoryIds = Array.from(document.querySelectorAll('input[name="filterCategories"]:checked')).map(cb => cb.value);
+
+            let query = supabaseClient.from('eat_establishments').select('*, eat_regions(name)');
+
+            if (keyword) {
+                query = query.or(`name.ilike.%${keyword}%,address.ilike.%${keyword}%,feature_recommendation.ilike.%${keyword}%`);
+            }
+            if (selectedCategoryIds.length > 0) {
+                query = query.overlaps('category_ids', selectedCategoryIds);
+            }
+            if (region) {
+                query = query.eq('region_id', region);
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            document.getElementById('resultCount').innerText = `找到 ${data.length} 家店家`;
+            renderList(data);
+            updateStats(data);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchKeyword').value = '';
+            document.getElementById('filterRegion').value = '';
+            document.querySelectorAll('input[name="filterCategories"]').forEach(cb => cb.checked = false);
+            fetchData();
+        }
+
+        function renderList(data) {
+            const container = document.getElementById('establishmentList');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500 bg-white rounded-lg shadow-inner">找不到符合條件的店家 🍜</div>';
+                return;
+            }
+            container.innerHTML = data.map(item => `
+                <div class="card bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full">
+                    <div class="relative">
+                        <img src="${item.image_urls[0] || 'https://placehold.co/400x200?text=No+Image'}" class="w-full h-48 object-cover">
+                        <div class="absolute top-2 right-2 flex flex-wrap gap-1 justify-end">
+                            ${(item.category_ids || []).map(id => {
+                                const cat = window.allCategories.find(c => c.id === id);
+                                return cat ? `<span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full shadow-sm">${cat.name}</span>` : '';
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div class="p-4 flex-grow">
+                        <h3 class="text-xl font-bold mb-2 text-gray-800">${item.name}</h3>
+                        <p class="text-sm text-gray-600 mb-2 flex items-center">
+                            <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+                            ${item.eat_regions?.name || '未分類'}
+                        </p>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">${item.address || '暫無地址'}</p>
+                        <div class="flex justify-between items-center pt-4 border-t">
+                            <span class="text-blue-600 font-bold text-sm">${item.phone || '無電話'}</span>
+                            <a href="eat_establishment_detail.html?id=${item.id}" class="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-100 transition">詳情</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats(data) {
+            const catCounts = {};
+            const regCounts = {};
+            
+            data.forEach(item => {
+                if (item.category_ids && item.category_ids.length > 0) {
+                    item.category_ids.forEach(catId => {
+                        const catName = window.allCategories.find(cat => cat.id === catId)?.name || '未知分類';
+                        catCounts[catName] = (catCounts[catName] || 0) + 1;
+                    });
+                } else {
+                    catCounts['未分類'] = (catCounts['未分類'] || 0) + 1;
+                }
+                const reg = item.eat_regions?.name || '未分類';
+                regCounts[reg] = (regCounts[reg] || 0) + 1;
+            });
+
+            document.getElementById('categoryStats').innerHTML = Object.entries(catCounts).length > 0 ? 
+                Object.entries(catCounts).map(([name, count]) => `
+                    <div class="flex justify-between border-b border-gray-50 py-1 px-2 hover:bg-gray-50">
+                        <span class="text-gray-600 text-sm">${name}</span>
+                        <span class="font-bold text-blue-600 text-sm">${count}</span>
+                    </div>
+                `).join('') : '<div class="col-span-2 text-gray-400 text-sm">暫無資料</div>';
+
+            document.getElementById('regionStats').innerHTML = Object.entries(regCounts).length > 0 ?
+                Object.entries(regCounts).map(([name, count]) => `
+                    <div class="flex justify-between border-b border-gray-50 py-1 px-2 hover:bg-gray-50">
+                        <span class="text-gray-600 text-sm">${name}</span>
+                        <span class="font-bold text-green-600 text-sm">${count}</span>
+                    </div>
+                `).join('') : '<div class="col-span-2 text-gray-400 text-sm">暫無資料</div>';
+        }
+
+        init();
+    </script>
+</body>
+</html>

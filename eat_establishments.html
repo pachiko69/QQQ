@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美食地圖 - 店家管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
+            <div class="space-x-4">
+                <a href="eat_index.html" class="hover:underline">首頁</a>
+                <a href="eat_categories.html" class="hover:underline">分類管理</a>
+                <a href="eat_regions.html" class="hover:underline">地區管理</a>
+                <a href="eat_establishments.html" class="underline font-bold">店家管理</a>
+                <a href="eat_records.html" class="hover:underline">品嚐記錄</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-6">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4" id="formTitle">新增店家</h2>
+            <form id="establishmentForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="estId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">店家名稱 *</label>
+                    <input type="text" id="name" required class="mt-1 block w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">電話</label>
+                    <input type="text" id="phone" class="mt-1 block w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">美食地區</label>
+                    <select id="region_id" class="mt-1 block w-full border rounded-md p-2"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">美食分類 (可多選)</label>
+                    <div id="category_checkboxes" class="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto bg-gray-50">
+                        <!-- Checkboxes 將由 JS 動態載入 -->
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">地址</label>
+                    <input type="text" id="address" class="mt-1 block w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">營業時間</label>
+                    <input type="text" id="opening_hours" class="mt-1 block w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">店家網址</label>
+                    <input type="url" id="website_url" class="mt-1 block w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">點菜單網址</label>
+                    <input type="url" id="menu_url" class="mt-1 block w-full border rounded-md p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">菜單圖片 (1-10張, 輸入URL，以逗號分隔)</label>
+                    <textarea id="image_urls" rows="2" class="mt-1 block w-full border rounded-md p-2" placeholder="https://image1.jpg, https://image2.jpg"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">特色推薦</label>
+                    <textarea id="feature_recommendation" rows="2" class="mt-1 block w-full border rounded-md p-2"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">備註</label>
+                    <textarea id="notes" rows="2" class="mt-1 block w-full border rounded-md p-2"></textarea>
+                </div>
+                <div class="md:col-span-2 flex gap-4">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">儲存店家</button>
+                    <button type="button" onclick="resetForm()" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">重置</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-4">店家列表</h2>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border p-2 text-left">名稱</th>
+                        <th class="border p-2 text-left">地區</th>
+                        <th class="border p-2 text-left">分類</th>
+                        <th class="border p-2 text-left">電話</th>
+                        <th class="border p-2 text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="estTableBody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function init() {
+            await Promise.all([loadOptions('eat_regions', 'region_id'), loadOptions('eat_categories', 'category_ids')]);
+            fetchEstablishments();
+        }
+
+        async function loadOptions(table, elementId) {
+            const { data } = await supabaseClient.from(table).select('*').order(table === 'eat_categories' ? 'sort_order' : 'name');
+            if (table === 'eat_categories') allCategories = data;
+            if (elementId === 'category_ids') {
+                const container = document.getElementById('category_checkboxes');
+                container.innerHTML = data.map(cat => `
+                    <label class="flex items-center space-x-2 p-1 hover:bg-gray-100 rounded cursor-pointer">
+                        <input type="checkbox" name="categories" value="${cat.id}" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-700">${cat.name}</span>
+                    </label>
+                `).join('');
+            } else {
+                const select = document.getElementById(elementId);
+                select.innerHTML = '<option value="">請選擇</option>';
+                data.forEach(item => {
+                    select.add(new Option(item.name, item.id));
+                });
+            }
+        }
+
+        let allCategories = [];
+        async function fetchEstablishments() {
+            const { data, error } = await supabaseClient.from('eat_establishments').select('*, eat_regions(name)').order('created_at', { ascending: false });
+            if (error) return alert(error.message);
+            const tbody = document.getElementById('estTableBody');
+            tbody.innerHTML = data.map(item => {
+                const categoryNames = (item.category_ids || []).map(id => {
+                    const cat = allCategories.find(c => c.id === id);
+                    return cat ? cat.name : '';
+                }).filter(name => name).join(', ') || '-';
+
+                return `
+                <tr>
+                    <td class="border p-2 font-semibold">${item.name}</td>
+                    <td class="border p-2">${item.eat_regions?.name || '-'}</td>
+                    <td class="border p-2">${categoryNames}</td>
+                    <td class="border p-2">${item.phone || '-'}</td>
+                    <td class="border p-2 text-center">
+                        <button onclick="editEst('${item.id}')" class="text-blue-500 hover:underline mr-2">編輯</button>
+                        <button onclick="deleteEst('${item.id}')" class="text-red-500 hover:underline">刪除</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('establishmentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('estId').value;
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                region_id: document.getElementById('region_id').value || null,
+                category_ids: Array.from(document.querySelectorAll('input[name="categories"]:checked')).map(cb => cb.value),
+                address: document.getElementById('address').value,
+                opening_hours: document.getElementById('opening_hours').value,
+                website_url: document.getElementById('website_url').value,
+                menu_url: document.getElementById('menu_url').value,
+                image_urls: document.getElementById('image_urls').value.split(',').map(s => s.trim()).filter(s => s),
+                feature_recommendation: document.getElementById('feature_recommendation').value,
+                notes: document.getElementById('notes').value
+            };
+
+            let result;
+            if (id) {
+                result = await supabaseClient.from('eat_establishments').update(formData).eq('id', id);
+            } else {
+                result = await supabaseClient.from('eat_establishments').insert([formData]);
+            }
+
+            if (result.error) alert(result.error.message);
+            else {
+                alert('儲存成功！');
+                resetForm();
+                fetchEstablishments();
+            }
+        };
+
+        async function editEst(id) {
+            const { data } = await supabaseClient.from('eat_establishments').select('*').eq('id', id).single();
+            if (data) {
+                document.getElementById('estId').value = data.id;
+                document.getElementById('name').value = data.name;
+                document.getElementById('phone').value = data.phone;
+                document.getElementById('region_id').value = data.region_id;
+                // 設置多選分類
+                const selectedCategoryIds = data.category_ids || [];
+                document.querySelectorAll('input[name="categories"]').forEach(cb => {
+                    cb.checked = selectedCategoryIds.includes(cb.value);
+                });
+                document.getElementById('address').value = data.address;
+                document.getElementById('opening_hours').value = data.opening_hours;
+                document.getElementById('website_url').value = data.website_url;
+                document.getElementById('menu_url').value = data.menu_url;
+                document.getElementById('image_urls').value = (data.image_urls || []).join(', ');
+                document.getElementById('feature_recommendation').value = data.feature_recommendation;
+                document.getElementById('notes').value = data.notes;
+                document.getElementById('formTitle').innerText = '編輯店家 - ' + data.name;
+                window.scrollTo(0, 0);
+            }
+        }
+
+        async function deleteEst(id) {
+            if (!confirm('確定要刪除此店家及其所有品嚐記錄嗎？')) return;
+            const { error } = await supabaseClient.from('eat_establishments').delete().eq('id', id);
+            if (error) alert(error.message);
+            else fetchEstablishments();
+        }
+
+        function resetForm() {
+            document.getElementById('establishmentForm').reset();
+            document.getElementById('estId').value = '';
+            document.getElementById('formTitle').innerText = '新增店家';
+        }
+
+        init();
+    </script>
+</body>
+</html>

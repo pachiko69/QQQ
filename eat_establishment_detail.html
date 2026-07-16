@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>店家詳情 - 美食地圖</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .menu-image { transition: transform 0.3s; }
+        .menu-image:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
+            <div class="space-x-4">
+                <a href="eat_index.html" class="hover:underline">首頁</a>
+                <a href="eat_categories.html" class="hover:underline">分類管理</a>
+                <a href="eat_regions.html" class="hover:underline">地區管理</a>
+                <a href="eat_establishments.html" class="hover:underline">店家管理</a>
+                <a href="eat_records.html" class="hover:underline">品嚐記錄</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-6 max-w-5xl">
+        <button onclick="history.back()" class="mb-6 flex items-center text-blue-600 hover:text-blue-800 font-bold transition">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            返回列表
+        </button>
+
+        <div id="loading" class="text-center py-20 text-gray-500">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            正在載入店家資料...
+        </div>
+
+        <div id="content" class="hidden">
+            <!-- 店家主體資訊 -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="md:flex">
+                    <div class="md:w-1/3 bg-gray-200">
+                        <img id="mainImage" src="" alt="店家圖片" class="w-full h-full object-cover min-h-[300px]">
+                    </div>
+                    <div class="md:w-2/3 p-8">
+                        <div class="flex flex-wrap gap-2 mb-4" id="categoryTags"></div>
+                        <h1 id="estName" class="text-4xl font-extrabold text-gray-900 mb-2"></h1>
+                        <p id="estRegion" class="text-lg text-blue-600 font-semibold mb-6 flex items-center">
+                            <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+                            <span></span>
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-gray-700">
+                            <div class="flex items-start">
+                                <span class="font-bold w-24 flex-shrink-0">📍 地址：</span>
+                                <span id="estAddress"></span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold w-24 flex-shrink-0">📞 電話：</span>
+                                <span id="estPhone"></span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold w-24 flex-shrink-0">⏰ 營業時間：</span>
+                                <span id="estHours"></span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold w-24 flex-shrink-0">🔗 官方網址：</span>
+                                <a id="estWebsite" href="#" target="_blank" class="text-blue-600 hover:underline break-all">點此前往</a>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold w-24 flex-shrink-0">📑 點菜單：</span>
+                                <a id="estMenuLink" href="#" target="_blank" class="text-blue-600 hover:underline break-all">點此前往</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 特色推薦與備註 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-yellow-400">
+                    <h2 class="text-xl font-bold mb-4 flex items-center text-yellow-700">
+                        <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        特色推薦
+                    </h2>
+                    <p id="estRecommendation" class="text-gray-700 whitespace-pre-wrap"></p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-gray-400">
+                    <h2 class="text-xl font-bold mb-4 flex items-center text-gray-700">
+                        <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                        店家備註
+                    </h2>
+                    <p id="estNotes" class="text-gray-700 whitespace-pre-wrap"></p>
+                </div>
+            </div>
+
+            <!-- 菜單圖片輪播/網格 -->
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <h2 class="text-xl font-bold mb-6 border-b pb-2">🖼️ 菜單圖片</h2>
+                <div id="menuImages" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <!-- 圖片內容 -->
+                </div>
+            </div>
+
+            <!-- 品嚐記錄 -->
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <div class="flex justify-between items-center mb-6 border-b pb-2">
+                    <h2 class="text-xl font-bold">😋 品嚐記錄</h2>
+                    <a href="eat_records.html" class="text-sm text-blue-600 hover:underline font-bold">新增記錄 +</a>
+                </div>
+                <div id="tastingRecords" class="space-y-4">
+                    <!-- 記錄內容 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const estId = urlParams.get('id');
+
+        async function init() {
+            if (!estId) {
+                alert('未提供店家 ID');
+                window.location.href = 'eat_index.html';
+                return;
+            }
+
+            try {
+                const [estResult, catResult] = await Promise.all([
+                    supabaseClient.from('eat_establishments').select('*, eat_regions(name)').eq('id', estId).single(),
+                    supabaseClient.from('eat_categories').select('*').order('sort_order').order('name')
+                ]);
+
+                if (estResult.error) throw estResult.error;
+                
+                const establishment = estResult.data;
+                const categories = catResult.data;
+
+                // 渲染店家資訊
+                document.getElementById('estName').innerText = establishment.name;
+                document.getElementById('estRegion').querySelector('span').innerText = establishment.eat_regions?.name || '未設定地區';
+                document.getElementById('estAddress').innerText = establishment.address || '暫無資料';
+                document.getElementById('estPhone').innerText = establishment.phone || '暫無資料';
+                document.getElementById('estHours').innerText = establishment.opening_hours || '暫無資料';
+                document.getElementById('estRecommendation').innerText = establishment.feature_recommendation || '暫無推薦內容';
+                document.getElementById('estNotes').innerText = establishment.notes || '暫無備註';
+                
+                if (establishment.website_url) {
+                    document.getElementById('estWebsite').href = establishment.website_url;
+                } else {
+                    document.getElementById('estWebsite').innerText = '暫無連結';
+                    document.getElementById('estWebsite').removeAttribute('href');
+                }
+
+                if (establishment.menu_url) {
+                    document.getElementById('estMenuLink').href = establishment.menu_url;
+                } else {
+                    document.getElementById('estMenuLink').innerText = '暫無連結';
+                    document.getElementById('estMenuLink').removeAttribute('href');
+                }
+
+                // 渲染分類標籤
+                const categoryTags = document.getElementById('categoryTags');
+                if (establishment.category_ids && establishment.category_ids.length > 0) {
+                    categoryTags.innerHTML = establishment.category_ids.map(id => {
+                        const cat = categories.find(c => c.id === id);
+                        return cat ? `<span class="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-bold">${cat.name}</span>` : '';
+                    }).join('');
+                } else {
+                    categoryTags.innerHTML = '<span class="text-gray-400 text-sm italic">未設定分類</span>';
+                }
+
+                // 渲染圖片
+                const images = establishment.image_urls || [];
+                document.getElementById('mainImage').src = images[0] || 'https://placehold.co/600x400?text=No+Image';
+                
+                const imageContainer = document.getElementById('menuImages');
+                if (images.length > 0) {
+                    imageContainer.innerHTML = images.map(url => `
+                        <a href="${url}" target="_blank" class="block overflow-hidden rounded-lg shadow-sm border border-gray-100">
+                            <img src="${url}" class="menu-image w-full h-32 object-cover" onerror="this.src='https://placehold.co/200x200?text=Error'">
+                        </a>
+                    `).join('');
+                } else {
+                    imageContainer.innerHTML = '<p class="col-span-full text-gray-400 italic">暫無圖片</p>';
+                }
+
+                // 載入品嚐記錄
+                await loadTastingRecords();
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                alert('載入資料失敗：' + error.message);
+            }
+        }
+
+        async function loadTastingRecords() {
+            const { data, error } = await supabaseClient.from('eat_tasting_records')
+                .select('*')
+                .eq('establishment_id', estId)
+                .order('tasting_date', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            const container = document.getElementById('tastingRecords');
+            if (data.length > 0) {
+                container.innerHTML = data.map(record => `
+                    <div class="border rounded-lg p-4 bg-gray-50 hover:bg-white transition duration-200">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="text-sm font-bold text-gray-500">${record.tasting_date}</span>
+                                <div class="text-yellow-500 text-lg mt-1">${'⭐'.repeat(record.overall_rating)}</div>
+                            </div>
+                            <span class="text-xl font-bold text-blue-600">$${record.amount_spent}</span>
+                        </div>
+                        <div class="text-gray-800 font-bold mb-2">點購菜品：${record.dishes_ordered || '未記錄'}</div>
+                        <div class="text-gray-600 text-sm italic">${record.notes ? '💬 ' + record.notes : ''}</div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-gray-400 italic py-4">尚無品嚐記錄，快去吃吃看吧！</p>';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
