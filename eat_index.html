@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的美食地圖 - 主儀表板</title>
+    <title>美食地圖 - 主儀表板</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
@@ -15,7 +15,7 @@
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <nav class="bg-blue-600 p-4 text-white shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">我的美食地圖 🍜</h1>
+            <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
             <div class="space-x-4">
                 <a href="eat_index.html" class="hover:underline">首頁</a>
                 <a href="eat_categories.html" class="hover:underline">分類管理</a>
@@ -35,29 +35,31 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">關鍵字搜尋</label>
-                    <input type="text" id="searchKeyword" placeholder="搜尋店家名稱、地址、特色..." class="border p-2 rounded w-full">
+                    <input type="text" id="searchKeyword" placeholder="搜尋店家名稱、地址、特色、備註、菜系" class="border p-2 rounded w-full">
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">地區篩選</label>
                     <select id="filterRegion" class="border p-2 rounded w-full">
                         <option value="">所有地區</option>
                     </select>
                 </div>
+<!-- 按鈕組 -->
+            <div class="flex gap-4">
+                <button onclick="fetchData()" class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-md transition duration-200">執行搜尋</button>
+                <button onclick="clearSearch()" class="bg-gray-200 text-gray-700 px-8 py-2 rounded-lg hover:bg-gray-300 font-bold transition duration-200">清空搜尋</button>
+            </div>
             </div>
 
             <!-- 第二排：獨立的分類篩選區 -->
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2 font-bold text-blue-600">美食分類篩選 (可多選)</label>
-                <div id="filterCategoryCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4 border rounded-md bg-gray-50">
+                <div id="filterCategoryCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-1 p-10 border rounded-md bg-blue-100">
                     <!-- Checkboxes 將由 JS 動態載入 -->
                 </div>
             </div>
 
-            <!-- 按鈕組 -->
-            <div class="flex gap-4">
-                <button onclick="fetchData()" class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-md transition duration-200">執行搜尋</button>
-                <button onclick="clearSearch()" class="bg-gray-200 text-gray-700 px-8 py-2 rounded-lg hover:bg-gray-300 font-bold transition duration-200">清空搜尋</button>
-            </div>
+            
         </section>
 
         <!-- 儀表板統計 -->
@@ -111,7 +113,7 @@
         }
 
         async function loadRegions() {
-            const { data } = await supabaseClient.from('eat_regions').select('*').order('name');
+            const { data } = await supabaseClient.from('eat_regions').select('*').order('sort_order').order('name');
             const select = document.getElementById('filterRegion');
             data.forEach(reg => {
                 select.add(new Option(reg.name, reg.id));
@@ -126,7 +128,7 @@
             let query = supabaseClient.from('eat_establishments').select('*, eat_regions(name)');
 
             if (keyword) {
-                query = query.or(`name.ilike.%${keyword}%,address.ilike.%${keyword}%,feature_recommendation.ilike.%${keyword}%`);
+                query = query.or(`name.ilike.%${keyword}%,address.ilike.%${keyword}%,feature_recommendation.ilike.%${keyword}%,notes.ilike.%${keyword}%`);
             }
             if (selectedCategoryIds.length > 0) {
                 query = query.overlaps('category_ids', selectedCategoryIds);

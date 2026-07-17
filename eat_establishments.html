@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的美食地圖 - 店家管理</title>
+    <title>美食地圖 - 店家管理</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
     <nav class="bg-blue-600 p-4 text-white shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">我的美食地圖 🍜</h1>
+            <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
             <div class="space-x-4">
                 <a href="eat_index.html" class="hover:underline">首頁</a>
                 <a href="eat_categories.html" class="hover:underline">分類管理</a>
@@ -38,10 +38,11 @@
                     <label class="block text-sm font-medium text-gray-700">美食地區</label>
                     <select id="region_id" class="mt-1 block w-full border rounded-md p-2"></select>
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">美食分類 (可多選)</label>
-                    <div id="category_checkboxes" class="grid grid-cols-2 md:grid-cols-5 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto bg-gray-50">
-                        <!-- Checkboxes 將由 JS 動態載入 -- 上面的md:grid-cols-5 5=5列的意思 -->
+                    <div id="category_checkboxes" class="grid grid-cols-2 md:grid-cols-6 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto bg-blue-100">
+                        <!-- Checkboxes 將由 JS 動態載入 -->
                     </div>
                 </div>
                 <div class="md:col-span-2">
@@ -57,7 +58,7 @@
                     <input type="url" id="website_url" class="mt-1 block w-full border rounded-md p-2">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">菜單網址</label>
+                    <label class="block text-sm font-medium text-gray-700">點菜單網址</label>
                     <input type="url" id="menu_url" class="mt-1 block w-full border rounded-md p-2">
                 </div>
                 <div>
@@ -69,8 +70,8 @@
                     <textarea id="feature_recommendation" rows="2" class="mt-1 block w-full border rounded-md p-2"></textarea>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700">備註</label>
-                    <textarea id="notes" rows="2" class="mt-1 block w-full border rounded-md p-2"></textarea>
+                    <label class="block text-sm font-medium text-gray-700">備註或菜系</label>
+                    <textarea id="notes" rows="2" class="mt-1 block w-full border rounded-md p-2">菜系:小吃 台菜 中式 日式 川菜 客家菜 義式 韓式 泰式 越式 歐美 早午餐</textarea>
                 </div>
                 <div class="md:col-span-2 flex gap-4">
                     <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">儲存店家</button>
@@ -107,7 +108,7 @@
         }
 
         async function loadOptions(table, elementId) {
-            const { data } = await supabaseClient.from(table).select('*').order(table === 'eat_categories' ? 'sort_order' : 'name');
+            const { data } = await supabaseClient.from(table).select('*').order('sort_order').order('name');
             if (table === 'eat_categories') allCategories = data;
             if (elementId === 'category_ids') {
                 const container = document.getElementById('category_checkboxes');
