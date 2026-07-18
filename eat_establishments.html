@@ -38,17 +38,17 @@
                     <label class="block text-sm font-medium text-gray-700">美食地區</label>
                     <select id="region_id" class="mt-1 block w-full border rounded-md p-2"></select>
                 </div>
-
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">美食分類 (可多選)</label>
-                    <div id="category_checkboxes" class="grid grid-cols-2 md:grid-cols-5 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto bg-blue-100">
-                        <!-- Checkboxes 將由 JS 動態載入 -->
-                    </div>
-                </div>
-                <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">地址</label>
                     <input type="text" id="address" class="mt-1 block w-full border rounded-md p-2" value="高雄市區">
                 </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">美食分類 (可多選)</label>
+                    <div id="category_checkboxes" class="grid grid-cols-2 md:grid-cols-9 gap-2 p-3 border rounded-md max-h-48 overflow-y-auto bg-blue-100">
+                        <!-- Checkboxes 將由 JS 動態載入 -->
+                    </div>
+                </div>
+                
                 <div>
                     <label class="block text-sm font-medium text-gray-700">營業時間</label>
                     <input type="text" id="opening_hours" class="mt-1 block w-full border rounded-md p-2" value="公休日:星期一二三四五六日  : ~ :">
