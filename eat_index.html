@@ -10,6 +10,25 @@
         .card { transition: transform 0.2s; }
         .card:hover { transform: scale(1.02); }
         .checkbox-item:hover { background-color: #f3f4f6; }
+        /* 右鍵搜尋框樣式 */
+        #contextSearch {
+            position: fixed;
+            display: none;
+            z-index: 1000;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            padding: 12px;
+            width: 300px;
+            border: 1px solid #e5e7eb;
+        }
+        #contextSearch input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            outline: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -35,26 +54,24 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">關鍵字搜尋</label>
-                    <input type="text" id="searchKeyword" placeholder="搜尋店家名稱、地址、特色、備註、菜系" class="border p-2 rounded w-full">
+                    <input type="text" id="searchKeyword" placeholder="搜尋店家名稱、地址、特色..." class="border p-2 rounded w-full">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">地區篩選</label>
                     <select id="filterRegion" class="border p-2 rounded w-full">
                         <option value="">所有地區</option>
                     </select>
                 </div>
+            </div>
 <!-- 按鈕組 -->
             <div class="flex gap-4">
                 <button onclick="fetchData()" class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-md transition duration-200">執行搜尋</button>
                 <button onclick="clearSearch()" class="bg-gray-200 text-gray-700 px-8 py-2 rounded-lg hover:bg-gray-300 font-bold transition duration-200">清空搜尋</button>
             </div>
-            </div>
-
             <!-- 第二排：獨立的分類篩選區 -->
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2 font-bold text-blue-600">美食分類篩選 (可多選)</label>
-                <div id="filterCategoryCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-1 p-10 border rounded-md bg-blue-100">
+                <div id="filterCategoryCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-1 p-4 border rounded-md bg-blue-100">
                     <!-- Checkboxes 將由 JS 動態載入 -->
                 </div>
             </div>
@@ -90,6 +107,13 @@
         </section>
     </main>
 
+    <!-- 右鍵搜尋框 -->
+    <div id="contextSearch">
+        <label class="block text-xs font-bold text-blue-600 mb-2 uppercase tracking-wider">快速關鍵字模糊搜尋</label>
+        <input type="text" id="contextSearchInput" placeholder="輸入關鍵字後按 Enter...">
+        <p class="text-[10px] text-gray-400 mt-2">按 Esc 鍵或點擊空白處取消</p>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
@@ -98,6 +122,57 @@
         async function init() {
             await Promise.all([loadCategories(), loadRegions()]);
             fetchData();
+            setupContextSearch();
+        }
+
+        function setupContextSearch() {
+            const contextSearch = document.getElementById('contextSearch');
+            const contextInput = document.getElementById('contextSearchInput');
+
+            // 監聽右鍵點擊
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // 攔截預設選單
+                
+                contextSearch.style.display = 'block';
+                contextSearch.style.left = `${e.clientX}px`;
+                contextSearch.style.top = `${e.clientY}px`;
+                
+                // 確保搜尋框不會超出視窗右側或下方
+                const rect = contextSearch.getBoundingClientRect();
+                if (rect.right > window.innerWidth) {
+                    contextSearch.style.left = `${window.innerWidth - rect.width - 10}px`;
+                }
+                if (rect.bottom > window.innerHeight) {
+                    contextSearch.style.top = `${window.innerHeight - rect.height - 10}px`;
+                }
+clearSearch()
+                contextInput.value = ''; // 清空舊值
+                contextInput.focus();
+            });
+
+            // 監聽輸入框按鍵
+            contextInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const keyword = contextInput.value.trim();
+                    if (keyword) {
+                        document.getElementById('searchKeyword').value = keyword;
+                        fetchData();
+// 捲到頁面最底部
+window.scrollTo(0, document.body.scrollHeight);
+                    }
+                    contextSearch.style.display = 'none';
+                } else if (e.key === 'Escape') {
+                    contextSearch.style.display = 'none';
+                }
+
+            });
+
+            // 點擊空白處關閉
+            document.addEventListener('click', (e) => {
+                if (!contextSearch.contains(e.target)) {
+                    contextSearch.style.display = 'none';
+                }
+            });
         }
 
         async function loadCategories() {
@@ -128,7 +203,21 @@
             let query = supabaseClient.from('eat_establishments').select('*, eat_regions(name)');
 
             if (keyword) {
-                query = query.or(`name.ilike.%${keyword}%,address.ilike.%${keyword}%,feature_recommendation.ilike.%${keyword}%,notes.ilike.%${keyword}%`);
+                // 1. 找出名稱匹配關鍵字的分類 ID
+                const matchedCategoryIds = window.allCategories
+                    .filter(cat => cat.name.toLowerCase().includes(keyword.toLowerCase()))
+                    .map(cat => cat.id);
+
+                // 2. 建立基本搜尋條件 (名稱、地址、特色)
+                let orCondition = `name.ilike.%${keyword}%,address.ilike.%${keyword}%,feature_recommendation.ilike.%${keyword}%,notes.ilike.%${keyword}%`;
+                
+                // 3. 如果有關聯的分類 ID，則將這些 ID 的 overlaps 條件也加入 OR 查詢中
+                // 注意：Supabase 的 .or() 對於陣列欄位的 overlaps 語法為 `category_ids.ov.{id1,id2}`
+                if (matchedCategoryIds.length > 0) {
+                    orCondition += `,category_ids.ov.{${matchedCategoryIds.join(',')}}`;
+                }
+                
+                query = query.or(orCondition);
             }
             if (selectedCategoryIds.length > 0) {
                 query = query.overlaps('category_ids', selectedCategoryIds);
