@@ -1749,23 +1749,72 @@ function addSalesCombo(item = null) {
         }
 
         async function saveSales(event) {
-    event.preventDefault();
+    if(event?.preventDefault) event.preventDefault();
     const id = document.getElementById('sales-id').value;
-    // ... (取得表單資料的邏輯) ...
+    const customerId = document.getElementById('sales-customer').value;
+    const orderDate = document.getElementById('sales-date').value;
 
-    // --- 編輯模式：還原舊庫存 ---
+    if(!customerId) return alert('請選擇客戶');
+    if(!orderDate) return alert('請選擇訂單日期');
+
+    const isTaxIncluded = document.getElementById('sales-tax-type').value === 'true';
+    const platformFee = Number(document.getElementById('sales-platform-fee').value) || 0;
+    const shippingSelect = document.getElementById('sales-shipping');
+    const shippingFee = shippingSelect ? Number(shippingSelect.options[shippingSelect.selectedIndex].dataset.fee) || 0 : 0;
+    const shippingMethod = shippingSelect ? shippingSelect.value : '';
+    const totalAmount = Number(document.getElementById('sales-total').value) || 0;
+    const notes = document.getElementById('sales-notes').value;
+
+    const items = [];
+    document.querySelectorAll('#sales-items .order-item-row').forEach(row => {
+        if (row.classList.contains('order-item-header')) return;
+        const productSelect = row.querySelector('.sales-product-select');
+        const comboSelect = row.querySelector('.sales-combo-select');
+        const quantityInput = row.querySelector('.sales-quantity');
+        const priceInput = row.querySelector('.sales-price');
+        
+        if (!quantityInput || !priceInput) return;
+        
+        const productId = productSelect ? productSelect.value : null;
+        const comboId = comboSelect ? comboSelect.value : null;
+        const quantity = Number(quantityInput.value);
+        const unitPrice = Number(priceInput.value);
+
+        if ((productId || comboId) && quantity > 0) {
+            items.push({
+                product_id: productId || null,
+                combo_id: comboId || null,
+                quantity,
+                unit_price: unitPrice,
+                total_price: quantity * unitPrice
+            });
+        }
+    });
+
+    if (items.length === 0) { alert('請至少新增一項商品或套餐'); return; }
+
+    // 編輯還原舊庫存
     if (id) {
-        const { data: oldItems } = await supabaseClient.from('stock_sales_items').select('*').eq('sales_order_id', id);
-        for (const item of oldItems) {
-            if (item.product_id) {
-                const p = products.find(x => x.id === item.product_id);
-                if (p) await supabaseClient.from('stock_products').update({ current_stock: p.current_stock + item.quantity }).eq('id', p.id);
-            } else if (item.combo_id) {
-                const c = combos.find(x => x.id === item.combo_id);
-                if (c && c.stock_combo_items) {
-                    for (const ci of c.stock_combo_items) {
-                        const p = products.find(x => x.id === ci.product_id);
-                        if (p) await supabaseClient.from('stock_products').update({ current_stock: p.current_stock + (ci.quantity * item.quantity) }).eq('id', p.id);
+        const { data: oldItems, error: oldErr } = await supabaseClient
+            .from('stock_sales_items')
+            .select('*')
+            .eq('sales_order_id', id);
+        if(oldErr) {
+            alert('讀取舊訂單失敗：' + oldErr.message);
+            return;
+        }
+        if (oldItems) {
+            for (const item of oldItems) {
+                if (item.product_id) {
+                    const p = products.find(x => x.id === item.product_id);
+                    if (p) await supabaseClient.from('stock_products').update({ current_stock: p.current_stock + item.quantity }).eq('id', p.id);
+                } else if (item.combo_id) {
+                    const c = combos.find(x => x.id === item.combo_id);
+                    if (c && c.stock_combo_items) {
+                        for (const ci of c.stock_combo_items) {
+                            const p = products.find(x => x.id === ci.product_id);
+                            if (p) await supabaseClient.from('stock_products').update({ current_stock: p.current_stock + (ci.quantity * item.quantity) }).eq('id', p.id);
+                        }
                     }
                 }
             }
@@ -1773,18 +1822,47 @@ function addSalesCombo(item = null) {
         await supabaseClient.from('stock_sales_items').delete().eq('sales_order_id', id);
     }
 
-    // --- 儲存主檔 ---
     let result;
-    const orderData = { customer_id: customerId, order_date: orderDate, is_tax_included: isTaxIncluded, platform_fee: platformFee, shipping_fee: shippingFee, shipping_method: shippingMethod, total_amount: totalAmount, notes };
+    const orderData = { 
+        customer_id: customerId, 
+        order_date: orderDate, 
+        is_tax_included: isTaxIncluded, 
+        platform_fee: platformFee, 
+        shipping_fee: shippingFee, 
+        shipping_method: shippingMethod, 
+        total_amount: totalAmount, 
+        notes 
+    };
     
     if (id) {
         result = await supabaseClient.from('stock_sales_orders').update(orderData).eq('id', id).select();
     } else {
-        result = await supabaseClient.from('stock_sales_orders').insert([orderData]).select();
+        result = await supabaseClient.from('stock_sales_orders').insert(orderData).select();
     }
 
-    // --- 儲存新明細並扣除新庫存 (這部分邏輯與原本新增時相同) ---
-    // ... (後續 items 處理與庫存扣除邏輯) ...
+    if (result.error) { alert('儲存失敗: ' + result.error.message); return; }
+
+    const orderId = result.data[0].id;
+    const finalItems = items.map(item => ({ ...item, sales_order_id: orderId }));
+    
+    const { error: itemError } = await supabaseClient.from('stock_sales_items').insert(finalItems);
+    if (itemError) { alert('明細儲存失敗: ' + itemError.message); return; }
+
+    // 扣除新庫存
+    for (const item of finalItems) {
+        if (item.product_id) {
+            const p = products.find(x => x.id === item.product_id);
+            if (p) await supabaseClient.from('stock_products').update({ current_stock: p.current_stock - item.quantity }).eq('id', p.id);
+        } else if (item.combo_id) {
+            const c = combos.find(x => x.id === item.combo_id);
+            if (c && c.stock_combo_items) {
+                for (const ci of c.stock_combo_items) {
+                    const p = products.find(x => x.id === ci.product_id);
+                    if (p) await supabaseClient.from('stock_products').update({ current_stock: p.current_stock - (ci.quantity * item.quantity) }).eq('id', p.id);
+                }
+            }
+        }
+    }
     
     closeModal('sales-modal');
     await loadProducts();
