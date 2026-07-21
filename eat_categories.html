@@ -7,41 +7,46 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-blue-600 p-4 text-white shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg relative z-50">
+        <div class="container mx-auto flex flex-wrap justify-between items-center">
             <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
-            <div class="space-x-4">
-                <a href="eat_index.html" class="hover:underline">首頁</a>
-                <a href="eat_categories.html" class="bg-blue-500 text-white-600 px-2 py-1 rounded hover:underline">分類管理</a>
-                <a href="eat_regions.html" class="hover:underline">地區管理</a>
-                <a href="eat_establishments.html" class="hover:underline">店家管理</a>
-                <a href="eat_records.html" class="hover:underline">品嚐記錄</a>
-                <a href="eat_backup.html" class="hover:underline">資料備份</a>
+            <button id="menu-toggle" class="block md:hidden focus:outline-none hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+            <div id="menu-links" class="hidden w-full md:flex md:w-auto md:space-x-4 mt-4 md:mt-0 flex-col md:flex-row space-y-2 md:space-y-0">
+                <a href="eat_index.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">首頁</a>
+                <a href="eat_categories.html" class="block px-3 py-2 md:py-1 rounded bg-blue-500 font-bold">分類管理</a>
+                <a href="eat_regions.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">地區管理</a>
+                <a href="eat_establishments.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">店家管理</a>
+                <a href="eat_records.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">品嚐記錄</a>
+                <a href="eat_backup.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">資料備份</a>
             </div>
         </div>
     </nav>
 
     <main class="container mx-auto p-6">
-        <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto mb-6">
             <h2 class="text-xl font-semibold mb-4">新增/編輯美食分類</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input type="hidden" id="categoryId">
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">分類名稱</label>
                     <input type="text" id="categoryName" placeholder="例如：韓式、日式" class="border p-2 rounded w-full">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">排序 (數字越小越前面)</label>
+                    <label class="block text-sm font-medium text-gray-700">排序</label>
                     <input type="number" id="categorySortOrder" value="0" class="border p-2 rounded w-full">
                 </div>
-                <div class="md:col-span-3 flex gap-4">
-                    <button id="saveBtn" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">儲存</button>
-                    <button id="cancelBtn" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">取消</button>
+                <div class="md:col-span-3 flex flex-col sm:flex-row gap-4 mt-2">
+                    <button id="saveBtn" class="w-full sm:w-auto bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 font-bold">儲存</button>
+                    <button id="cancelBtn" class="w-full sm:w-auto bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 font-bold">取消</button>
                 </div>
             </div>
+        </div>
 
-            <table class="w-full border-collapse">
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto overflow-x-auto w-full">
+            <table class="w-full border-collapse whitespace-nowrap min-w-max">
                 <thead>
                     <tr class="bg-gray-200">
                         <th class="border p-2 text-left">分類名稱</th>
@@ -49,14 +54,16 @@
                         <th class="border p-2 text-center w-32">操作</th>
                     </tr>
                 </thead>
-                <tbody id="categoryTable">
-                    <!-- 分類列表 -->
-                </tbody>
+                <tbody id="categoryTable"></tbody>
             </table>
         </div>
     </main>
 
     <script>
+        document.getElementById('menu-toggle')?.addEventListener('click', function() {
+            document.getElementById('menu-links').classList.toggle('hidden');
+        });
+
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -76,50 +83,31 @@
                 </tr>
             `).join('');
         }
-
         async function saveCategory() {
             const id = document.getElementById('categoryId').value;
             const name = document.getElementById('categoryName').value;
             const sort_order = parseInt(document.getElementById('categorySortOrder').value) || 0;
             if (!name) return alert('請輸入名稱');
-
-            let result;
-            if (id) {
-                result = await supabaseClient.from('eat_categories').update({ name, sort_order }).eq('id', id);
-            } else {
-                result = await supabaseClient.from('eat_categories').insert([{ name, sort_order }]);
-            }
-
+            let result = id ? await supabaseClient.from('eat_categories').update({ name, sort_order }).eq('id', id) : await supabaseClient.from('eat_categories').insert([{ name, sort_order }]);
             if (result.error) alert(result.error.message);
-            else {
-                resetForm();
-                fetchCategories();
-            }
+            else { resetForm(); fetchCategories(); }
         }
-
         async function deleteCategory(id) {
-            if (!confirm('確定要刪除嗎？相關店家的分類將被清除。')) return;
+            if (!confirm('確定要刪除嗎？')) return;
             const { error } = await supabaseClient.from('eat_categories').delete().eq('id', id);
-            if (error) alert(error.message);
-            else fetchCategories();
+            if (error) alert(error.message); else fetchCategories();
         }
-
         function editCategory(id, name, sort_order) {
             document.getElementById('categoryId').value = id;
             document.getElementById('categoryName').value = name;
             document.getElementById('categorySortOrder').value = sort_order;
             document.getElementById('saveBtn').innerText = '更新';
         }
-
         function resetForm() {
-            document.getElementById('categoryId').value = '';
-            document.getElementById('categoryName').value = '';
-            document.getElementById('categorySortOrder').value = 0;
-            document.getElementById('saveBtn').innerText = '儲存';
+            document.getElementById('categoryId').value = ''; document.getElementById('categoryName').value = '';
+            document.getElementById('categorySortOrder').value = 0; document.getElementById('saveBtn').innerText = '儲存';
         }
-
         fetchCategories();
-
         document.getElementById("saveBtn").addEventListener("click", saveCategory);
         document.getElementById("cancelBtn").addEventListener("click", resetForm);
     </script>

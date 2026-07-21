@@ -7,41 +7,46 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-blue-600 p-4 text-white shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg relative z-50">
+        <div class="container mx-auto flex flex-wrap justify-between items-center">
             <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
-            <div class="space-x-4">
-                <a href="eat_index.html" class="hover:underline">首頁</a>
-                <a href="eat_categories.html" class="hover:underline">分類管理</a>
-                <a href="eat_regions.html" class="bg-blue-500 text-white-600 px-2 py-1 rounded hover:underline">地區管理</a>
-                <a href="eat_establishments.html" class="hover:underline">店家管理</a>
-                <a href="eat_records.html" class="hover:underline">品嚐記錄</a>
-                <a href="eat_backup.html" class="hover:underline">資料備份</a>
+            <button id="menu-toggle" class="block md:hidden focus:outline-none hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+            <div id="menu-links" class="hidden w-full md:flex md:w-auto md:space-x-4 mt-4 md:mt-0 flex-col md:flex-row space-y-2 md:space-y-0">
+                <a href="eat_index.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">首頁</a>
+                <a href="eat_categories.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">分類管理</a>
+                <a href="eat_regions.html" class="block px-3 py-2 md:py-1 rounded bg-blue-500 font-bold">地區管理</a>
+                <a href="eat_establishments.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">店家管理</a>
+                <a href="eat_records.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">品嚐記錄</a>
+                <a href="eat_backup.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">資料備份</a>
             </div>
         </div>
     </nav>
 
     <main class="container mx-auto p-6">
-        <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto mb-6">
             <h2 class="text-xl font-semibold mb-4">新增/編輯美食地區</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input type="hidden" id="regionId">
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">地區名稱</label>
-                    <input type="text" id="regionName" placeholder="例如：漢神巨蛋、鼓山區" class="border p-2 rounded w-full">
+                    <input type="text" id="regionName" placeholder="例如：漢神巨蛋" class="border p-2 rounded w-full">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">排序 (數字越小越前面)</label>
+                    <label class="block text-sm font-medium text-gray-700">排序</label>
                     <input type="number" id="regionSortOrder" value="0" class="border p-2 rounded w-full">
                 </div>
-                <div class="md:col-span-3 flex gap-4">
-                    <button id="saveBtn" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">儲存</button>
-                    <button id="cancelBtn" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">取消</button>
+                <div class="md:col-span-3 flex flex-col sm:flex-row gap-4 mt-2">
+                    <button id="saveBtn" class="w-full sm:w-auto bg-green-500 text-white px-6 py-3 rounded hover:bg-green-600 font-bold shadow-sm">儲存</button>
+                    <button id="cancelBtn" class="w-full sm:w-auto bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 font-bold shadow-sm">取消</button>
                 </div>
             </div>
+        </div>
 
-            <table class="w-full border-collapse">
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto overflow-x-auto w-full">
+            <table class="w-full border-collapse whitespace-nowrap min-w-max">
                 <thead>
                     <tr class="bg-gray-200">
                         <th class="border p-2 text-left">地區名稱</th>
@@ -49,77 +54,33 @@
                         <th class="border p-2 text-center w-32">操作</th>
                     </tr>
                 </thead>
-                <tbody id="regionTable">
-                    <!-- 地區列表 -->
-                </tbody>
+                <tbody id="regionTable"></tbody>
             </table>
         </div>
     </main>
 
     <script>
+        document.getElementById('menu-toggle')?.addEventListener('click', function() { document.getElementById('menu-links').classList.toggle('hidden'); });
+
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function fetchRegions() {
-            const { data, error } = await supabaseClient.from('eat_regions').select('*').order('sort_order').order('name');
-            if (error) return alert(error.message);
-            const tbody = document.getElementById('regionTable');
-            tbody.innerHTML = data.map(reg => `
-                <tr>
-                    <td class="border p-2">${reg.name}</td>
-                    <td class="border p-2 text-center">${reg.sort_order}</td>
-                    <td class="border p-2 text-center">
-                        <button onclick="editRegion('${reg.id}', '${reg.name}', ${reg.sort_order})" class="text-blue-500 hover:underline mr-2">編輯</button>
-                        <button onclick="deleteRegion('${reg.id}')" class="text-red-500 hover:underline">刪除</button>
-                    </td>
-                </tr>
-            `).join('');
+            const { data } = await supabaseClient.from('eat_regions').select('*').order('sort_order').order('name');
+            document.getElementById('regionTable').innerHTML = data.map(reg => `<tr><td class="border p-2">${reg.name}</td><td class="border p-2 text-center">${reg.sort_order}</td><td class="border p-2 text-center"><button onclick="editRegion('${reg.id}', '${reg.name}', ${reg.sort_order})" class="text-blue-500 mr-2">編輯</button><button onclick="deleteRegion('${reg.id}')" class="text-red-500">刪除</button></td></tr>`).join('');
         }
-
         async function saveRegion() {
-            const id = document.getElementById('regionId').value;
-            const name = document.getElementById('regionName').value;
-            const sort_order = parseInt(document.getElementById('regionSortOrder').value) || 0;
+            const id = document.getElementById('regionId').value, name = document.getElementById('regionName').value, sort_order = parseInt(document.getElementById('regionSortOrder').value) || 0;
             if (!name) return alert('請輸入名稱');
-
-            let result;
-            if (id) {
-                result = await supabaseClient.from('eat_regions').update({ name, sort_order }).eq('id', id);
-            } else {
-                result = await supabaseClient.from('eat_regions').insert([{ name, sort_order }]);
-            }
-
-            if (result.error) alert(result.error.message);
-            else {
-                resetForm();
-                fetchRegions();
-            }
+            let result = id ? await supabaseClient.from('eat_regions').update({ name, sort_order }).eq('id', id) : await supabaseClient.from('eat_regions').insert([{ name, sort_order }]);
+            if (result.error) alert(result.error.message); else { resetForm(); fetchRegions(); }
         }
-
-        async function deleteRegion(id) {
-            if (!confirm('確定要刪除嗎？相關店家的地區將被清除。')) return;
-            const { error } = await supabaseClient.from('eat_regions').delete().eq('id', id);
-            if (error) alert(error.message);
-            else fetchRegions();
-        }
-
-        function editRegion(id, name, sort_order) {
-            document.getElementById('regionId').value = id;
-            document.getElementById('regionName').value = name;
-            document.getElementById('regionSortOrder').value = sort_order;
-            document.getElementById('saveBtn').innerText = '更新';
-        }
-
-        function resetForm() {
-            document.getElementById('regionId').value = '';
-            document.getElementById('regionName').value = '';
-            document.getElementById('regionSortOrder').value = 0;
-            document.getElementById('saveBtn').innerText = '儲存';
-        }
-
+        async function deleteRegion(id) { if(confirm('確定刪除？')) { await supabaseClient.from('eat_regions').delete().eq('id', id); fetchRegions(); } }
+        function editRegion(id, name, sort_order) { document.getElementById('regionId').value = id; document.getElementById('regionName').value = name; document.getElementById('regionSortOrder').value = sort_order; document.getElementById('saveBtn').innerText = '更新'; }
+        function resetForm() { document.getElementById('regionId').value = ''; document.getElementById('regionName').value = ''; document.getElementById('regionSortOrder').value = 0; document.getElementById('saveBtn').innerText = '儲存'; }
+        
         fetchRegions();
-
         document.getElementById("saveBtn").addEventListener("click", saveRegion);
         document.getElementById("cancelBtn").addEventListener("click", resetForm);
     </script>

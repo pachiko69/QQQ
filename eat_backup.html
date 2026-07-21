@@ -8,187 +8,117 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <nav class="bg-blue-600 p-4 text-white shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg relative z-50">
+        <div class="container mx-auto flex flex-wrap justify-between items-center">
             <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
-            <div class="space-x-4">
-                <a href="eat_index.html" class="hover:underline">首頁</a>
-                <a href="eat_categories.html" class="hover:underline">分類管理</a>
-                <a href="eat_regions.html" class="hover:underline">地區管理</a>
-                <a href="eat_establishments.html" class="hover:underline">店家管理</a>
-                <a href="eat_records.html" class="hover:underline">品嚐記錄</a>
-                <a href="eat_backup.html" class="bg-blue-500 text-white-600 px-2 py-1 rounded hover:underline">資料備份</a>
+            <button id="menu-toggle" class="block md:hidden focus:outline-none hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+            <div id="menu-links" class="hidden w-full md:flex md:w-auto md:space-x-4 mt-4 md:mt-0 flex-col md:flex-row space-y-2 md:space-y-0">
+                <a href="eat_index.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">首頁</a>
+                <a href="eat_categories.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">分類管理</a>
+                <a href="eat_regions.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">地區管理</a>
+                <a href="eat_establishments.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">店家管理</a>
+                <a href="eat_records.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">品嚐記錄</a>
+                <a href="eat_backup.html" class="block px-3 py-2 md:py-1 rounded bg-blue-500 font-bold">資料備份</a>
             </div>
         </div>
     </nav>
 
     <main class="container mx-auto p-6 max-w-4xl">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- 匯出區 -->
             <div class="bg-white p-8 rounded-lg shadow-md">
                 <div class="flex items-center mb-6 text-blue-600">
                     <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     <h2 class="text-2xl font-bold">匯出資料</h2>
                 </div>
-                <p class="text-gray-600 mb-6">將資料庫中的所有資料（分類、地區、店家、記錄）打包下載為 JSON 檔案，作為備份使用。</p>
-                <button id="exportBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-200 flex justify-center items-center">
-                    <span>開始備份並下載</span>
-                </button>
+                <p class="text-gray-600 mb-6">將資料庫中的所有資料打包下載為 JSON 檔案。</p>
+                <button id="exportBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition duration-200">開始備份並下載</button>
                 <div id="exportStatus" class="mt-4 text-sm text-center hidden"></div>
             </div>
 
-            <!-- 匯入區 -->
             <div class="bg-white p-8 rounded-lg shadow-md border-2 border-dashed border-gray-200">
                 <div class="flex items-center mb-6 text-green-600">
                     <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                     <h2 class="text-2xl font-bold">匯入資料</h2>
                 </div>
                 <p class="text-gray-600 mb-6">選取先前備份的 JSON 檔案，將資料還原至資料庫中。<br><span class="text-red-500 font-bold">注意：匯入過程可能產生重複資料。</span></p>
-                
                 <input type="file" id="importFile" accept=".json" class="hidden">
-                <button id="importBtn" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition duration-200">
-                    選取備份檔案並匯入
-                </button>
-                
+                <button id="importBtn" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition duration-200">選取備份檔案並匯入</button>
                 <div id="importStatus" class="mt-4 text-sm hidden">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-                        <div id="importProgress" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2"><div id="importProgress" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div></div>
                     <p id="importMsg" class="text-center text-gray-600">準備中...</p>
                 </div>
             </div>
         </div>
-
-        <!-- 說明區 -->
         <div class="mt-8 bg-blue-50 p-6 rounded-lg border border-blue-200">
             <h3 class="text-lg font-bold text-blue-800 mb-2">💡 操作說明</h3>
             <ul class="list-disc list-inside text-blue-700 space-y-1 text-sm">
                 <li>匯出檔案包含所有圖片連結、評分及詳細店家資訊。</li>
-                <li>匯入時會自動略過 ID 重複的資料，但建議在清空資料庫後再進行還原。</li>
+                <li>匯入時會自動略過 ID 重複的資料，建議在清空資料庫後再還原。</li>
                 <li>若資料量較大，匯入過程請勿關閉視窗。</li>
             </ul>
         </div>
     </main>
 
     <script>
+        document.getElementById('menu-toggle')?.addEventListener('click', function() {
+            document.getElementById('menu-links').classList.toggle('hidden');
+        });
+
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 匯出邏輯
         document.getElementById('exportBtn').addEventListener('click', async () => {
             const btn = document.getElementById('exportBtn');
             const status = document.getElementById('exportStatus');
-            
             try {
-                btn.disabled = true;
-                btn.innerHTML = '讀取資料中...';
-                status.classList.remove('hidden');
-                status.innerText = '正在從 Supabase 抓取完整資料庫...';
-
+                btn.disabled = true; btn.innerHTML = '讀取資料中...';
+                status.classList.remove('hidden'); status.innerText = '正在抓取資料...';
                 const [cats, regs, ests, recs] = await Promise.all([
                     supabaseClient.from('eat_categories').select('*'),
                     supabaseClient.from('eat_regions').select('*'),
                     supabaseClient.from('eat_establishments').select('*'),
                     supabaseClient.from('eat_tasting_records').select('*')
                 ]);
-
-                const backupData = {
-                    version: "1.0",
-                    export_date: new Date().toISOString(),
-                    categories: cats.data || [],
-                    regions: regs.data || [],
-                    establishments: ests.data || [],
-                    records: recs.data || []
-                };
-
+                const backupData = { version: "1.0", export_date: new Date().toISOString(), categories: cats.data || [], regions: regs.data || [], establishments: ests.data || [], records: recs.data || [] };
                 const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `food_map_backup_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                status.innerText = '✅ 備份完成！檔案已開始下載。';
-                status.classList.add('text-green-600');
+                const a = document.createElement('a'); a.href = url; a.download = `food_map_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                status.innerText = '✅ 備份完成！'; status.classList.add('text-green-600');
             } catch (err) {
-                console.error(err);
-                status.innerText = '❌ 匯出失敗：' + err.message;
-                status.classList.add('text-red-600');
+                status.innerText = '❌ 失敗：' + err.message; status.classList.add('text-red-600');
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<span>開始備份並下載</span>';
+                btn.disabled = false; btn.innerHTML = '開始備份並下載';
             }
         });
 
-        // 匯入邏輯
-        document.getElementById('importBtn').addEventListener('click', () => {
-            document.getElementById('importFile').click();
-        });
-
+        document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
+            const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
                     const data = JSON.parse(event.target.result);
-                    if (!confirm(`確定要匯入此備份檔案嗎？\n包含：${data.categories.length} 個分類、${data.regions.length} 個地區、${data.establishments.length} 個店家、${data.records.length} 筆記錄。`)) return;
-
-                    const statusArea = document.getElementById('importStatus');
-                    const progress = document.getElementById('importProgress');
-                    const msg = document.getElementById('importMsg');
-                    
-                    statusArea.classList.remove('hidden');
+                    if (!confirm(`確定匯入？包含：${data.categories.length}分類、${data.regions.length}地區、${data.establishments.length}店家、${data.records.length}記錄。`)) return;
+                    document.getElementById('importStatus').classList.remove('hidden');
                     document.getElementById('importBtn').disabled = true;
-
-                    // 1. 匯入分類
-                    msg.innerText = '正在匯入美食分類...';
-                    if (data.categories.length > 0) {
-                        await supabaseClient.from('eat_categories').upsert(data.categories);
-                    }
-                    progress.style.width = '25%';
-
-                    // 2. 匯入地區
-                    msg.innerText = '正在匯入美食地區...';
-                    if (data.regions.length > 0) {
-                        await supabaseClient.from('eat_regions').upsert(data.regions);
-                    }
-                    progress.style.width = '50%';
-
-                    // 3. 匯入店家
-                    msg.innerText = '正在匯入美食店家...';
+                    const msg = document.getElementById('importMsg'); const progress = document.getElementById('importProgress');
+                    
+                    msg.innerText = '匯入分類...'; if (data.categories.length > 0) await supabaseClient.from('eat_categories').upsert(data.categories); progress.style.width = '25%';
+                    msg.innerText = '匯入地區...'; if (data.regions.length > 0) await supabaseClient.from('eat_regions').upsert(data.regions); progress.style.width = '50%';
+                    msg.innerText = '匯入店家...';
                     if (data.establishments.length > 0) {
-                        // 為了確保外鍵關聯正確，分批匯入
-                        for (let i = 0; i < data.establishments.length; i += 50) {
-                            const chunk = data.establishments.slice(i, i + 50);
-                            await supabaseClient.from('eat_establishments').upsert(chunk);
-                        }
-                    }
-                    progress.style.width = '75%';
-
-                    // 4. 匯入記錄
-                    msg.innerText = '正在匯入品嚐記錄...';
+                        for (let i = 0; i < data.establishments.length; i += 50) await supabaseClient.from('eat_establishments').upsert(data.establishments.slice(i, i + 50));
+                    } progress.style.width = '75%';
+                    msg.innerText = '匯入記錄...';
                     if (data.records.length > 0) {
-                        for (let i = 0; i < data.records.length; i += 50) {
-                            const chunk = data.records.slice(i, i + 50);
-                            await supabaseClient.from('eat_tasting_records').upsert(chunk);
-                        }
-                    }
-                    progress.style.width = '100%';
-                    msg.innerText = '✅ 匯入成功！資料已同步至資料庫。';
-                    msg.classList.add('text-green-600', 'font-bold');
-
-                } catch (err) {
-                    alert('匯入失敗：' + err.message);
-                    console.error(err);
-                } finally {
-                    document.getElementById('importBtn').disabled = false;
-                }
+                        for (let i = 0; i < data.records.length; i += 50) await supabaseClient.from('eat_tasting_records').upsert(data.records.slice(i, i + 50));
+                    } progress.style.width = '100%';
+                    msg.innerText = '✅ 匯入成功！'; msg.classList.add('text-green-600', 'font-bold');
+                } catch (err) { alert('匯入失敗：' + err.message); } finally { document.getElementById('importBtn').disabled = false; }
             };
             reader.readAsText(file);
         });

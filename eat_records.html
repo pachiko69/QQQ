@@ -7,17 +7,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-blue-600 p-4 text-white shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <nav class="bg-blue-600 p-4 text-white shadow-lg relative z-50">
+        <div class="container mx-auto flex flex-wrap justify-between items-center">
             <h1 class="text-2xl font-bold">美食地圖 🍜</h1>
-            <div class="space-x-4">
-                <a href="eat_index.html" class="hover:underline">首頁</a>
-                <a href="eat_categories.html" class="hover:underline">分類管理</a>
-                <a href="eat_regions.html" class="hover:underline">地區管理</a>
-                <a href="eat_establishments.html" class="hover:underline">店家管理</a>
-                <a href="eat_records.html" class="bg-blue-500 text-white-600 px-2 py-1 rounded hover:underline">品嚐記錄</a>
-                <a href="eat_backup.html" class="hover:underline">資料備份</a>
+            <button id="menu-toggle" class="block md:hidden focus:outline-none hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+            <div id="menu-links" class="hidden w-full md:flex md:w-auto md:space-x-4 mt-4 md:mt-0 flex-col md:flex-row space-y-2 md:space-y-0">
+                <a href="eat_index.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">首頁</a>
+                <a href="eat_categories.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">分類管理</a>
+                <a href="eat_regions.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">地區管理</a>
+                <a href="eat_establishments.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">店家管理</a>
+                <a href="eat_records.html" class="block px-3 py-2 md:py-1 rounded bg-blue-500 font-bold">品嚐記錄</a>
+                <a href="eat_backup.html" class="block px-3 py-2 md:py-1 rounded hover:bg-blue-700 transition">資料備份</a>
             </div>
         </div>
     </nav>
@@ -27,156 +30,57 @@
             <h2 class="text-xl font-semibold mb-4" id="formTitle">新增品嚐記錄</h2>
             <form id="recordForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" id="recordId">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">店家 *</label>
-                    <select id="establishment_id" required class="mt-1 block w-full border rounded-md p-2"></select>
+                <div><label class="block text-sm">店家 *</label><select id="establishment_id" required class="mt-1 w-full border rounded p-2"></select></div>
+                <div><label class="block text-sm">日期 *</label><input type="date" id="tasting_date" required class="mt-1 w-full border rounded p-2"></div>
+                <div><label class="block text-sm">點購菜品</label><input type="text" id="dishes_ordered" class="mt-1 w-full border rounded p-2"></div>
+                <div><label class="block text-sm">金額</label><input type="number" step="0.01" id="amount_spent" class="mt-1 w-full border rounded p-2"></div>
+                <div><label class="block text-sm">整體評分 (1-5星)</label>
+                    <select id="overall_rating" class="mt-1 w-full border rounded p-2"><option value="5">⭐⭐⭐⭐⭐ (5星)</option><option value="4">⭐⭐⭐⭐ (4星)</option><option value="3">⭐⭐⭐ (3星)</option><option value="2">⭐⭐ (2星)</option><option value="1">⭐ (1星)</option></select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">日期 *</label>
-                    <input type="date" id="tasting_date" required class="mt-1 block w-full border rounded-md p-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">點購菜品</label>
-                    <input type="text" id="dishes_ordered" class="mt-1 block w-full border rounded-md p-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">金額</label>
-                    <input type="number" step="0.01" id="amount_spent" class="mt-1 block w-full border rounded-md p-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">整體評分 (1-5星)</label>
-                    <select id="overall_rating" class="mt-1 block w-full border rounded-md p-2">
-                        <option value="5">⭐⭐⭐⭐⭐ (5星)</option>
-                        <option value="4">⭐⭐⭐⭐ (4星)</option>
-                        <option value="3">⭐⭐⭐ (3星)</option>
-                        <option value="2">⭐⭐ (2星)</option>
-                        <option value="1">⭐ (1星)</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700">備註</label>
-                    <textarea id="notes" rows="2" class="mt-1 block w-full border rounded-md p-2"></textarea>
-                </div>
-                <div class="md:col-span-2 flex gap-4">
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">儲存記錄</button>
-                    <button type="button" onclick="resetForm()" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">重置</button>
+                <div class="md:col-span-2"><label class="block text-sm">備註</label><textarea id="notes" rows="2" class="mt-1 w-full border rounded p-2"></textarea></div>
+                <div class="md:col-span-2 flex flex-col sm:flex-row gap-4 mt-2">
+                    <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 font-bold shadow-sm">儲存記錄</button>
+                    <button type="button" onclick="resetForm()" class="w-full sm:w-auto bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 font-bold shadow-sm">重置</button>
                 </div>
             </form>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+        <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto w-full">
             <h2 class="text-xl font-semibold mb-4">品嚐記錄列表</h2>
-            <table class="w-full border-collapse">
-                <thead>
-                    <tr class="bg-gray-200">
-                        <th class="border p-2 text-left">日期</th>
-                        <th class="border p-2 text-left">店家</th>
-                        <th class="border p-2 text-left">菜品</th>
-                        <th class="border p-2 text-right">金額</th>
-                        <th class="border p-2 text-center">評分</th>
-                        <th class="border p-2 text-center">操作</th>
-                    </tr>
-                </thead>
+            <table class="w-full border-collapse whitespace-nowrap min-w-max">
+                <thead><tr class="bg-gray-200"><th class="border p-2 text-left">日期</th><th class="border p-2 text-left">店家</th><th class="border p-2 text-left">菜品</th><th class="border p-2 text-right">金額</th><th class="border p-2 text-center">評分</th><th class="border p-2 text-center">操作</th></tr></thead>
                 <tbody id="recordTableBody"></tbody>
             </table>
         </div>
     </main>
 
     <script>
+        document.getElementById('menu-toggle')?.addEventListener('click', function() { document.getElementById('menu-links').classList.toggle('hidden'); });
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function init() {
-            await loadEstablishments();
-            fetchRecords();
-            document.getElementById('tasting_date').valueAsDate = new Date();
-        }
-
+        async function init() { await loadEstablishments(); fetchRecords(); document.getElementById('tasting_date').valueAsDate = new Date(); }
         async function loadEstablishments() {
             const { data } = await supabaseClient.from('eat_establishments').select('id, name').order('name');
-            const select = document.getElementById('establishment_id');
-            select.innerHTML = '<option value="">請選擇店家</option>';
-            data.forEach(item => {
-                select.add(new Option(item.name, item.id));
-            });
+            const select = document.getElementById('establishment_id'); select.innerHTML = '<option value="">請選擇店家</option>'; data.forEach(item => select.add(new Option(item.name, item.id)));
         }
-
         async function fetchRecords() {
-            const { data, error } = await supabaseClient.from('eat_tasting_records').select('*, eat_establishments(name)').order('tasting_date', { ascending: false });
-            if (error) return alert(error.message);
-            const tbody = document.getElementById('recordTableBody');
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td class="border p-2">${item.tasting_date}</td>
-                    <td class="border p-2 font-semibold">${item.eat_establishments?.name || '未知店家'}</td>
-                    <td class="border p-2">${item.dishes_ordered || '-'}</td>
-                    <td class="border p-2 text-right">$${item.amount_spent || 0}</td>
-                    <td class="border p-2 text-center text-yellow-500">${'⭐'.repeat(item.overall_rating)}</td>
-                    <td class="border p-2 text-center">
-                        <button onclick="editRecord('${item.id}')" class="text-blue-500 hover:underline mr-2">編輯</button>
-                        <button onclick="deleteRecord('${item.id}')" class="text-red-500 hover:underline">刪除</button>
-                    </td>
-                </tr>
-            `).join('');
+            const { data } = await supabaseClient.from('eat_tasting_records').select('*, eat_establishments(name)').order('tasting_date', { ascending: false });
+            document.getElementById('recordTableBody').innerHTML = data.map(item => `<tr><td class="border p-2">${item.tasting_date}</td><td class="border p-2 font-semibold">${item.eat_establishments?.name || '未知'}</td><td class="border p-2">${item.dishes_ordered || '-'}</td><td class="border p-2 text-right">$${item.amount_spent || 0}</td><td class="border p-2 text-center text-yellow-500">${'⭐'.repeat(item.overall_rating)}</td><td class="border p-2 text-center"><button onclick="editRecord('${item.id}')" class="text-blue-500 mr-2">編輯</button><button onclick="deleteRecord('${item.id}')" class="text-red-500">刪除</button></td></tr>`).join('');
         }
-
         document.getElementById('recordForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('recordId').value;
-            const formData = {
-                establishment_id: document.getElementById('establishment_id').value,
-                tasting_date: document.getElementById('tasting_date').value,
-                dishes_ordered: document.getElementById('dishes_ordered').value,
-                amount_spent: parseFloat(document.getElementById('amount_spent').value) || 0,
-                overall_rating: parseInt(document.getElementById('overall_rating').value),
-                notes: document.getElementById('notes').value
-            };
-
-            let result;
-            if (id) {
-                result = await supabaseClient.from('eat_tasting_records').update(formData).eq('id', id);
-            } else {
-                result = await supabaseClient.from('eat_tasting_records').insert([formData]);
-            }
-
-            if (result.error) alert(result.error.message);
-            else {
-                alert('儲存成功！');
-                resetForm();
-                fetchRecords();
-            }
+            e.preventDefault(); const id = document.getElementById('recordId').value;
+            const formData = { establishment_id: document.getElementById('establishment_id').value, tasting_date: document.getElementById('tasting_date').value, dishes_ordered: document.getElementById('dishes_ordered').value, amount_spent: parseFloat(document.getElementById('amount_spent').value) || 0, overall_rating: parseInt(document.getElementById('overall_rating').value), notes: document.getElementById('notes').value };
+            let result = id ? await supabaseClient.from('eat_tasting_records').update(formData).eq('id', id) : await supabaseClient.from('eat_tasting_records').insert([formData]);
+            if (result.error) alert(result.error.message); else { alert('儲存成功！'); resetForm(); fetchRecords(); }
         };
-
         async function editRecord(id) {
             const { data } = await supabaseClient.from('eat_tasting_records').select('*').eq('id', id).single();
-            if (data) {
-                document.getElementById('recordId').value = data.id;
-                document.getElementById('establishment_id').value = data.establishment_id;
-                document.getElementById('tasting_date').value = data.tasting_date;
-                document.getElementById('dishes_ordered').value = data.dishes_ordered;
-                document.getElementById('amount_spent').value = data.amount_spent;
-                document.getElementById('overall_rating').value = data.overall_rating;
-                document.getElementById('notes').value = data.notes;
-                document.getElementById('formTitle').innerText = '編輯品嚐記錄';
-                window.scrollTo(0, 0);
-            }
+            if (data) { document.getElementById('recordId').value = data.id; document.getElementById('establishment_id').value = data.establishment_id; document.getElementById('tasting_date').value = data.tasting_date; document.getElementById('dishes_ordered').value = data.dishes_ordered; document.getElementById('amount_spent').value = data.amount_spent; document.getElementById('overall_rating').value = data.overall_rating; document.getElementById('notes').value = data.notes; document.getElementById('formTitle').innerText = '編輯品嚐記錄'; window.scrollTo(0, 0); }
         }
-
-        async function deleteRecord(id) {
-            if (!confirm('確定要刪除此記錄嗎？')) return;
-            const { error } = await supabaseClient.from('eat_tasting_records').delete().eq('id', id);
-            if (error) alert(error.message);
-            else fetchRecords();
-        }
-
-        function resetForm() {
-            document.getElementById('recordForm').reset();
-            document.getElementById('recordId').value = '';
-            document.getElementById('formTitle').innerText = '新增品嚐記錄';
-            document.getElementById('tasting_date').valueAsDate = new Date();
-        }
-
+        async function deleteRecord(id) { if(confirm('確定刪除？')) { await supabaseClient.from('eat_tasting_records').delete().eq('id', id); fetchRecords(); } }
+        function resetForm() { document.getElementById('recordForm').reset(); document.getElementById('recordId').value = ''; document.getElementById('formTitle').innerText = '新增記錄'; document.getElementById('tasting_date').valueAsDate = new Date(); }
         init();
     </script>
 </body>
