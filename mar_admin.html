@@ -10,26 +10,26 @@
         .container { max-width: 1200px; margin: 0 auto; }
         h1 { color: #2c5282; margin-bottom: 20px; text-align: center; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { padding: 10px 20px; border: none; background: #cbd5e0; cursor: pointer; border-radius: 8px; font-size: 16px; }
+        .tab-btn { padding: 10px 20px; border: none; background: #cbd5e0; cursor: pointer; border-radius: 8px; font-size: 16px; flex: 1 1 auto; text-align: center; }
         .tab-btn.active { background: #3182ce; color: white; }
         .tab-content { display: none; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .tab-content.active { display: block; }
-        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
         input, select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; flex: 1; min-width: 120px; }
-        button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; white-space: nowrap; }
         .btn-primary { background: #3182ce; color: white; }
         .btn-danger { background: #e53e3e; color: white; }
         .btn-edit { background: #dd6b20; color: white; }
         .btn-clear { background: #718096; color: white; margin-left: 10px; }
-        .btn-price-update { background: #38a169; color: white; margin-left: 10px; } /* 新增更新價格按鈕樣式 */
-        /* 新增備份還原按鈕樣式 */
+        .btn-price-update { background: #38a169; color: white; margin-left: 10px; }
         .btn-backup { background: #9f7aea; color: white; margin-left: 10px; }
         .btn-restore { background: #38b2ac; color: white; margin-left: 10px; }
-        /* 新增前台按鈕樣式 */
         .btn-front { background: #48bb78; color: white; margin-left: 10px; }
-        /* 隱藏檔案輸入框 */
         #fileInput { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        
+        /* 響應式表格外掛 */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #edf2f7; font-weight: 600; }
         .action-btns { display: flex; gap: 5px; }
@@ -37,67 +37,37 @@
         .product-url:hover { text-decoration: underline; }
         .tag-purchase { color:#2f855a; font-weight:bold; }
         .tag-compare { color:#c05621; font-weight:bold; }
-        /* 新增統計樣式 */
-        .stats-container { 
-            background: #f7fafc; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            display: flex; 
-            gap: 20px; 
-            flex-wrap: wrap;
-        }
-        .stat-item { 
-            font-size: 15px; 
-            color: #2d3748;
-        }
+        .stats-container { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 20px; flex-wrap: wrap; }
+        .stat-item { font-size: 15px; color: #2d3748; }
         .stat-label { font-weight: 600; color: #4a5568; }
         .stat-value { color: #2c5282; font-weight: bold; }
-        /* 備份還原區域樣式 */
-        .backup-restore-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f0f8fb;
-            border-radius: 8px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
+        .backup-restore-section { margin-bottom: 20px; padding: 15px; background: #f0f8fb; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .search-input-wrapper { display: flex; align-items: center; position: relative; flex: 1; min-width: 150px; }
+        .search-input { width: 100%; padding-right: 25px; }
+        .search-icon { position: absolute; right: 10px; color: #718096; pointer-events: none; }
+        .search-input::placeholder { color: #dc2626 !important; opacity: 1; }
+
+        /* 手機版響應式設計 */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .tabs { flex-direction: row; }
+            .tab-btn { flex: 1 1 45%; padding: 10px; }
+            .form-row, .backup-restore-section { flex-direction: column; align-items: stretch; gap: 8px; }
+            .form-row input, .form-row select, .search-input-wrapper { width: 100%; margin: 0; flex: none; }
+            button { width: 100%; margin-left: 0 !important; padding: 12px 16px; }
+            .action-btns { flex-direction: column; }
+            .stats-container { flex-direction: column; gap: 10px; }
         }
-        /* 新增模糊搜尋輸入框樣式 */
-        .search-input-wrapper {
-            display: flex;
-            align-items: center;
-            position: relative;
-            flex: 1;
-            min-width: 150px;
-        }
-        .search-input {
-            width: 100%;
-            padding-right: 25px;
-        }
-        .search-icon {
-            position: absolute;
-            right: 10px;
-            color: #718096;
-            pointer-events: none;
-        }
-.search-input::placeholder {
-    color: #dc2626 !important;
-    opacity: 1;
-}
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🛒 購物清單後台管理系統</h1>
         
-        <!-- 新增備份還原區域 -->
         <div class="backup-restore-section">
             <span style="font-weight: 600; color: #2c5282;">資料備份/還原：</span>
             <button class="btn-backup" id="btnBackup">備份資料 (JSON)</button>
             <button class="btn-restore" id="btnRestore">還原資料 (JSON)</button>
-            <!-- 新增前台按鈕 -->
             <button class="btn-front" id="btnFront">前台</button>
             <input type="file" id="fileInput" accept=".json" />
         </div>
@@ -111,7 +81,6 @@
         <!-- 商品管理 -->
         <div id="products" class="tab-content active">
             <h2 style="margin-bottom:15px;">商品資料維護</h2>
-            <!-- 新增：商品名稱模糊搜尋框 -->
             <div class="form-row" style="margin-bottom: 10px;">
                 <div class="search-input-wrapper">
                     <input type="text" id="searchProductByName" class="search-input" placeholder="模糊搜尋商品名稱...">
@@ -126,21 +95,22 @@
                 <input type="text" id="productCategory" placeholder="儲位/備註">
                 <input type="number" step="1" id="productPrice" placeholder="最近的價格">
                 <button class="btn-primary" id="btnAddProduct">新增商品</button>
-                <!-- 新增：更新價格按鈕 -->
                 <button class="btn-price-update" id="btnUpdatePrice">更新價格</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>商品名稱</th>
-                        <th>儲位/備註</th>
-                        <th>最近價格</th>
-                        <th>網址</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="productList"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>商品名稱</th>
+                            <th>儲位/備註</th>
+                            <th>最近價格</th>
+                            <th>網址</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productList"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- 市場管理 -->
@@ -151,23 +121,24 @@
                 <input type="text" id="marketAddress" placeholder="地址">
                 <button class="btn-primary" id="btnAddMarket">新增市場</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>市場名稱</th>
-                        <th>地址</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="marketList"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>市場名稱</th>
+                            <th>地址</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marketList"></tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- 歷史記錄（重點：可篩選/顯示購買/比價 + 價格統計 + 新增清除購物清單按鈕） -->
+        <!-- 歷史記錄 -->
         <div id="history" class="tab-content">
             <h2 style="margin-bottom:15px;">歷史價格記錄</h2>
             <div class="form-row">
-                <!-- 新增：商品名稱模糊搜尋輸入框 -->
                 <div class="search-input-wrapper">
                     <input type="text" id="searchProductName" class="search-input" placeholder="模糊搜尋商品名稱...">
                     <span class="search-icon">🔍</span>
@@ -184,11 +155,9 @@
                     <option value="compare">純比價</option>
                 </select>
                 <button class="btn-primary" id="btnQueryHistory">查詢</button>
-                <!-- 新增：清除購物檢查清單按鈕 -->
                 <button class="btn-clear" id="btnClearShoppingLists">清除購物檢查清單記錄</button>
             </div>
             
-            <!-- 新增：價格統計顯示區域 -->
             <div id="priceStats" class="stats-container" style="display: none;">
                 <div class="stat-item"><span class="stat-label">商品名稱：</span><span id="statProductName" class="stat-value"></span></div>
                 <div class="stat-item"><span class="stat-label">最低購買價：</span><span id="statMinPrice" class="stat-value"></span></div>
@@ -197,20 +166,22 @@
                 <div class="stat-item"><span class="stat-label">購買記錄筆數：</span><span id="statRecordCount" class="stat-value"></span></div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>商品</th>
-                        <th>市場</th>
-                        <th>記錄類型</th>
-                        <th>單價</th>
-                        <th>數量</th>
-                        <th>日期</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="historyList"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>商品</th>
+                            <th>市場</th>
+                            <th>記錄類型</th>
+                            <th>單價</th>
+                            <th>數量</th>
+                            <th>日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyList"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -220,13 +191,10 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let editingProductId = null;
         let editingMarketId = null;
-        // 新增：存儲所有商品數據，用於模糊搜尋
         let allProducts = [];
 
-        // 工具函數：取得本地日期時間（YYYY-MM-DD HH:mm:ss）
         function getLocalDateTime() {
             const now = new Date();
-            // 補零函數
             const pad = (num) => num.toString().padStart(2, '0');
             const year = now.getFullYear();
             const month = pad(now.getMonth() + 1);
@@ -237,190 +205,81 @@
             return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         }
 
-        // 【核心修改】工具函數：格式化本地日期顯示（僅保留年月日）
-function formatLocalDate(dateStr) {
-    if (!dateStr) return '';
-    // 處理帶時間的格式和僅日期的格式
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    const pad = (num) => num.toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    // 移除時間部分，只返回 YYYY-MM-DD
-    return `${year}-${month}-${day}`;
-}
+        function formatLocalDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            const pad = (num) => num.toString().padStart(2, '0');
+            const year = date.getFullYear();
+            const month = pad(date.getMonth() + 1);
+            const day = pad(date.getDate());
+            return `${year}-${month}-${day}`;
+        }
 
-        // 新增：計算商品購買價格統計
         async function calculatePriceStats(productId) {
-            // 隱藏統計區域預設
             const statsContainer = document.getElementById('priceStats');
             statsContainer.style.display = 'none';
-
-            // 如果沒有選擇單一商品，直接返回
             if (!productId) return;
-
-            // 查詢該商品的所有購買記錄
-            const { data, error } = await supabaseClient
-                .from('mar_price_history')
-                .select('price')
-                .eq('product_id', productId)
-                .eq('price_type', 'purchase');
-
-            if (error) {
-                alert('查詢價格統計失敗: ' + error.message);
-                return;
-            }
-
-            // 如果沒有購買記錄，返回
-            if (!data || data.length === 0) {
-                return;
-            }
-
-            // 取得商品名稱
-            const { data: productData } = await supabaseClient
-                .from('mar_products')
-                .select('name')
-                .eq('id', productId)
-                .single();
-
-            // 計算統計數據
+            const { data, error } = await supabaseClient.from('mar_price_history').select('price').eq('product_id', productId).eq('price_type', 'purchase');
+            if (error) { alert('查詢價格統計失敗: ' + error.message); return; }
+            if (!data || data.length === 0) return;
+            const { data: productData } = await supabaseClient.from('mar_products').select('name').eq('id', productId).single();
             const prices = data.map(item => Number(item.price));
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
-            // 平均價四捨五入取整，無小數
             const avgPrice = Math.round(prices.reduce((sum, price) => sum + price, 0) / prices.length);
             const recordCount = prices.length;
-
-            // 填充統計數據到頁面
             document.getElementById('statProductName').textContent = productData?.name || '未知商品';
             document.getElementById('statMinPrice').textContent = `$${minPrice}`;
             document.getElementById('statMaxPrice').textContent = `$${maxPrice}`;
             document.getElementById('statAvgPrice').textContent = `$${avgPrice}`;
             document.getElementById('statRecordCount').textContent = recordCount;
-
-            // 顯示統計區域
             statsContainer.style.display = 'flex';
-            
-            // 返回整數平均價格（供更新價格功能使用）
             return avgPrice;
         }
 
-        // 【核心修改】批量更新所有商品的最近價格為最近一次購買價
         async function updateProductDefaultPrice() {
-            // 確認操作
             const confirmUpdate = confirm('⚠️ 確認要批量更新所有商品的最近價格為「最近一次購買價」嗎？');
             if (!confirmUpdate) return;
-
             try {
-                // 1. 先獲取所有商品列表
-                const { data: allProductsData, error: productError } = await supabaseClient
-                    .from('mar_products')
-                    .select('id, name')
-                    .neq('id', '00000000-0000-0000-0000-000000000000'); // 排除空UUID
-
+                const { data: allProductsData, error: productError } = await supabaseClient.from('mar_products').select('id, name').neq('id', '00000000-0000-0000-0000-000000000000');
                 if (productError) throw productError;
-                if (!allProductsData || allProductsData.length === 0) {
-                    alert('⚠️ 沒有可更新的商品資料');
-                    return;
-                }
-
-                // 2. 遍歷每個商品，查詢最近一次購買價
+                if (!allProductsData || allProductsData.length === 0) { alert('⚠️ 沒有可更新的商品資料'); return; }
                 let updateCount = 0;
-                const updatePromises = [];
-
                 for (const product of allProductsData) {
-                    // 查詢該商品最近一次的購買記錄（purchase類型）
-                    const { data: historyData, error: historyError } = await supabaseClient
-                        .from('mar_price_history')
-                        .select('price')
-                        .eq('product_id', product.id)
-                        .eq('price_type', 'purchase') // 只取「購買」類型
-                        .order('purchase_date', { ascending: false }) // 最新的在前
-                        .limit(1); // 只取一筆
-
-                    if (historyError) {
-                        console.warn(`❌ 查詢商品【${product.name}】的購買記錄失敗:`, historyError.message);
-                        continue;
-                    }
-
-                    // 如果有購買記錄，執行更新
+                    const { data: historyData, error: historyError } = await supabaseClient.from('mar_price_history').select('price').eq('product_id', product.id).eq('price_type', 'purchase').order('purchase_date', { ascending: false }).limit(1);
+                    if (historyError) continue;
                     if (historyData && historyData.length > 0) {
                         const latestPrice = Number(historyData[0].price);
-                        const { error: updateError } = await supabaseClient
-                            .from('mar_products')
-                            .update({
-                                default_price: latestPrice,
-                                updated_at: getLocalDateTime()
-                            })
-                            .eq('id', product.id);
-
-                        if (updateError) {
-                            console.warn(`❌ 更新商品【${product.name}】價格失敗:`, updateError.message);
-                        } else {
-                            updateCount++;
-                        }
-                    } else {
-                        console.log(`ℹ️ 商品【${product.name}】無購買記錄，跳過更新`);
+                        const { error: updateError } = await supabaseClient.from('mar_products').update({ default_price: latestPrice, updated_at: getLocalDateTime() }).eq('id', product.id);
+                        if (!updateError) updateCount++;
                     }
                 }
-
-                // 3. 重新加載商品列表
                 loadProducts();
-
-                // 4. 提示結果
                 alert(`✅ 批量更新完成！\n成功更新 ${updateCount} 個商品的最近價格.`);
-
-            } catch (err) {
-                alert('❌ 批量更新價格失敗：' + err.message);
-            }
+            } catch (err) { alert('❌ 批量更新價格失敗：' + err.message); }
         }
 
-        // 新增：清除購物檢查清單記錄（修正UUID主鍵刪除語法錯誤）
         async function clearShoppingLists() {
             const confirm1 = confirm('⚠️ 警告：此操作將刪除所有購物檢查清單記錄！無法復原');
             if (!confirm1) return;
-            
-
             try {
                 const emptyUuid = '00000000-0000-0000-0000-000000000000';
-                // 排除空UUID，其餘全部刪除
-                const { error: itemsError } = await supabaseClient
-                    .from('mar_shopping_items')
-                    .delete()
-                    .neq('id', emptyUuid);
-
+                const { error: itemsError } = await supabaseClient.from('mar_shopping_items').delete().neq('id', emptyUuid);
                 if (itemsError) throw itemsError;
-
-                const { error: listsError } = await supabaseClient
-                    .from('mar_shopping_lists')
-                    .delete()
-                    .neq('id', emptyUuid);
-
+                const { error: listsError } = await supabaseClient.from('mar_shopping_lists').delete().neq('id', emptyUuid);
                 if (listsError) throw listsError;
-
                 alert('✅ 清除完成');
-            } catch (err) {
-                alert('❌ 清除失敗：' + err.message);
-            }
+            } catch (err) { alert('❌ 清除失敗：' + err.message); }
         }
 
-        // 新增：打開前台頁面並關閉當前頁面
         function openFrontPage() {
-            // 打開index.html（同目錄下）
             window.open('https://qqq-theta-flax.vercel.app/mar_index.html', '_blank');
-            // 關閉當前管理頁面
             window.close();
         }
 
-        // ====================== 新增：備份還原功能 ======================
-        // 備份所有資料為JSON檔案
         async function backupData() {
             try {
-                // 顯示加載提示
-                //alert('正在備份資料，請稍候...');
-
-                // 獲取所有資料表的數據
                 const [productsData, marketsData, priceHistoryData, shoppingListsData, shoppingItemsData] = await Promise.all([
                     supabaseClient.from('mar_products').select('*'),
                     supabaseClient.from('mar_markets').select('*'),
@@ -428,8 +287,6 @@ function formatLocalDate(dateStr) {
                     supabaseClient.from('mar_shopping_lists').select('*'),
                     supabaseClient.from('mar_shopping_items').select('*')
                 ]);
-
-                // 組裝備份數據
                 const backupData = {
                     backupTime: getLocalDateTime(),
                     version: "1.0",
@@ -441,58 +298,31 @@ function formatLocalDate(dateStr) {
                         mar_shopping_items: shoppingItemsData.data || []
                     }
                 };
-
-                // 轉換為JSON字串（格式化顯示）
                 const jsonString = JSON.stringify(backupData, null, 2);
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
-
-                // 建立下載連結
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `購物清單備份_${new Date().getTime()}.json`;
                 document.body.appendChild(a);
                 a.click();
-
-                // 清理
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-
                 alert('✅ 備份成功！檔案已下載');
-            } catch (error) {
-                alert('❌ 備份失敗：' + error.message);
-            }
+            } catch (error) { alert('❌ 備份失敗：' + error.message); }
         }
 
-        // 觸發檔案選擇框
-        function triggerFileInput() {
-            document.getElementById('fileInput').click();
-        }
+        function triggerFileInput() { document.getElementById('fileInput').click(); }
 
-        // 還原JSON資料
         async function restoreData(file) {
             try {
-                // 二次確認
                 const confirm1 = confirm('⚠️ 警告：還原操作將覆蓋當前所有資料！請確保已備份當前數據。');
                 if (!confirm1) return;
-                
-
-                // 讀取檔案內容
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     try {
                         const backupData = JSON.parse(e.target.result);
-                        
-                        // 驗證備份檔案格式
-                        if (!backupData || !backupData.data) {
-                            alert('❌ 無效的備份檔案格式！');
-                            return;
-                        }
-
-                        // 開始還原（使用事務確保數據一致性）
-                        //alert('正在還原資料，請稍候...');
-
-                        // 清空現有數據（保留空UUID記錄）
+                        if (!backupData || !backupData.data) { alert('❌ 無效的備份檔案格式！'); return; }
                         const emptyUuid = '00000000-0000-0000-0000-000000000000';
                         await Promise.all([
                             supabaseClient.from('mar_products').delete().neq('id', emptyUuid),
@@ -501,104 +331,36 @@ function formatLocalDate(dateStr) {
                             supabaseClient.from('mar_shopping_lists').delete().neq('id', emptyUuid),
                             supabaseClient.from('mar_shopping_items').delete().neq('id', emptyUuid)
                         ]);
-
-                        // 插入備份數據（過濾空UUID記錄）
                         const insertPromises = [];
-                        
-                        // 商品資料
-                        if (backupData.data.mar_products && backupData.data.mar_products.length > 0) {
-                            const filteredProducts = backupData.data.mar_products.filter(item => item.id !== emptyUuid);
-                            if (filteredProducts.length > 0) {
-                                insertPromises.push(supabaseClient.from('mar_products').insert(filteredProducts));
-                            }
-                        }
-
-                        // 市場資料
-                        if (backupData.data.mar_markets && backupData.data.mar_markets.length > 0) {
-                            const filteredMarkets = backupData.data.mar_markets.filter(item => item.id !== emptyUuid);
-                            if (filteredMarkets.length > 0) {
-                                insertPromises.push(supabaseClient.from('mar_markets').insert(filteredMarkets));
-                            }
-                        }
-
-                        // 價格歷史
-                        if (backupData.data.mar_price_history && backupData.data.mar_price_history.length > 0) {
-                            const filteredHistory = backupData.data.mar_price_history.filter(item => item.id !== emptyUuid);
-                            if (filteredHistory.length > 0) {
-                                insertPromises.push(supabaseClient.from('mar_price_history').insert(filteredHistory));
-                            }
-                        }
-
-                        // 購物清單
-                        if (backupData.data.mar_shopping_lists && backupData.data.mar_shopping_lists.length > 0) {
-                            const filteredLists = backupData.data.mar_shopping_lists.filter(item => item.id !== emptyUuid);
-                            if (filteredLists.length > 0) {
-                                insertPromises.push(supabaseClient.from('mar_shopping_lists').insert(filteredLists));
-                            }
-                        }
-
-                        // 購物項目
-                        if (backupData.data.mar_shopping_items && backupData.data.mar_shopping_items.length > 0) {
-                            const filteredItems = backupData.data.mar_shopping_items.filter(item => item.id !== emptyUuid);
-                            if (filteredItems.length > 0) {
-                                insertPromises.push(supabaseClient.from('mar_shopping_items').insert(filteredItems));
-                            }
-                        }
-
-                        // 執行所有插入操作
+                        if (backupData.data.mar_products?.length > 0) insertPromises.push(supabaseClient.from('mar_products').insert(backupData.data.mar_products.filter(i => i.id !== emptyUuid)));
+                        if (backupData.data.mar_markets?.length > 0) insertPromises.push(supabaseClient.from('mar_markets').insert(backupData.data.mar_markets.filter(i => i.id !== emptyUuid)));
+                        if (backupData.data.mar_price_history?.length > 0) insertPromises.push(supabaseClient.from('mar_price_history').insert(backupData.data.mar_price_history.filter(i => i.id !== emptyUuid)));
+                        if (backupData.data.mar_shopping_lists?.length > 0) insertPromises.push(supabaseClient.from('mar_shopping_lists').insert(backupData.data.mar_shopping_lists.filter(i => i.id !== emptyUuid)));
+                        if (backupData.data.mar_shopping_items?.length > 0) insertPromises.push(supabaseClient.from('mar_shopping_items').insert(backupData.data.mar_shopping_items.filter(i => i.id !== emptyUuid)));
                         await Promise.all(insertPromises);
-
-                        // 重新加載頁面數據
-                        loadProducts();
-                        loadMarkets();
-                        loadPriceHistory();
-
+                        loadProducts(); loadMarkets(); loadPriceHistory();
                         alert('✅ 還原成功！所有資料已更新');
-                    } catch (parseError) {
-                        alert('❌ 還原失敗：' + parseError.message);
-                    }
+                    } catch (parseError) { alert('❌ 還原失敗：' + parseError.message); }
                 };
-
                 reader.readAsText(file);
-            } catch (error) {
-                alert('❌ 還原失敗：' + error.message);
-            }
+            } catch (error) { alert('❌ 還原失敗：' + error.message); }
         }
-        // ====================== 備份還原功能結束 ======================
 
-        // 新增：根據商品名稱模糊搜尋商品
         async function searchProductByName() {
             const searchKeyword = document.getElementById('searchProductByName').value.trim().toLowerCase();
-            // 如果搜尋框為空，直接加載所有商品
-            if (!searchKeyword) {
-                loadProducts();
-                return;
-            }
-
-            // 從所有商品數據中過濾符合條件的商品
-            const filteredProducts = allProducts.filter(product => {
-                const productName = (product.name || '').toLowerCase();
-                return productName.includes(searchKeyword);
-            });
-
-            // 渲染過濾後的商品列表
+            if (!searchKeyword) { loadProducts(); return; }
+            const filteredProducts = allProducts.filter(product => (product.name || '').toLowerCase().includes(searchKeyword));
             renderProductList(filteredProducts);
-            
-            // 如果沒有找到匹配的商品，提示用戶
-            if (filteredProducts.length === 0) {
-                alert(`未找到包含「${searchKeyword}」的商品`);
-            }
+            if (filteredProducts.length === 0) alert(`未找到包含「${searchKeyword}」的商品`);
         }
 
-        // 新增：渲染商品列表（抽離 loadProducts 中的渲染邏輯）
         function renderProductList(products) {
             const tbody = document.getElementById('productList');
             tbody.innerHTML = products.map(p => {
                 const safeName = p.name.replace(/'/g, "\\'");
                 const safeUrl = (p.url || '').replace(/'/g, "\\'");
                 const safeCat = (p.category || '').replace(/'/g, "\\'");
-                return `
-                <tr>
+                return `<tr>
                     <td>${p.name}</td>
                     <td>${p.category || ''}</td>
                     <td>$${p.default_price || 0}</td>
@@ -611,13 +373,11 @@ function formatLocalDate(dateStr) {
             }).join('');
         }
 
-        // 新增：清空搜尋框並還原所有商品
         function clearProductSearch() {
             document.getElementById('searchProductByName').value = '';
             loadProducts();
         }
         
-        // 切換分頁
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -625,20 +385,11 @@ function formatLocalDate(dateStr) {
             document.getElementById(tabId).classList.add('active');
         }
 
-        // 商品管理
         async function loadProducts() {
-            const { data, error } = await supabaseClient
-                .from('mar_products')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('mar_products').select('*').order('created_at', { ascending: false });
             if (error) { alert('載入商品失敗: ' + error.message); return; }
-
-            // 新增：存儲所有商品數據
             allProducts = data;
-
-            // 渲染商品列表
             renderProductList(allProducts);
-
             const filter = document.getElementById('filterProduct');
             filter.innerHTML = '<option value="">全部商品</option>' + data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
@@ -649,32 +400,13 @@ function formatLocalDate(dateStr) {
             const category = document.getElementById('productCategory').value.trim();
             const price = Number(document.getElementById('productPrice').value) || 0;
             if (!name) { alert('請輸入商品名稱'); return; }
-
             if (editingProductId) {
-                const { error } = await supabaseClient
-                    .from('mar_products')
-                    .update({ 
-                        name, 
-                        url, 
-                        category, 
-                        default_price: price,
-                        updated_at: getLocalDateTime() // 新增：更新時間使用本地時間
-                    })
-                    .eq('id', editingProductId);
+                const { error } = await supabaseClient.from('mar_products').update({ name, url, category, default_price: price, updated_at: getLocalDateTime() }).eq('id', editingProductId);
                 if (error) { alert('更新商品失敗: ' + error.message); return; }
                 editingProductId = null;
                 document.getElementById('btnAddProduct').textContent = '新增商品';
             } else {
-                const { error } = await supabaseClient
-                    .from('mar_products')
-                    .insert({ 
-                        name, 
-                        url, 
-                        category, 
-                        default_price: price,
-                        created_at: getLocalDateTime(), // 新增：建立時間使用本地時間
-                        updated_at: getLocalDateTime()
-                    });
+                const { error } = await supabaseClient.from('mar_products').insert({ name, url, category, default_price: price, created_at: getLocalDateTime(), updated_at: getLocalDateTime() });
                 if (error) { alert('新增商品失敗: ' + error.message); return; }
             }
             document.querySelectorAll('#products input').forEach(el=>el.value='');
@@ -697,20 +429,14 @@ function formatLocalDate(dateStr) {
             loadProducts();
         }
 
-        // 市場管理
         async function loadMarkets() {
-            const { data, error } = await supabaseClient
-                .from('mar_markets')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('mar_markets').select('*').order('created_at', { ascending: false });
             if (error) { alert('載入市場失敗: ' + error.message); return; }
-
             const tbody = document.getElementById('marketList');
             tbody.innerHTML = data.map(m => {
                 const safeName = m.name.replace(/'/g, "\\'");
                 const safeAddr = (m.address || '').replace(/'/g, "\\'");
-                return `
-                <tr>
+                return `<tr>
                     <td>${m.name}</td>
                     <td>${m.address || ''}</td>
                     <td class="action-btns">
@@ -719,7 +445,6 @@ function formatLocalDate(dateStr) {
                     </td>
                 </tr>`;
             }).join('');
-
             const filter = document.getElementById('filterMarket');
             filter.innerHTML = '<option value="">全部市場</option>' + data.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         }
@@ -728,32 +453,16 @@ function formatLocalDate(dateStr) {
             const name = document.getElementById('marketName').value.trim();
             const address = document.getElementById('marketAddress').value.trim();
             if (!name) { alert('請輸入市場名稱'); return; }
-
             if (editingMarketId) {
-                const { error } = await supabaseClient
-                    .from('mar_markets')
-                    .update({ 
-                        name, 
-                        address,
-                        updated_at: getLocalDateTime() // 新增：更新時間使用本地時間
-                    })
-                    .eq('id', editingMarketId);
+                const { error } = await supabaseClient.from('mar_markets').update({ name, address, updated_at: getLocalDateTime() }).eq('id', editingMarketId);
                 if (error) { alert('更新市場失敗: ' + error.message); return; }
                 editingMarketId = null;
                 document.getElementById('btnAddMarket').textContent = '新增市場';
             } else {
-                const { error } = await supabaseClient
-                    .from('mar_markets')
-                    .insert({ 
-                        name, 
-                        address,
-                        created_at: getLocalDateTime(), // 新增：建立時間使用本地時間
-                        updated_at: getLocalDateTime()
-                    });
+                const { error } = await supabaseClient.from('mar_markets').insert({ name, address, created_at: getLocalDateTime(), updated_at: getLocalDateTime() });
                 if (error) { alert('新增市場失敗: ' + error.message); return; }
             }
-            document.getElementById('marketName').value = '';
-            document.getElementById('marketAddress').value = '';
+            document.getElementById('marketName').value = ''; document.getElementById('marketAddress').value = '';
             loadMarkets();
         }
 
@@ -771,26 +480,14 @@ function formatLocalDate(dateStr) {
             loadMarkets();
         }
 
-        // 歷史價格（核心修正：從 mar_price_history 取 price_type + 本地時間處理 + 統計功能 + 模糊搜尋）
         async function loadPriceHistory() {
             const productId = document.getElementById('filterProduct').value;
             const marketId = document.getElementById('filterMarket').value;
             const type = document.getElementById('filterPriceType').value;
-            // 新增：取得模糊搜尋的商品名稱
             const searchProductName = document.getElementById('searchProductName').value.trim().toLowerCase();
-
-            // 先計算價格統計（僅當選擇單一商品時）
             await calculatePriceStats(productId);
 
-            let query = supabaseClient
-                .from('mar_price_history')
-                .select(`
-                    id,price,quantity,purchase_date,price_type,
-                    mar_products(name),
-                    mar_markets(name)
-                `)
-                .order('purchase_date', { ascending: false });
-
+            let query = supabaseClient.from('mar_price_history').select(`id,price,quantity,purchase_date,price_type, mar_products(name), mar_markets(name)`).order('purchase_date', { ascending: false });
             if(productId) query = query.eq('product_id', productId);
             if(marketId) query = query.eq('market_id', marketId);
             if(type) query = query.eq('price_type', type);
@@ -798,23 +495,17 @@ function formatLocalDate(dateStr) {
             const { data, error } = await query;
             if (error) { alert('查詢歷史失敗: ' + error.message); return; }
 
-            // 新增：如果有輸入模糊搜尋條件，過濾結果
             let filteredData = data;
             if (searchProductName) {
-                filteredData = data.filter(item => {
-                    const productName = (item.mar_products?.name || '').toLowerCase();
-                    return productName.includes(searchProductName);
-                });
+                filteredData = data.filter(item => (item.mar_products?.name || '').toLowerCase().includes(searchProductName));
             }
 
             const tbody = document.getElementById('historyList');
             tbody.innerHTML = filteredData.map(h=>{
                 const typeText = h.price_type === 'purchase' ? '購買' : '純比價';
                 const typeClass = h.price_type === 'purchase' ? 'tag-purchase' : 'tag-compare';
-                // 格式化本地日期顯示（此處會呼叫修改後的 formatLocalDate，只返回年月日）
                 const localDate = formatLocalDate(h.purchase_date);
-                return `
-                <tr>
+                return `<tr>
                     <td>${h.mar_products?.name || '已刪除商品'}</td>
                     <td>${h.mar_markets?.name || '已刪除市場'}</td>
                     <td><span class="${typeClass}">${typeText}</span></td>
@@ -833,52 +524,24 @@ function formatLocalDate(dateStr) {
             loadPriceHistory();
         }
 
-        // 初始化綁定
         document.addEventListener('DOMContentLoaded', ()=>{
-            document.querySelectorAll('.tab-btn').forEach(btn=>{
-                btn.onclick = ()=>switchTab(btn.dataset.tab);
-            });
+            document.querySelectorAll('.tab-btn').forEach(btn=>{ btn.onclick = ()=>switchTab(btn.dataset.tab); });
             document.getElementById('btnAddProduct').onclick = addProduct;
             document.getElementById('btnAddMarket').onclick = addMarket;
             document.getElementById('btnQueryHistory').onclick = loadPriceHistory;
-            // 新增：綁定清除購物清單按鈕事件
             document.getElementById('btnClearShoppingLists').onclick = clearShoppingLists;
-            // 新增：綁定更新價格按鈕事件
             document.getElementById('btnUpdatePrice').onclick = updateProductDefaultPrice;
-            
-            // 新增：綁定備份還原按鈕事件
             document.getElementById('btnBackup').onclick = backupData;
             document.getElementById('btnRestore').onclick = triggerFileInput;
             document.getElementById('fileInput').addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    restoreData(e.target.files[0]);
-                    // 清空檔案選擇框
-                    e.target.value = '';
-                }
+                if (e.target.files.length > 0) { restoreData(e.target.files[0]); e.target.value = ''; }
             });
-
-            // 新增：綁定前台按鈕事件
             document.getElementById('btnFront').onclick = openFrontPage;
-
-            // 新增：模糊搜尋框支援即時搜尋（按Enter鍵）
-            document.getElementById('searchProductName').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    loadPriceHistory();
-                }
-            });
-
-            // 新增：商品管理搜尋按鈕事件
+            document.getElementById('searchProductName').addEventListener('keypress', function(e) { if (e.key === 'Enter') loadPriceHistory(); });
             document.getElementById('btnSearchProduct').onclick = searchProductByName;
             document.getElementById('btnClearSearch').onclick = clearProductSearch;
-            // 支援按Enter鍵搜尋商品
-            document.getElementById('searchProductByName').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchProductByName();
-                }
-            });
-
-            loadProducts();
-            loadMarkets();
+            document.getElementById('searchProductByName').addEventListener('keypress', function(e) { if (e.key === 'Enter') searchProductByName(); });
+            loadProducts(); loadMarkets();
         });
     </script>
 </body>

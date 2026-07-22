@@ -11,17 +11,10 @@
         .container { max-width: 800px; margin: 0 auto; }
         h1 { color: #276749; text-align: center; margin-bottom: 15px; font-size: 24px; }
         
-        .header-bar {
-            background: white; padding: 15px; border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px;
-        }
+        .header-bar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
         .market-select { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
         select, input { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
-        .total-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            background: #c6f6d5; padding: 12px 15px; border-radius: 8px;
-            font-size: 18px; font-weight: bold; color: #22543d;
-        }
+        .total-bar { display: flex; justify-content: space-between; align-items: center; background: #c6f6d5; padding: 12px 15px; border-radius: 8px; font-size: 18px; font-weight: bold; color: #22543d; }
         .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
         .btn-primary { background: #38a169; color: white; }
         .btn-secondary { background: #4a5568; color: white; }
@@ -32,95 +25,29 @@
         .btn-paper { background: #6366f1; color: white; }
         .btn-clear { background: #718096; color: white; }
         .btn-convert { background: #805ad5; color: white; margin-bottom: 15px; }
-        /* 新增後台按鈕樣式 */
         .btn-admin { background: #d69e2e; color: white; }
-        .add-section {
-            background: white; padding: 15px; border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px;
-        }
+        
+        .add-section { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
         .add-row { display: flex; gap: 8px; flex-wrap: wrap; }
         .add-row select, .add-row input { flex: 1; min-width: 100px; }
-        /* 換算彈窗樣式 */
-        .convert-modal {
-            display: none; /* 預設隱藏 */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .convert-modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-close {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 15px;
-        }
-        .modal-close button {
-            background: #e53e3e;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        /* 獨立單位換算區塊樣式 */
-        .calc-unit-box {
-            background: #fff8eb;
-            padding: 12px 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 12px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-        .calc-unit-box label { font-weight: 500; }
-        .calc-result {
-            padding: 8px 12px;
-            background: #e8f4f8;
-            border-radius: 6px;
-            font-weight: 500;
-            color: #2d3748;
-            min-width: 260px;
-        }
-        .list-section { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
         
-        .item-card {
-            padding: 12px 15px; border-bottom: 1px solid #edf2f7;
-            display: flex; flex-direction: column; gap: 8px;
-        }
+        /* 換算彈窗樣式 */
+        .convert-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .convert-modal-content { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-close { display: flex; justify-content: flex-end; margin-bottom: 15px; }
+        .modal-close button { background: #e53e3e; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+        .calc-unit-box { background: #fff8eb; padding: 12px 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .calc-unit-box label { font-weight: 500; }
+        .calc-result { padding: 8px 12px; background: #e8f4f8; border-radius: 6px; font-weight: 500; color: #2d3748; min-width: 260px; }
+        
+        .list-section { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+        .item-card { padding: 12px 15px; border-bottom: 1px solid #edf2f7; display: flex; flex-direction: column; gap: 8px; }
         .item-card:last-child { border-bottom: none; }
         .item-main { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .item-name { font-weight: 600; color: #2d3748; font-size: 16px; }
         .item-name a { color: #3182ce; text-decoration: none; margin-left: 8px; font-size: 12px; }
         .item-name a:hover { text-decoration: underline; }
-        .storage-location {
-            font-size: 12px;
-            color: #718096;
-            margin-left: 8px;
-            font-weight: normal;
-        }
-        
+        .storage-location { font-size: 12px; color: #718096; margin-left: 8px; font-weight: normal; }
         .item-detail { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: #4a5568; }
         .item-detail input { width: 80px; padding: 5px 8px; }
         
@@ -130,52 +57,42 @@
         .status-btn.active-purchased { background: #c6f6d5; color: #22543d; border-color: #68d391; }
         .status-btn.active-out_of_stock { background: #fed7d7; color: #742a2a; border-color: #fc8181; }
         .status-btn.active-compare_price { background: #feebc8; color: #744210; border-color: #f6ad55; }
+        
         .history-price { font-size: 12px; color: #718096; }
         .history-price .compare-tag { color: #dd6b20; font-weight: 600; }
         .history-price .purchase-tag { color: #38a169; font-weight: 600; }
-        .item-delete { color: #e53e3e; cursor: pointer; font-size: 12px; }
+        .item-delete { color: #e53e3e; cursor: pointer; font-size: 12px; white-space: nowrap; }
         .status-purchased { background: #f0fff4; }
         .status-out_of_stock { background: #fff5f5; }
         .status-compare_price { background: #fffaf0; }
-        .action-bar {
-            display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap;
-            align-items: center;
-        }
-        .date-input {
-            padding: 8px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 14px;
-            min-width: 120px;
-        }
+        .action-bar { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; align-items: center; }
+        .date-input { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; min-width: 120px; }
         .empty-tip { text-align: center; padding: 30px; color: #a0aec0; }
-        .search-container {
-            position: relative;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-        #productSearch {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .new-product-form {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed #cbd5e0;
-            display: none;
-        }
-        .new-product-form .form-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .new-product-form input {
-            flex: 1;
-            min-width: 100px;
+        .search-container { position: relative; width: 100%; margin-bottom: 8px; }
+        #productSearch { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+        .new-product-form { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e0; display: none; }
+        .new-product-form .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .new-product-form input { flex: 1; min-width: 100px; }
+
+        /* 手機版響應式設計 */
+        @media (max-width: 768px) {
+            .market-select, .total-bar { flex-direction: column; align-items: stretch; }
+            .market-select button, .market-select select { width: 100%; margin: 5px 0; }
+            .add-row { flex-direction: column; align-items: stretch; }
+            .add-row select, .add-row input, .add-row button { width: 100%; margin-bottom: 8px; flex: none; }
+            .new-product-form .form-row { flex-direction: column; }
+            .new-product-form input, .new-product-form button { width: 100%; margin-bottom: 5px; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .action-bar button, .action-bar input { width: 100%; margin: 5px 0; }
+            
+            /* 將手機版的狀態按鈕改為 2x2 網格，加大觸控範圍 */
+            .status-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+            .status-btn { padding: 12px 10px; font-size: 14px; }
+            
+            .calc-unit-box { flex-direction: column; align-items: stretch; }
+            .calc-unit-box input, .calc-unit-box button { width: 100%; }
+            .item-main { flex-direction: column; align-items: flex-start; }
+            .item-delete { margin-top: 5px; align-self: flex-end; padding: 10px; }
         }
     </style>
 </head>
@@ -189,7 +106,6 @@
                     <option value="">請選擇市場</option>
                 </select>
                 <button class="btn btn-blue" onclick="newList()">開新清單</button>
-                <!-- 新增後台按鈕 -->
                 <button class="btn btn-admin" onclick="openAdminPage()">後台</button>
             </div>
             <div class="total-bar">
@@ -198,8 +114,7 @@
             </div>
         </div>
 
-        <!-- 新增單價換算按鈕 -->
-        <button class="btn btn-convert" onclick="openConvertModal()">💰 單價換算</button>
+        <button class="btn btn-convert" onclick="openConvertModal()" style="width: 100%;">💰 單價換算</button>
 
         <!-- 換算彈窗 -->
         <div class="convert-modal" id="convertModal">
@@ -209,7 +124,6 @@
                 </div>
                 <h3 style="text-align:center; margin-bottom:15px; color:#276749;">價格換算工具</h3>
                 
-                <!-- 1. 單位(g/ml)價格換算區塊 + 清空按鈕 -->
                 <div class="calc-unit-box">
                     <label>商品售價：</label>
                     <input type="number" id="calcPrice" min="0.01" step="0.01" placeholder="輸入金額">
@@ -220,7 +134,6 @@
                     <div class="calc-result" id="calcResult">換算結果將顯示於此</div>
                 </div>
 
-                <!-- 2. 平均單張/支/瓶價格換算區塊 + 清空按鈕 -->
                 <div class="calc-unit-box">
                     <label>總價：</label>
                     <input type="number" id="paperTotal" min="0.01" step="0.01" placeholder="全部金額">
@@ -245,12 +158,11 @@
                 <select id="productSelect">
                     <option value="">選擇商品加入清單</option>
                 </select>
-                <input type="number" id="addQty" value="1" min="1" step="1" style="width:80px;">
+                <input type="number" id="addQty" value="1" min="1" step="1" placeholder="數量">
                 <button class="btn btn-primary" onclick="addItem()">加入清單</button>
                 <button class="btn btn-purple" onclick="toggleNewProductForm()">插入新商品</button>
             </div>
             
-            <!-- 新增商品表單：無換算功能 -->
             <div class="new-product-form" id="newProductForm">
                 <div class="form-row">
                     <input type="text" id="newProductName" placeholder="商品名稱" required>
@@ -259,16 +171,18 @@
                     <input type="number" id="newProductUnit" placeholder="容量(公克/ml)" min="0.01" step="0.01">
                 </div>
                 <div class="form-row">
-                    <input type="number" id="newProductQty" value="1" min="1" step="1" placeholder="數量" style="width:80px;">
+                    <input type="number" id="newProductQty" value="1" min="1" step="1" placeholder="數量">
                     <input type="url" id="newProductUrl" placeholder="商品網址 (選填)">
                     <button class="btn btn-primary" onclick="addCustomProduct()">新增自定義商品</button>
                     <button class="btn btn-secondary" onclick="toggleNewProductForm()">取消</button>
                 </div>
             </div>
         </div>
+        
         <div class="list-section" id="itemList">
             <div class="empty-tip">尚未加入商品，請從上方選擇商品加入購物清單</div>
         </div>
+        
         <div class="action-bar">
             <label for="customDate">選擇日期：</label>
             <input type="date" id="customDate" class="date-input">
@@ -276,122 +190,60 @@
             <button class="btn btn-orange" onclick="saveToHistory()">📊 加入歷史價格</button>
         </div>
     </div>
+    
     <script>
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
-        if (!window.supabaseClient) {
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
+        if (!window.supabaseClient) { window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }
         const getSupabase = () => window.supabaseClient;
         let currentListId = localStorage.getItem('currentListId') || null;
         let currentMarketId = null;
         let products = [];
         let items = [];
-        const statusLabels = {
-            pending: '待購買',
-            purchased: '已購買',
-            out_of_stock: '缺貨中',
-            compare_price: '純比價'
-        };
+        const statusLabels = { pending: '待購買', purchased: '已購買', out_of_stock: '缺貨中', compare_price: '純比價' };
 
-        // 新增打開後台頁面函數
-        function openAdminPage() {
-            // 開啟新分頁打開admin.html
-            window.open('https://qqq-theta-flax.vercel.app/mar_admin.html', '_blank');
-            // 如果要在當前頁面打開，請使用：window.location.href = 'admin.html';
-            // 關閉當前管理頁面
-            window.close();
-        }
-
-        // 彈窗控制函數
-        function openConvertModal() {
-            document.getElementById('convertModal').style.display = 'flex';
-        }
-
-        function closeConvertModal() {
-            document.getElementById('convertModal').style.display = 'none';
-        }
-
-        // 點擊彈窗外層關閉
-        window.onclick = function(event) {
-            const modal = document.getElementById('convertModal');
-            if (event.target === modal) {
-                closeConvertModal();
-            }
-        }
-
+        function openAdminPage() { window.open('https://qqq-theta-flax.vercel.app/mar_admin.html', '_blank'); window.close(); }
+        function openConvertModal() { document.getElementById('convertModal').style.display = 'flex'; }
+        function closeConvertModal() { document.getElementById('convertModal').style.display = 'none'; }
+        window.onclick = function(event) { const modal = document.getElementById('convertModal'); if (event.target === modal) closeConvertModal(); }
+        
         function initDatePicker() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('customDate').value = today;
         }
-
-        function getSelectedDate() {
-            const dateInput = document.getElementById('customDate');
-            return dateInput.value || new Date().toISOString().split('T')[0];
-        }
-
-        // 單位(g/ml)換算清空
+        function getSelectedDate() { return document.getElementById('customDate').value || new Date().toISOString().split('T')[0]; }
+        
         function clearCalcUnit() {
-            document.getElementById('calcPrice').value = '';
-            document.getElementById('calcUnit').value = '';
+            document.getElementById('calcPrice').value = ''; document.getElementById('calcUnit').value = '';
             document.getElementById('calcResult').textContent = '換算結果將顯示於此';
         }
-        // 衛生紙換算清空
         function clearPaperCalc() {
-            document.getElementById('paperTotal').value = '';
-            document.getElementById('paperSet').value = '';
-            document.getElementById('paperPack').value = '';
-            document.getElementById('paperSheet').value = '';
+            document.getElementById('paperTotal').value = ''; document.getElementById('paperSet').value = '';
+            document.getElementById('paperPack').value = ''; document.getElementById('paperSheet').value = '';
             document.getElementById('paperResult').textContent = '單張價格結果將顯示於此';
         }
 
-        // 1. 原有：單位(g/ml)價格計算
         function calcUnitPrice() {
             const priceVal = parseFloat(document.getElementById('calcPrice').value);
             const unitVal = parseFloat(document.getElementById('calcUnit').value);
             const resultBox = document.getElementById('calcResult');
-
-            if (isNaN(priceVal) || priceVal <= 0) {
-                resultBox.textContent = "錯誤：請輸入大於0的售價";
-                return;
-            }
-            if (isNaN(unitVal) || unitVal <= 0) {
-                resultBox.textContent = "錯誤：請輸入大於0的容量(g/ml)";
-                return;
-            }
+            if (isNaN(priceVal) || priceVal <= 0) { resultBox.textContent = "錯誤：請輸入大於0的售價"; return; }
+            if (isNaN(unitVal) || unitVal <= 0) { resultBox.textContent = "錯誤：請輸入大於0的容量(g/ml)"; return; }
             const perUnit = (priceVal / unitVal).toFixed(2);
             resultBox.textContent = `每單位(g/ml)價格：$${perUnit}，計算：${priceVal} ÷ ${unitVal}`;
         }
 
-        // 2. 新增：衛生紙單張價格計算
         function calcPaperPerSheet() {
             const totalPrice = parseFloat(document.getElementById('paperTotal').value);
             const setNum = parseInt(document.getElementById('paperSet').value);
             const packNum = parseInt(document.getElementById('paperPack').value);
             const sheetNum = parseInt(document.getElementById('paperSheet').value);
             const resultBox = document.getElementById('paperResult');
-
-            // 驗證所有輸入
-            if (isNaN(totalPrice) || totalPrice <= 0) {
-                resultBox.textContent = "錯誤：總價需大於0";
-                return;
-            }
-            if (isNaN(setNum) || setNum < 1) {
-                resultBox.textContent = "錯誤：串數至少為1";
-                return;
-            }
-            if (isNaN(packNum) || packNum < 1) {
-                resultBox.textContent = "錯誤：每串包數至少為1";
-                return;
-            }
-            if (isNaN(sheetNum) || sheetNum < 1) {
-                resultBox.textContent = "錯誤：每包張數至少為1";
-                return;
-            }
-
-            // 計算總張數 = 串數 × 包數 × 單包張數
+            if (isNaN(totalPrice) || totalPrice <= 0) { resultBox.textContent = "錯誤：總價需大於0"; return; }
+            if (isNaN(setNum) || setNum < 1) { resultBox.textContent = "錯誤：串數至少為1"; return; }
+            if (isNaN(packNum) || packNum < 1) { resultBox.textContent = "錯誤：每串包數至少為1"; return; }
+            if (isNaN(sheetNum) || sheetNum < 1) { resultBox.textContent = "錯誤：每包張數至少為1"; return; }
             const totalSheets = setNum * packNum * sheetNum;
-            // 單張價格，四捨五入至小數第6位
             const perSheet = (totalPrice / totalSheets).toFixed(6);
             resultBox.textContent = `單張成本：$${perSheet}｜總張數=${setNum}×${packNum}×${sheetNum}=${totalSheets}｜公式：${totalPrice} ÷ ${totalSheets}`;
         }
@@ -400,208 +252,95 @@
             await loadMarkets();
             await loadProducts();
             initDatePicker();
-            if (currentListId) {
-                await loadCurrentList();
-            }
+            if (currentListId) await loadCurrentList();
         }
         async function loadMarkets() {
-            const { data } = await getSupabase()
-                .from('mar_markets')
-                .select('*')
-                .order('name');
+            const { data } = await getSupabase().from('mar_markets').select('*').order('name');
             const sel = document.getElementById('marketSelect');
-            sel.innerHTML = '<option value="">請選擇市場</option>' + 
-                data.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+            sel.innerHTML = '<option value="">請選擇市場</option>' + data.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         }
         async function loadProducts() {
-            const { data } = await getSupabase()
-                .from('mar_products')
-                .select('*')
-                .order('name');
-            products = data || [];
-            renderProductSelect(products);
+            const { data } = await getSupabase().from('mar_products').select('*').order('name');
+            products = data || []; renderProductSelect(products);
         }
         function renderProductSelect(filteredProducts) {
             const sel = document.getElementById('productSelect');
-            sel.innerHTML = '<option value="">選擇商品加入清單</option>' + 
-                filteredProducts.map(p => `<option value="${p.id}">${p.name} ${p.category ? `(儲位：${p.category})` : ''}</option>`).join('');
+            sel.innerHTML = '<option value="">選擇商品加入清單</option>' + filteredProducts.map(p => `<option value="${p.id}">${p.name} ${p.category ? `(儲位：${p.category})` : ''}</option>`).join('');
         }
         function filterProducts() {
             const searchTerm = document.getElementById('productSearch').value.toLowerCase().trim();
-            if (!searchTerm) {
-                renderProductSelect(products);
-                return;
-            }
-            const filtered = products.filter(product => 
-                product.name.toLowerCase().includes(searchTerm) || 
-                (product.category && product.category.toLowerCase().includes(searchTerm))
-            );
+            if (!searchTerm) { renderProductSelect(products); return; }
+            const filtered = products.filter(product => product.name.toLowerCase().includes(searchTerm) || (product.category && product.category.toLowerCase().includes(searchTerm)));
             renderProductSelect(filtered);
         }
-        function onMarketChange() {
-            currentMarketId = document.getElementById('marketSelect').value;
-        }
+        function onMarketChange() { currentMarketId = document.getElementById('marketSelect').value; }
+        
         async function newList() {
             const marketId = document.getElementById('marketSelect').value;
             if (!marketId) { alert('請先選擇市場'); return; }
-            
-            const { data, error } = await getSupabase()
-                .from('mar_shopping_lists')
-                .insert({ market_id: marketId, status: 'active' })
-                .select().single();
-            
+            const { data, error } = await getSupabase().from('mar_shopping_lists').insert({ market_id: marketId, status: 'active' }).select().single();
             if (error) { alert('建立失敗: ' + error.message); return; }
-            
-            currentListId = data.id;
-            localStorage.setItem('currentListId', currentListId);
-            currentMarketId = marketId;
-            items = [];
-            renderList();
-            updateTotal();
+            currentListId = data.id; localStorage.setItem('currentListId', currentListId); currentMarketId = marketId;
+            items = []; renderList(); updateTotal();
         }
         async function loadCurrentList() {
-            const { data: listData } = await getSupabase()
-                .from('mar_shopping_lists')
-                .select('*')
-                .eq('id', currentListId)
-                .maybeSingle();
-            
-            if (!listData) {
-                currentListId = null;
-                localStorage.removeItem('currentListId');
-                return;
-            }
-            currentMarketId = listData.market_id;
-            document.getElementById('marketSelect').value = listData.market_id;
-            const { data: itemData } = await getSupabase()
-                .from('mar_shopping_items')
-                .select('*')
-                .eq('list_id', currentListId)
-                .order('created_at');
-            
-            items = itemData || [];
-            renderList();
-            updateTotal();
+            const { data: listData } = await getSupabase().from('mar_shopping_lists').select('*').eq('id', currentListId).maybeSingle();
+            if (!listData) { currentListId = null; localStorage.removeItem('currentListId'); return; }
+            currentMarketId = listData.market_id; document.getElementById('marketSelect').value = listData.market_id;
+            const { data: itemData } = await getSupabase().from('mar_shopping_items').select('*').eq('list_id', currentListId).order('created_at');
+            items = itemData || []; renderList(); updateTotal();
         }
         async function addItem() {
-            if (!currentListId) {
-                alert('請先點擊「開新清單」建立購物清單');
-                return;
-            }
+            if (!currentListId) { alert('請先點擊「開新清單」建立購物清單'); return; }
             const productId = document.getElementById('productSelect').value;
             const qty = parseInt(document.getElementById('addQty').value) || 1;
             if (!productId) { alert('請選擇商品'); return; }
             const product = products.find(p => p.id === productId);
-            
-            const { data: history } = await getSupabase()
-                .from('mar_price_history')
-                .select('price, price_type')
-                .eq('product_id', productId)
-                .eq('market_id', currentMarketId)
-                .order('purchase_date', { ascending: false })
-                .limit(1);
-            
+            const { data: history } = await getSupabase().from('mar_price_history').select('price, price_type').eq('product_id', productId).eq('market_id', currentMarketId).order('purchase_date', { ascending: false }).limit(1);
             const refPrice = history && history.length > 0 ? parseInt(history[0].price) || 0 : (parseInt(product.default_price) || 0);
-            const { data, error } = await getSupabase()
-                .from('mar_shopping_items')
-                .insert({
-                    list_id: currentListId,
-                    product_id: productId,
-                    product_name: product.name,
-                    quantity: qty,
-                    price: refPrice,
-                    status: 'pending'
-                })
-                .select().single();
             
+            const { data, error } = await getSupabase().from('mar_shopping_items').insert({
+                list_id: currentListId, product_id: productId, product_name: product.name, quantity: qty, price: refPrice, status: 'pending'
+            }).select().single();
             if (error) { alert('加入失敗: ' + error.message); return; }
             
-            items.push(data);
-            document.getElementById('productSelect').value = '';
-            document.getElementById('addQty').value = '1';
-            renderList();
-            updateTotal();
+            items.push(data); document.getElementById('productSelect').value = ''; document.getElementById('addQty').value = '1';
+            renderList(); updateTotal();
         }
+        
         function toggleNewProductForm() {
             const form = document.getElementById('newProductForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
         }
         async function addCustomProduct() {
-            if (!currentListId) {
-                alert('請先點擊「開新清單」建立購物清單');
-                return;
-            }
-            
+            if (!currentListId) { alert('請先點擊「開新清單」建立購物清單'); return; }
             const productName = document.getElementById('newProductName').value.trim();
             const productStorage = document.getElementById('newProductStorage').value.trim();
             const productPrice = parseInt(document.getElementById('newProductPrice').value) || 0;
             const productQty = parseInt(document.getElementById('newProductQty').value) || 1;
             const productUrl = document.getElementById('newProductUrl').value.trim();
-            
-            if (!productName) {
-                alert('請輸入商品名稱');
-                return;
-            }
+            if (!productName) { alert('請輸入商品名稱'); return; }
             
             try {
-                const { data: newProduct, error: productError } = await getSupabase()
-                    .from('mar_products')
-                    .insert({
-                        name: productName,
-                        category: productStorage,
-                        default_price: productPrice,
-                        url: productUrl
-                    })
-                    .select().single();
-                
+                const { data: newProduct, error: productError } = await getSupabase().from('mar_products').insert({ name: productName, category: productStorage, default_price: productPrice, url: productUrl }).select().single();
                 if (productError) throw productError;
-                
-                const { data: newItem, error: itemError } = await getSupabase()
-                    .from('mar_shopping_items')
-                    .insert({
-                        list_id: currentListId,
-                        product_id: newProduct.id,
-                        product_name: newProduct.name,
-                        quantity: productQty,
-                        price: productPrice,
-                        status: 'pending'
-                    })
-                    .select().single();
-                
+                const { data: newItem, error: itemError } = await getSupabase().from('mar_shopping_items').insert({ list_id: currentListId, product_id: newProduct.id, product_name: newProduct.name, quantity: productQty, price: productPrice, status: 'pending' }).select().single();
                 if (itemError) throw itemError;
                 
-                products.push(newProduct);
-                items.push(newItem);
-                
-                document.getElementById('newProductName').value = '';
-                document.getElementById('newProductStorage').value = '';
-                document.getElementById('newProductPrice').value = '0';
-                document.getElementById('newProductUnit').value = '';
-                document.getElementById('newProductQty').value = '1';
-                document.getElementById('newProductUrl').value = '';
-                toggleNewProductForm();
-                
-                renderProductSelect(products);
-                renderList();
-                updateTotal();
-                
+                products.push(newProduct); items.push(newItem);
+                document.getElementById('newProductName').value = ''; document.getElementById('newProductStorage').value = '';
+                document.getElementById('newProductPrice').value = '0'; document.getElementById('newProductUnit').value = '';
+                document.getElementById('newProductQty').value = '1'; document.getElementById('newProductUrl').value = '';
+                toggleNewProductForm(); renderProductSelect(products); renderList(); updateTotal();
                 alert(`成功新增商品：${productName}`);
-                
-            } catch (error) {
-                alert('新增商品失敗: ' + error.message);
-            }
+            } catch (error) { alert('新增商品失敗: ' + error.message); }
         }
+        
         async function updateItemStatus(itemId, status) {
-            const { error } = await getSupabase()
-                .from('mar_shopping_items')
-                .update({ status })
-                .eq('id', itemId);
-            
+            const { error } = await getSupabase().from('mar_shopping_items').update({ status }).eq('id', itemId);
             if (error) return;
-            const item = items.find(i => i.id === itemId);
-            if (item) item.status = status;
-            renderList();
-            updateTotal();
+            const item = items.find(i => i.id === itemId); if (item) item.status = status;
+            renderList(); updateTotal();
         }
         async function updateItemField(itemId, field, value) {
             let updateValue = value;
@@ -609,172 +348,92 @@
                 updateValue = parseInt(value) || 1;
                 if (field === 'price' && updateValue < 0) updateValue = 0;
             }
-            
-            const { error } = await getSupabase()
-                .from('mar_shopping_items')
-                .update({ [field]: updateValue })
-                .eq('id', itemId);
-            
+            const { error } = await getSupabase().from('mar_shopping_items').update({ [field]: updateValue }).eq('id', itemId);
             if (error) return;
-            const item = items.find(i => i.id === itemId);
-            if (item) item[field] = updateValue;
+            const item = items.find(i => i.id === itemId); if (item) item[field] = updateValue;
             updateTotal();
         }
         async function deleteItem(itemId) {
             if (!confirm('確定移除此商品？')) return;
-            const { error } = await getSupabase()
-                .from('mar_shopping_items')
-                .delete()
-                .eq('id', itemId);
-            
+            const { error } = await getSupabase().from('mar_shopping_items').delete().eq('id', itemId);
             if (error) return;
             items = items.filter(i => i.id !== itemId);
-            renderList();
-            updateTotal();
+            renderList(); updateTotal();
         }
+        
         function updateTotal() {
-            const total = items
-                .filter(i => i.status === 'purchased')
-                .reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
+            const total = items.filter(i => i.status === 'purchased').reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
             document.getElementById('totalPrice').textContent = '$' + total;
         }
         async function getHistoryPrice(productId) {
-            const { data } = await getSupabase()
-                .from('mar_price_history')
-                .select('price, purchase_date, price_type')
-                .eq('product_id', productId)
-                .eq('market_id', currentMarketId)
-                .order('purchase_date', { ascending: false })
-                .limit(1);
+            const { data } = await getSupabase().from('mar_price_history').select('price, purchase_date, price_type').eq('product_id', productId).eq('market_id', currentMarketId).order('purchase_date', { ascending: false }).limit(1);
             return data && data.length > 0 ? data[0] : null;
         }
+        
         async function renderList() {
             const container = document.getElementById('itemList');
-            
-            if (items.length === 0) {
-                container.innerHTML = '<div class="empty-tip">尚未加入商品，請從上方選擇商品加入購物清單</div>';
-                return;
-            }
+            if (items.length === 0) { container.innerHTML = '<div class="empty-tip">尚未加入商品，請從上方選擇商品加入購物清單</div>'; return; }
             let html = '';
             for (const item of items) {
                 const product = products.find(p => p.id === item.product_id);
                 const history = await getHistoryPrice(item.product_id);
                 const statusClass = item.status !== 'pending' ? `status-${item.status}` : '';
                 const storageText = product?.category ? `<span class="storage-location">【儲位：${product.category}】</span>` : '';
-                
                 let historyHtml = '';
                 if (history) {
-                    const priceTypeTag = history.price_type === 'compare' 
-                        ? '<span class="compare-tag">[比價]</span>' 
-                        : '<span class="purchase-tag">[購買]</span>';
+                    const priceTypeTag = history.price_type === 'compare' ? '<span class="compare-tag">[比價]</span>' : '<span class="purchase-tag">[購買]</span>';
                     historyHtml = `<div class="history-price">歷史參考價：$${parseInt(history.price)} ${priceTypeTag} (${history.purchase_date})</div>`;
                 }
-                
                 html += `
                 <div class="item-card ${statusClass}">
                     <div class="item-main">
                         <div class="item-name">
-                            ${item.product_name}
-                            ${storageText}
+                            ${item.product_name} ${storageText}
                             ${product && product.url ? `<a href="${product.url}" target="_blank">🔗 官網</a>` : ''}
                         </div>
                         <span class="item-delete" onclick="deleteItem('${item.id}')">✕ 移除</span>
                     </div>
                     ${historyHtml}
                     <div class="item-detail">
-                        <span>數量：<input type="number" step="1" min="1" value="${item.quantity}" 
-                            onchange="updateItemField('${item.id}', 'quantity', this.value)"></span>
-                        <span>單價：<input type="number" step="1" min="0" value="${item.price}" 
-                            onchange="updateItemField('${item.id}', 'price', this.value)"></span>
+                        <span>數量：<input type="number" step="1" min="1" value="${item.quantity}" onchange="updateItemField('${item.id}', 'quantity', this.value)"></span>
+                        <span>單價：<input type="number" step="1" min="0" value="${item.price}" onchange="updateItemField('${item.id}', 'price', this.value)"></span>
                         <span>小計：$${(parseInt(item.price) * parseInt(item.quantity))}</span>
                     </div>
                     <div class="status-btns">
-                        <button class="status-btn ${item.status === 'pending' ? 'active-pending' : ''}" 
-                            onclick="updateItemStatus('${item.id}', 'pending')">待購買</button>
-                        <button class="status-btn ${item.status === 'purchased' ? 'active-purchased' : ''}" 
-                            onclick="updateItemStatus('${item.id}', 'purchased')">已購買</button>
-                        <button class="status-btn ${item.status === 'out_of_stock' ? 'active-out_of_stock' : ''}" 
-                            onclick="updateItemStatus('${item.id}', 'out_of_stock')">缺貨中</button>
-                        <button class="status-btn ${item.status === 'compare_price' ? 'active-compare_price' : ''}" 
-                            onclick="updateItemStatus('${item.id}', 'compare_price')">純比價</button>
+                        <button class="status-btn ${item.status === 'pending' ? 'active-pending' : ''}" onclick="updateItemStatus('${item.id}', 'pending')">待購買</button>
+                        <button class="status-btn ${item.status === 'purchased' ? 'active-purchased' : ''}" onclick="updateItemStatus('${item.id}', 'purchased')">已購買</button>
+                        <button class="status-btn ${item.status === 'out_of_stock' ? 'active-out_of_stock' : ''}" onclick="updateItemStatus('${item.id}', 'out_of_stock')">缺貨中</button>
+                        <button class="status-btn ${item.status === 'compare_price' ? 'active-compare_price' : ''}" onclick="updateItemStatus('${item.id}', 'compare_price')">純比價</button>
                     </div>
-                </div>
-                `;
+                </div>`;
             }
             container.innerHTML = html;
         }
+        
         async function checkout() {
-    const purchasedItems = items.filter(i => i.status === 'purchased');
-    if (purchasedItems.length === 0) {
-        alert('尚無已購買的商品');
-        return;
-    }
-    const total = purchasedItems.reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
-    const selectedDate = getSelectedDate();
-
-    try {
-        const { error: listError } = await getSupabase()
-            .from('mar_shopping_lists')
-            .update({ total_price: total, status: 'completed' })
-            .eq('id', currentListId);
+            const purchasedItems = items.filter(i => i.status === 'purchased');
+            if (purchasedItems.length === 0) { alert('尚無已購買的商品'); return; }
+            const total = purchasedItems.reduce((sum, i) => sum + (parseInt(i.price) * parseInt(i.quantity)), 0);
+            const selectedDate = getSelectedDate();
+            try {
+                const { error: listError } = await getSupabase().from('mar_shopping_lists').update({ total_price: total, status: 'completed' }).eq('id', currentListId);
+                if (listError) throw new Error('更新清單失敗: ' + listError.message);
+                const historyRecords = purchasedItems.map(item => ({ product_id: item.product_id, market_id: currentMarketId, price: parseInt(item.price), quantity: parseInt(item.quantity), purchase_date: selectedDate, price_type: 'purchase' }));
+                const { error: historyError } = await getSupabase().from('mar_price_history').insert(historyRecords);
+                if (historyError) throw new Error('存入購買記錄失敗: ' + historyError.message);
+                alert(`結帳完成！本次總花費：$${total}\n已自動保存 ${purchasedItems.length} 筆購買記錄到歷史價格庫（日期：${selectedDate}）`);
+            } catch (error) { alert(error.message); }
+        }
         
-        if (listError) throw new Error('更新清單失敗: ' + listError.message);
-
-        const historyRecords = purchasedItems.map(item => ({
-            product_id: item.product_id,
-            market_id: currentMarketId,
-            price: parseInt(item.price),
-            quantity: parseInt(item.quantity),
-            purchase_date: selectedDate,
-            price_type: 'purchase'
-        }));
-
-        const { error: historyError } = await getSupabase()
-            .from('mar_price_history')
-            .insert(historyRecords);
-        
-        if (historyError) throw new Error('存入購買記錄失敗: ' + historyError.message);
-
-        alert(`結帳完成！本次總花費：$${total}\n已自動保存 ${purchasedItems.length} 筆購買記錄到歷史價格庫（日期：${selectedDate}）`);
-
-    } catch (error) {
-        alert(error.message);
-    }
-}
-
         async function saveToHistory() {
             const targetItems = items.filter(i => i.status === 'purchased' || i.status === 'compare_price');
-            if (targetItems.length === 0) {
-                alert('尚無已購買或純比價的商品可存入歷史');
-                return;
-            }
+            if (targetItems.length === 0) { alert('尚無已購買或純比價的商品可存入歷史'); return; }
             const selectedDate = getSelectedDate();
-            
-            const records = targetItems.map(i => ({
-                product_id: i.product_id,
-                market_id: currentMarketId,
-                price: parseInt(i.price),
-                quantity: i.quantity,
-                purchase_date: selectedDate,
-                price_type: i.status === 'purchased' ? 'purchase' : 'compare'
-            }));
-            
-            const { error } = await getSupabase()
-                .from('mar_price_history')
-                .insert(records);
-            
+            const records = targetItems.map(i => ({ product_id: i.product_id, market_id: currentMarketId, price: parseInt(i.price), quantity: i.quantity, purchase_date: selectedDate, price_type: i.status === 'purchased' ? 'purchase' : 'compare' }));
+            const { error } = await getSupabase().from('mar_price_history').insert(records);
             if (error) { alert('存入失敗: ' + error.message); return; }
-            
-            const count = {
-                purchase: targetItems.filter(i => i.status === 'purchased').length,
-                compare: targetItems.filter(i => i.status === 'compare_price').length
-            };
-            
-            alert(`已成功存入歷史價格記錄！
-購買價格：${count.purchase} 筆
-比價價格：${count.compare} 筆
-記錄日期：${selectedDate}
-下次購物時可參考`);
+            const count = { purchase: targetItems.filter(i => i.status === 'purchased').length, compare: targetItems.filter(i => i.status === 'compare_price').length };
+            alert(`已成功存入歷史價格記錄！\n購買價格：${count.purchase} 筆\n比價價格：${count.compare} 筆\n記錄日期：${selectedDate}\n下次購物時可參考`);
         }
 
         init();
