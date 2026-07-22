@@ -64,22 +64,23 @@
     <div class="container">
         <h1>🛒 購物清單後台管理系統</h1>
         
+        <div class="tabs">
+            <button class="btn-front" id="btnFront">前台</button>            
+            <button class="tab-btn" data-tab="products">商品管理</button>
+            <button class="tab-btn" data-tab="markets">市場管理</button>
+            <button class="tab-btn active" data-tab="history">歷史購物記錄</button>
+        </div>
+        
         <div class="backup-restore-section">
             <span style="font-weight: 600; color: #2c5282;">資料備份/還原：</span>
             <button class="btn-backup" id="btnBackup">備份資料 (JSON)</button>
             <button class="btn-restore" id="btnRestore">還原資料 (JSON)</button>
-            <button class="btn-front" id="btnFront">前台</button>
+            <button class="btn-clear" id="btnClearShoppingLists">清除購物檢查清單記錄</button>
             <input type="file" id="fileInput" accept=".json" />
         </div>
         
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="products">商品管理</button>
-            <button class="tab-btn" data-tab="markets">市場管理</button>
-            <button class="tab-btn" data-tab="history">歷史購物記錄</button>
-        </div>
-
         <!-- 商品管理 -->
-        <div id="products" class="tab-content active">
+        <div id="products" class="tab-content">
             <h2 style="margin-bottom:15px;">商品資料維護</h2>
             <div class="form-row" style="margin-bottom: 10px;">
                 <div class="search-input-wrapper">
@@ -136,7 +137,7 @@
         </div>
 
         <!-- 歷史記錄 -->
-        <div id="history" class="tab-content">
+        <div id="history" class="tab-content active">
             <h2 style="margin-bottom:15px;">歷史價格記錄</h2>
             <div class="form-row">
                 <div class="search-input-wrapper">
@@ -152,10 +153,11 @@
                 <select id="filterPriceType">
                     <option value="">全部類型</option>
                     <option value="purchase">購買</option>
-                    <option value="compare">純比價</option>
+                    <option value="compare">比價</option>
                 </select>
                 <button class="btn-primary" id="btnQueryHistory">查詢</button>
-                <button class="btn-clear" id="btnClearShoppingLists">清除購物檢查清單記錄</button>
+                <!-- 新增：清空搜尋按鈕 -->
+                <button class="btn-clear" id="btnClearHistorySearch">清空搜尋</button>
             </div>
             
             <div id="priceStats" class="stats-container" style="display: none;">
@@ -378,6 +380,15 @@
             loadProducts();
         }
         
+        // 新增：清除歷史紀錄搜尋框與條件
+        function clearHistorySearch() {
+            document.getElementById('searchProductName').value = '';
+            document.getElementById('filterProduct').value = '';
+            document.getElementById('filterMarket').value = '';
+            document.getElementById('filterPriceType').value = '';
+            loadPriceHistory();
+        }
+        
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -502,7 +513,7 @@
 
             const tbody = document.getElementById('historyList');
             tbody.innerHTML = filteredData.map(h=>{
-                const typeText = h.price_type === 'purchase' ? '購買' : '純比價';
+                const typeText = h.price_type === 'purchase' ? '購買' : '比價';
                 const typeClass = h.price_type === 'purchase' ? 'tag-purchase' : 'tag-compare';
                 const localDate = formatLocalDate(h.purchase_date);
                 return `<tr>
@@ -529,6 +540,8 @@
             document.getElementById('btnAddProduct').onclick = addProduct;
             document.getElementById('btnAddMarket').onclick = addMarket;
             document.getElementById('btnQueryHistory').onclick = loadPriceHistory;
+            // 綁定清除歷史紀錄搜尋按鈕
+            document.getElementById('btnClearHistorySearch').onclick = clearHistorySearch;
             document.getElementById('btnClearShoppingLists').onclick = clearShoppingLists;
             document.getElementById('btnUpdatePrice').onclick = updateProductDefaultPrice;
             document.getElementById('btnBackup').onclick = backupData;
@@ -541,7 +554,11 @@
             document.getElementById('btnSearchProduct').onclick = searchProductByName;
             document.getElementById('btnClearSearch').onclick = clearProductSearch;
             document.getElementById('searchProductByName').addEventListener('keypress', function(e) { if (e.key === 'Enter') searchProductByName(); });
-            loadProducts(); loadMarkets();
+            
+            // 載入初始資料
+            loadProducts(); 
+            loadMarkets();
+            loadPriceHistory();
         });
     </script>
 </body>
