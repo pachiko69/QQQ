@@ -65,10 +65,10 @@
         <h1>🛒 購物清單後台管理</h1>
         
         <div class="tabs">
-            <button class="btn-front" id="btnFront">前台</button>            
-            <button class="tab-btn" data-tab="products">商品管理</button>
-            <button class="tab-btn" data-tab="markets">市場管理</button>
-            <button class="tab-btn active" data-tab="history">歷史購物記錄</button>
+            <button class="btn-danger" id="btnFront">前台</button>            
+            <button class="btn-front" data-tab="products">商品管理</button>
+            <button class="btn-front" data-tab="markets">市場管理</button>
+            <button class="btn-front active" data-tab="history">歷史購物記錄</button>
         </div>
         
         <div class="backup-restore-section">
@@ -174,7 +174,7 @@
                         <tr>
                             <th>商品</th>
                             <th>市場</th>
-                            <th>記錄類型</th>
+                            <th>類型</th>
                             <th>單價</th>
                             <th>數量</th>
                             <th>日期</th>
@@ -558,6 +558,10 @@
             // 載入初始資料
             loadProducts(); 
             loadMarkets();
+// 🌟 新增：設定模糊搜尋框的預設值
+            document.getElementById('searchProductName').value = 'A4硬底座';
+            
+            // 執行查詢 (此時會自動讀取上方剛設定好的 'A4硬底座' 進行過濾)
             loadPriceHistory();
         });
     </script>
