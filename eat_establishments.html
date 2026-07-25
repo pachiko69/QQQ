@@ -51,7 +51,7 @@
         <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto w-full">
             <h2 class="text-xl font-semibold mb-4">店家列表</h2>
             <table class="w-full border-collapse whitespace-nowrap min-w-max">
-                <thead><tr class="bg-gray-200"><th class="border p-2 text-left">名稱</th><th class="border p-2 text-left">地區</th><th class="border p-2 text-left">分類</th><th class="border p-2 text-left">電話</th><th class="border p-2 text-center">操作</th></tr></thead>
+                <thead><tr class="bg-gray-200"><th class="border p-2 text-left">名稱</th><th class="border p-2 text-center">操作</th><th class="border p-2 text-left">地區</th><th class="border p-2 text-left">分類</th><th class="border p-2 text-left">電話</th></tr></thead>
                 <tbody id="estTableBody"></tbody>
             </table>
         </div>
@@ -78,8 +78,12 @@
         async function fetchEstablishments() {
             const { data } = await supabaseClient.from('eat_establishments').select('*, eat_regions(name)').order('created_at', { ascending: false });
             document.getElementById('estTableBody').innerHTML = data.map(item => `<tr>
-                <td class="border p-2 font-semibold">${item.name}</td><td class="border p-2">${item.eat_regions?.name || '-'}</td><td class="border p-2">${(item.category_ids||[]).map(id=>allCategories.find(c=>c.id===id)?.name).filter(n=>n).join(', ')||'-'}</td><td class="border p-2">${item.phone || '-'}</td>
-                <td class="border p-2 text-center"><button onclick="editEst('${item.id}')" class="text-blue-500 mr-2">編輯</button><button onclick="deleteEst('${item.id}')" class="text-red-500">刪除</button></td></tr>`).join('');
+                <td class="border p-2 font-semibold">${item.name}</td>
+                <td class="border p-2 text-center"><button onclick="editEst('${item.id}')" class="text-blue-500 mr-2">編輯</button><button onclick="deleteEst('${item.id}')" class="text-red-500">刪除</button></td>
+                <td class="border p-2">${item.eat_regions?.name || '-'}</td>
+                <td class="border p-2">${(item.category_ids||[]).map(id=>allCategories.find(c=>c.id===id)?.name).filter(n=>n).join(', ')||'-'}</td>
+                <td class="border p-2">${item.phone || '-'}</td>
+                </tr>`).join('');
         }
         document.getElementById('establishmentForm').onsubmit = async (e) => {
             e.preventDefault(); const id = document.getElementById('estId').value;
