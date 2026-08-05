@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的股票清單系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div class="max-w-7xl mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">📈 股票交易記錄清單</h1>
+
+        <!-- 頁籤選單 -->
+        <div class="flex border-b mb-6">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 tab-active">主儀表板 (持有中)</button>
+            <button onclick="switchTab('report')" id="btn-report" class="px-4 py-2 text-gray-500">計算報表 (已售出)</button>
+        </div>
+
+        <!-- 區塊：主儀表板 -->
+        <div id="tab-dashboard" class="block">
+            <!-- 新增股票表單 -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h2 class="text-xl font-bold mb-4">＋ 新增買入記錄</h2>
+                <form id="add-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-blue-600">股票編號 (輸入後自動搜尋)</label>
+                        <input type="text" id="add-id" required placeholder="例如: 3546" class="mt-1 w-full border rounded p-2 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">股票名稱</label>
+                        <input type="text" id="add-name" required placeholder="例如: 宇峻" class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">買進日期</label>
+                        <input type="date" id="add-date" required class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">買進單價</label>
+                        <input type="number" step="0.01" id="add-price" required class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div class="md:col-span-4 text-right mt-2">
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">儲存買入紀錄</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 持有中股票列表與試算 -->
+            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <h2 class="text-xl font-bold mb-4">📊 目前持有中 & 賣出試算</h2>
+                <table class="min-w-full text-sm text-left whitespace-nowrap">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="p-3">編號 / 名稱</th>
+                            <th class="p-3">買進日期</th>
+                            <th class="p-3">買進單價</th>
+                            <th class="p-3">買入交割款</th>
+                            <th class="p-3 bg-blue-50 text-blue-800">試算賣出單價</th>
+                            <th class="p-3 bg-blue-50 text-blue-800">試算盈虧</th>
+                            <th class="p-3 bg-blue-50 text-blue-800">試算報酬率</th>
+                            <th class="p-3 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="holdings-tbody">
+                        <!-- 資料由 JS 動態載入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 區塊：計算報表 -->
+        <div id="tab-report" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h2 class="text-xl font-bold mb-4">🔍 查詢已售出紀錄</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
+                    <div>
+                        <label class="block text-sm font-medium">開始日期 (賣出)</label>
+                        <input type="date" id="filter-start" class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">結束日期 (賣出)</label>
+                        <input type="date" id="filter-end" class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">股票編號/名稱 (選填)</label>
+                        <input type="text" id="filter-keyword" placeholder="輸入編號或名稱" class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <button onclick="fetchReports()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">查詢</button>
+                    </div>
+                </div>
+
+                <!-- 總計顯示 -->
+                <div class="p-4 bg-gray-50 border rounded text-lg font-bold mb-4">
+                    查詢區間總盈虧：<span id="report-total-pnl" class="text-2xl">$0</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left whitespace-nowrap">
+                        <thead class="bg-gray-100 border-b">
+                            <tr>
+                                <th class="p-3">編號 / 名稱</th>
+                                <th class="p-3">買進日期</th>
+                                <th class="p-3">買進單價</th>
+                                <th class="p-3">賣出日期</th>
+                                <th class="p-3">賣出單價</th>
+                                <th class="p-3">當沖</th>
+                                <th class="p-3">買入交割款</th>
+                                <th class="p-3">賣出交割款</th>
+                                <th class="p-3">買賣盈虧</th>
+                                <th class="p-3">報酬率(%)</th>
+                                <th class="p-3 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody">
+                            <!-- 資料由 JS 動態載入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯專用的彈出視窗 (Modal) -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">✏️ 編輯買入記錄</h2>
+            <form id="edit-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">股票編號</label>
+                        <input type="text" id="edit-id" disabled class="mt-1 w-full border rounded p-2 bg-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">股票名稱</label>
+                        <input type="text" id="edit-name" disabled class="mt-1 w-full border rounded p-2 bg-gray-100">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">買進日期</label>
+                    <input type="date" id="edit-date" required class="mt-1 w-full border rounded p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">買進單價</label>
+                    <input type="number" step="0.01" id="edit-price" required class="mt-1 w-full border rounded p-2">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存變更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 執行邏輯 -->
+    <script>
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let holdingsData = []; 
+        let currentEditId = null;
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('zh-TW', {
+                style: 'currency',
+                currency: 'TWD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('add-date').value = today;
+            fetchHoldings();
+        });
+
+        document.getElementById('add-id').addEventListener('blur', async (e) => {
+            const stockId = e.target.value.trim();
+            if (!stockId) return;
+
+            const { data, error } = await supabaseClient
+                .from('twstk_stock_info')
+                .select('stock_name')
+                .eq('stock_id', stockId)
+                .single();
+
+            if (data && data.stock_name) {
+                document.getElementById('add-name').value = data.stock_name;
+            }
+        });
+
+        function switchTab(tabId) {
+            document.getElementById('tab-dashboard').classList.toggle('hidden', tabId !== 'dashboard');
+            document.getElementById('tab-report').classList.toggle('hidden', tabId !== 'report');
+            
+            document.getElementById('btn-dashboard').className = `px-4 py-2 ${tabId === 'dashboard' ? 'tab-active' : 'text-gray-500'}`;
+            document.getElementById('btn-report').className = `px-4 py-2 ${tabId === 'report' ? 'tab-active' : 'text-gray-500'}`;
+
+            if(tabId === 'report') {
+                fetchReports();
+            } else if(tabId === 'dashboard') {
+                fetchHoldings();
+            }
+        }
+
+        document.getElementById('add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('add-id').value.trim();
+            const name = document.getElementById('add-name').value.trim();
+            const date = document.getElementById('add-date').value;
+            const price = parseFloat(document.getElementById('add-price').value);
+
+            const buyTotal = Math.round(price * 1000);
+            const buyFee = Math.round(buyTotal * 0.001425 * 0.6);
+            const buySettlement = buyTotal + buyFee;
+
+            const { error: insertError } = await supabaseClient
+                .from('twstk_stock_records') 
+                .insert([{
+                    stock_id: id,
+                    stock_name: name,
+                    buy_date: date,
+                    buy_price: price.toFixed(2), 
+                    buy_total: buyTotal,
+                    buy_fee: buyFee,
+                    buy_settlement: buySettlement,
+                    status: '持有中'
+                }]);
+
+            if (insertError) {
+                alert('新增失敗: ' + insertError.message);
+                return;
+            }
+
+            await supabaseClient
+                .from('twstk_stock_info')
+                .upsert([{ stock_id: id, stock_name: name }]);
+
+            // alert('新增成功！');
+            document.getElementById('add-form').reset();
+            document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
+            fetchHoldings();
+        });
+
+        async function fetchHoldings() {
+            const { data, error } = await supabaseClient
+                .from('twstk_stock_records')
+                .select('*')
+                .eq('status', '持有中')
+                .order('buy_date', { ascending: false });
+
+            if (error) { console.error(error); return; }
+            holdingsData = data;
+            renderHoldings();
+        }
+
+        function renderHoldings() {
+            const tbody = document.getElementById('holdings-tbody');
+            tbody.innerHTML = '';
+            
+            holdingsData.forEach(stock => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-3 font-medium">${stock.stock_id} ${stock.stock_name}</td>
+                    <td class="p-3">${stock.buy_date}</td>
+                    <td class="p-3 text-red-600">${parseFloat(stock.buy_price).toFixed(2)}</td>
+                    <td class="p-3">${formatCurrency(stock.buy_settlement)}</td>
+                    <td class="p-3 bg-blue-50">
+                        <input type="number" step="0.01" placeholder="輸入賣價" class="border rounded p-1 w-20 test-price-input" data-id="${stock.id}">
+                        <div class="mt-1">
+                            <label class="text-xs text-gray-700 cursor-pointer flex items-center">
+                                <input type="checkbox" class="mr-1 day-trade-cb" data-id="${stock.id}"> 當沖
+                            </label>
+                        </div>
+                    </td>
+                    <td class="p-3 bg-blue-50 font-bold" id="pnl-${stock.id}">-</td>
+                    <td class="p-3 bg-blue-50 font-bold" id="roi-${stock.id}">-</td>
+                    <td class="p-3 flex justify-center gap-2">
+                        <button onclick="processSell('${stock.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">賣出</button>
+                        <button onclick="openEditModal('${stock.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600">編輯</button>
+                        <button onclick="deleteStock('${stock.id}', false)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const handleTrialCalculation = (e) => {
+                const stockId = e.target.dataset.id;
+                const inputEl = document.querySelector(`.test-price-input[data-id="${stockId}"]`);
+                const cbEl = document.querySelector(`.day-trade-cb[data-id="${stockId}"]`);
+                
+                const sellPrice = parseFloat(inputEl.value);
+                const isDayTrade = cbEl.checked;
+                const stock = holdingsData.find(s => s.id === stockId);
+                
+                if (isNaN(sellPrice) || sellPrice <= 0) {
+                    document.getElementById(`pnl-${stockId}`).innerText = '-';
+                    document.getElementById(`pnl-${stockId}`).className = 'p-3 bg-blue-50 font-bold';
+                    document.getElementById(`roi-${stockId}`).innerText = '-';
+                    return;
+                }
+
+                const res = calculateSellResult(stock.buy_settlement, sellPrice, isDayTrade);
+                
+                const pnlTd = document.getElementById(`pnl-${stockId}`);
+                const roiTd = document.getElementById(`roi-${stockId}`);
+                
+                pnlTd.innerText = formatCurrency(res.pnl);
+                pnlTd.className = `p-3 bg-blue-50 font-bold ${res.pnl >= 0 ? 'text-red-600' : 'text-green-600'}`;
+                
+                roiTd.innerText = res.roi.toFixed(2) + '%';
+                roiTd.className = `p-3 bg-blue-50 font-bold ${res.roi >= 0 ? 'text-red-600' : 'text-green-600'}`;
+            };
+
+            document.querySelectorAll('.test-price-input').forEach(input => {
+                input.addEventListener('input', handleTrialCalculation);
+            });
+            document.querySelectorAll('.day-trade-cb').forEach(cb => {
+                cb.addEventListener('change', handleTrialCalculation);
+            });
+        }
+
+        function calculateSellResult(buySettlement, sellPrice, isDayTrade) {
+            buySettlement = Math.round(parseFloat(buySettlement));
+            const sellTotal = Math.round(sellPrice * 1000);
+            const sellFee = Math.round(sellTotal * 0.001425 * 0.6);
+            
+            const taxRate = isDayTrade ? 0.0015 : 0.003;
+            const tax = Math.round(sellTotal * taxRate);
+            
+            const sellSettlement = sellTotal - sellFee - tax;
+            const pnl = sellSettlement - buySettlement;
+            const roi = (pnl / buySettlement) * 100;
+
+            return { sellTotal, sellFee, tax, sellSettlement, pnl, roi };
+        }
+
+        async function deleteStock(dbId, isReportTab) {
+            if (!confirm('確定要刪除這筆紀錄嗎？此動作無法復原。')) return;
+
+            const { error } = await supabaseClient
+                .from('twstk_stock_records')
+                .delete()
+                .eq('id', dbId);
+
+            if (error) {
+                alert('刪除失敗: ' + error.message);
+            } else {
+                if (isReportTab) {
+                    fetchReports();
+                } else {
+                    fetchHoldings();
+                }
+            }
+        }
+
+        async function undoSell(dbId) {
+            if (!confirm('確定要撤銷這筆賣出紀錄嗎？\n狀態將恢復為「持有中」，您可以回到主儀表板重新執行賣出。')) return;
+
+            const { error } = await supabaseClient
+                .from('twstk_stock_records')
+                .update({
+                    sell_date: null,
+                    sell_price: null,
+                    sell_total: null,
+                    sell_fee: null,
+                    tax: null,
+                    sell_settlement: null,
+                    profit_loss: null,
+                    roi: null,
+                    status: '持有中'
+                })
+                .eq('id', dbId);
+
+            if (error) {
+                alert('撤銷失敗: ' + error.message);
+            } else {
+                // alert('撤銷成功！該筆股票已移回「主儀表板 (持有中)」。');
+                fetchReports(); 
+            }
+        }
+
+        function openEditModal(dbId) {
+            const stock = holdingsData.find(s => s.id === dbId);
+            if (!stock) return;
+
+            currentEditId = dbId;
+            document.getElementById('edit-id').value = stock.stock_id;
+            document.getElementById('edit-name').value = stock.stock_name;
+            document.getElementById('edit-date').value = stock.buy_date;
+            document.getElementById('edit-price').value = parseFloat(stock.buy_price).toFixed(2);
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            currentEditId = null;
+        }
+
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newDate = document.getElementById('edit-date').value;
+            const newPrice = parseFloat(document.getElementById('edit-price').value);
+
+            const buyTotal = Math.round(newPrice * 1000);
+            const buyFee = Math.round(buyTotal * 0.001425 * 0.6);
+            const buySettlement = buyTotal + buyFee;
+
+            const { error } = await supabaseClient
+                .from('twstk_stock_records')
+                .update({
+                    buy_date: newDate,
+                    buy_price: newPrice.toFixed(2), 
+                    buy_total: buyTotal,
+                    buy_fee: buyFee,
+                    buy_settlement: buySettlement
+                })
+                .eq('id', currentEditId);
+
+            if (error) {
+                alert('更新失敗: ' + error.message);
+            } else {
+                // alert('更新成功！');
+                closeEditModal();
+                fetchHoldings();
+            }
+        });
+
+        async function processSell(dbId) {
+            const inputEl = document.querySelector(`.test-price-input[data-id="${dbId}"]`);
+            const cbEl = document.querySelector(`.day-trade-cb[data-id="${dbId}"]`);
+            const sellPrice = parseFloat(inputEl.value);
+            const isDayTrade = cbEl.checked;
+            
+            if (isNaN(sellPrice) || sellPrice <= 0) {
+                alert('請先在「試算賣出單價」欄位輸入正確的賣出價格！');
+                return;
+            }
+
+            const stock = holdingsData.find(s => s.id === dbId);
+            
+            const defaultDate = isDayTrade ? stock.buy_date : new Date().toISOString().split('T')[0];
+            const sellDate = prompt("請輸入賣出日期 (YYYY-MM-DD)", defaultDate);
+            if (!sellDate) return;
+
+            const res = calculateSellResult(stock.buy_settlement, sellPrice, isDayTrade);
+
+            const msgPrefix = isDayTrade ? '【當沖】' : '';
+            if(confirm(`確定要以單價 ${sellPrice} 賣出 ${msgPrefix}${stock.stock_name} 嗎？\n預估盈虧為：${formatCurrency(res.pnl)}`)){
+                const { error } = await supabaseClient
+                    .from('twstk_stock_records')
+                    .update({
+                        sell_date: sellDate,
+                        sell_price: sellPrice.toFixed(2),
+                        sell_total: res.sellTotal,
+                        sell_fee: res.sellFee,
+                        tax: res.tax,
+                        sell_settlement: res.sellSettlement,
+                        profit_loss: res.pnl,
+                        roi: res.roi.toFixed(3),
+                        status: '已售出'
+                    })
+                    .eq('id', dbId);
+
+                if (error) {
+                    alert('賣出失敗: ' + error.message);
+                } else {
+                    // alert('賣出成功！紀錄已轉至計算報表。');
+                    fetchHoldings();
+                }
+            }
+        }
+
+        async function fetchReports() {
+            const start = document.getElementById('filter-start').value;
+            const end = document.getElementById('filter-end').value;
+            const keyword = document.getElementById('filter-keyword').value;
+
+            let query = supabaseClient.from('twstk_stock_records').select('*').eq('status', '已售出').order('sell_date', { ascending: false });
+
+            if (start) query = query.gte('sell_date', start);
+            if (end) query = query.lte('sell_date', end);
+            
+            const { data, error } = await query;
+            if (error) { console.error(error); return; }
+
+            let filteredData = data;
+            if (keyword) {
+                filteredData = data.filter(s => s.stock_id.includes(keyword) || s.stock_name.includes(keyword));
+            }
+
+            renderReports(filteredData);
+        }
+
+        function renderReports(data) {
+            const tbody = document.getElementById('reports-tbody');
+            tbody.innerHTML = '';
+            
+            let totalPnl = 0;
+
+            data.forEach(stock => {
+                totalPnl += parseFloat(stock.profit_loss);
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                const isWin = stock.profit_loss >= 0;
+                const colorClass = isWin ? 'text-red-600' : 'text-green-600';
+                
+                // 透過證交稅率反推是否為當沖 (< 0.2%)
+                const isDayTrade = (stock.tax / stock.sell_total) < 0.002;
+                const dayTradeBadge = isDayTrade ? '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">是</span>' : '<span class="text-gray-400">否</span>';
+                
+                tr.innerHTML = `
+                    <td class="p-3 font-medium">${stock.stock_id} ${stock.stock_name}</td>
+                    <td class="p-3">${stock.buy_date}</td>
+                    <td class="p-3 text-red-600">${parseFloat(stock.buy_price).toFixed(2)}</td>
+                    <td class="p-3">${stock.sell_date}</td>
+                    <td class="p-3 text-blue-600">${parseFloat(stock.sell_price).toFixed(2)}</td>
+                    <td class="p-3 text-center">${dayTradeBadge}</td>
+                    <td class="p-3">${formatCurrency(stock.buy_settlement)}</td>
+                    <td class="p-3">${formatCurrency(stock.sell_settlement)}</td>
+                    <td class="p-3 font-bold ${colorClass}">${formatCurrency(stock.profit_loss)}</td>
+                    <td class="p-3 font-bold ${colorClass}">${parseFloat(stock.roi).toFixed(2)}%</td>
+                    <td class="p-3 flex justify-center gap-2">
+                        <button onclick="undoSell('${stock.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600">撤銷賣出</button>
+                        <button onclick="deleteStock('${stock.id}', true)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const totalEl = document.getElementById('report-total-pnl');
+            totalEl.innerText = formatCurrency(totalPnl);
+            totalEl.className = `text-2xl ${totalPnl >= 0 ? 'text-red-600' : 'text-green-600'}`;
+        }
+    </script>
+</body>
+</html>
