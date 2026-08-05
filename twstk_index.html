@@ -28,11 +28,11 @@
                 <form id="add-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-sm font-medium text-blue-600">股票編號 (輸入後自動搜尋)</label>
-                        <input type="text" id="add-id" required placeholder="例如: 3546" class="mt-1 w-full border rounded p-2 focus:border-blue-500 outline-none">
+                        <input type="text" id="add-id" required placeholder="例如: 2330" class="mt-1 w-full border rounded p-2 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium">股票名稱</label>
-                        <input type="text" id="add-name" required placeholder="例如: 宇峻" class="mt-1 w-full border rounded p-2">
+                        <input type="text" id="add-name" required placeholder="例如: 台積電" class="mt-1 w-full border rounded p-2">
                     </div>
                     <div>
                         <label class="block text-sm font-medium">買進日期</label>
@@ -48,7 +48,7 @@
                 </form>
             </div>
 
-            <!-- 持有中股票列表與試算 -->
+            <!-- 持現中股票列表與試算 -->
             <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
                 <h2 class="text-xl font-bold mb-4">📊 目前持有中 & 賣出試算</h2>
                 <table class="min-w-full text-sm text-left whitespace-nowrap">
@@ -59,6 +59,7 @@
                             <th class="p-3">買進單價</th>
                             <th class="p-3">買入交割款</th>
                             <th class="p-3 bg-blue-50 text-blue-800">試算賣出單價</th>
+                            <th class="p-3 bg-blue-50 text-blue-800">是否當沖</th>
                             <th class="p-3 bg-blue-50 text-blue-800">試算盈虧</th>
                             <th class="p-3 bg-blue-50 text-blue-800">試算報酬率</th>
                             <th class="p-3 text-center">操作</th>
@@ -88,8 +89,10 @@
                         <label class="block text-sm font-medium">股票編號/名稱 (選填)</label>
                         <input type="text" id="filter-keyword" placeholder="輸入編號或名稱" class="mt-1 w-full border rounded p-2">
                     </div>
-                    <div>
-                        <button onclick="fetchReports()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">查詢</button>
+                    <!-- 修改點：加入了 flex 容器和清除按鈕 -->
+                    <div class="flex gap-2">
+                        <button onclick="fetchReports()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full flex-1">查詢</button>
+                        <button onclick="clearSearch()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 w-full flex-1">清除</button>
                     </div>
                 </div>
 
@@ -107,7 +110,7 @@
                                 <th class="p-3">買進單價</th>
                                 <th class="p-3">賣出日期</th>
                                 <th class="p-3">賣出單價</th>
-                                <th class="p-3">當沖</th>
+                                <th class="p-3 text-center">當沖</th>
                                 <th class="p-3">買入交割款</th>
                                 <th class="p-3">賣出交割款</th>
                                 <th class="p-3">買賣盈虧</th>
@@ -241,7 +244,7 @@
                 .from('twstk_stock_info')
                 .upsert([{ stock_id: id, stock_name: name }]);
 
-            // alert('新增成功！');
+            alert('新增成功！');
             document.getElementById('add-form').reset();
             document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
             fetchHoldings();
@@ -272,13 +275,14 @@
                     <td class="p-3 text-red-600">${parseFloat(stock.buy_price).toFixed(2)}</td>
                     <td class="p-3">${formatCurrency(stock.buy_settlement)}</td>
                     <td class="p-3 bg-blue-50">
-                        <input type="number" step="0.01" placeholder="輸入賣價" class="border rounded p-1 w-20 test-price-input" data-id="${stock.id}">
-                        <div class="mt-1">
+                        <input type="number" step="0.1" placeholder="${parseFloat((stock.buy_settlement+3300)/1000).toFixed(1)}" class="border rounded p-1 w-20 test-price-input" data-id="${stock.id}">
+</td>
+                        <td class="p-3 bg-blue-50">
                             <label class="text-xs text-gray-700 cursor-pointer flex items-center">
                                 <input type="checkbox" class="mr-1 day-trade-cb" data-id="${stock.id}"> 當沖
                             </label>
-                        </div>
-                    </td>
+                        </td>
+                    
                     <td class="p-3 bg-blue-50 font-bold" id="pnl-${stock.id}">-</td>
                     <td class="p-3 bg-blue-50 font-bold" id="roi-${stock.id}">-</td>
                     <td class="p-3 flex justify-center gap-2">
@@ -381,7 +385,7 @@
             if (error) {
                 alert('撤銷失敗: ' + error.message);
             } else {
-                // alert('撤銷成功！該筆股票已移回「主儀表板 (持有中)」。');
+                alert('撤銷成功！該筆股票已移回「主儀表板 (持有中)」。');
                 fetchReports(); 
             }
         }
@@ -427,7 +431,7 @@
             if (error) {
                 alert('更新失敗: ' + error.message);
             } else {
-                // alert('更新成功！');
+                alert('更新成功！');
                 closeEditModal();
                 fetchHoldings();
             }
@@ -472,10 +476,18 @@
                 if (error) {
                     alert('賣出失敗: ' + error.message);
                 } else {
-                    // alert('賣出成功！紀錄已轉至計算報表。');
+                    alert('賣出成功！紀錄已轉至計算報表。');
                     fetchHoldings();
                 }
             }
+        }
+
+        // 修改點：加入清除搜尋的功能
+        function clearSearch() {
+            document.getElementById('filter-start').value = '';
+            document.getElementById('filter-end').value = '';
+            document.getElementById('filter-keyword').value = '';
+            fetchReports();
         }
 
         async function fetchReports() {
