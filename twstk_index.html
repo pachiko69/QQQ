@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的股票清單系統</title>
+    <title>我的股票清單與分析系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -12,17 +12,26 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
     <div class="max-w-7xl mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">📈 股票交易記錄清單</h1>
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">📈 股票交易記錄與全方位分析系統</h1>
+
+        <!-- 匯入 CSV 與 管理控制區塊 -->
+        <div class="mb-6 p-4 bg-white rounded-lg shadow flex flex-wrap items-center gap-4">
+            <h2 class="text-lg font-bold text-gray-700">📂 匯入歷史資料 (CSV)</h2>
+            <input type="file" id="csv-file" accept=".csv" class="border p-1 rounded text-sm">
+            <button onclick="importCSV()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm font-medium">開始匯入 Supabase</button>
+            <button onclick="clearStockInfoTable()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium ml-auto">🗑️ 清除股票資訊表 (twstk_stock_info)</button>
+            <span id="import-status" class="text-sm text-gray-500 font-medium w-full"></span>
+        </div>
 
         <!-- 頁籤選單 -->
-        <div class="flex border-b mb-6">
-            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 tab-active">主儀表板 (持有中)</button>
-            <button onclick="switchTab('report')" id="btn-report" class="px-4 py-2 text-gray-500">計算報表 (已售出)</button>
+        <div class="flex border-b mb-6 overflow-x-auto">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 tab-active whitespace-nowrap">主儀表板 (持有中)</button>
+            <button onclick="switchTab('report')" id="btn-report" class="px-4 py-2 text-gray-500 whitespace-nowrap">計算報表 (已售出)</button>
+            <button onclick="switchTab('analysis')" id="btn-analysis" class="px-4 py-2 text-gray-500 whitespace-nowrap">📈 技術分析 (全方位診斷)</button>
         </div>
 
         <!-- 區塊：主儀表板 -->
         <div id="tab-dashboard" class="block">
-            <!-- 新增股票表單 -->
             <div class="bg-white p-6 rounded-lg shadow mb-8">
                 <h2 class="text-xl font-bold mb-4">＋ 新增買入記錄</h2>
                 <form id="add-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -48,13 +57,12 @@
                 </form>
             </div>
 
-            <!-- 持現中股票列表與試算 -->
             <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
                 <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
                     <h2 class="text-xl font-bold">📊 目前持有中 & 賣出試算</h2>
                     <button onclick="toggleSort()" id="sort-toggle-btn" class="bg-gray-100 text-gray-700 font-medium px-4 py-2 rounded text-sm hover:bg-gray-200 border transition">
-    切換排序：目前為【買進日期 (新到舊)】
-</button>
+                        切換排序：目前為【買進日期 (新到舊)】
+                    </button>
                 </div>
                 <table class="min-w-full text-sm text-left whitespace-nowrap">
                     <thead class="bg-gray-100 border-b">
@@ -64,15 +72,13 @@
                             <th class="p-3">買進單價</th>
                             <th class="p-3">買入交割款</th>
                             <th class="p-3 bg-blue-50 text-blue-800">試算賣出單價</th>
-                            <th class="p-3 bg-blue-50 text-blue-800">是否當沖</th>
+                            <th class="p-3 bg-blue-50 text-blue-800">當沖</th>
                             <th class="p-3 bg-blue-50 text-blue-800">試算盈虧</th>
                             <th class="p-3 bg-blue-50 text-blue-800">試算報酬率</th>
                             <th class="p-3 text-center">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="holdings-tbody">
-                        <!-- 資料由 JS 動態載入 -->
-                    </tbody>
+                    <tbody id="holdings-tbody"></tbody>
                 </table>
             </div>
         </div>
@@ -83,78 +89,136 @@
                 <h2 class="text-xl font-bold mb-4">🔍 查詢已售出紀錄</h2>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
                     <div>
-                        <label class="block text-sm font-medium">開始日期 (賣出)</label>
+                        <label class="block text-sm font-medium">開始日期</label>
                         <input type="date" id="filter-start" class="mt-1 w-full border rounded p-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium">結束日期 (賣出)</label>
+                        <label class="block text-sm font-medium">結束日期</label>
                         <input type="date" id="filter-end" class="mt-1 w-full border rounded p-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium">股票編號/名稱 (選填)</label>
-                        <input type="text" id="filter-keyword" placeholder="輸入編號或名稱" class="mt-1 w-full border rounded p-2">
+                        <label class="block text-sm font-medium">股票編號/名稱</label>
+                        <input type="text" id="filter-keyword" placeholder="輸入關鍵字" class="mt-1 w-full border rounded p-2">
                     </div>
-                    <!-- 修改點：加入了 flex 容器和清除按鈕 -->
                     <div class="flex gap-2">
                         <button onclick="fetchReports()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full flex-1">查詢</button>
                         <button onclick="clearSearch()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 w-full flex-1">清除</button>
                     </div>
                 </div>
-
-                <!-- 總計顯示 -->
                 <div class="p-4 bg-gray-50 border rounded text-lg font-bold mb-4">
                     查詢區間總盈虧：<span id="report-total-pnl" class="text-2xl">$0</span>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm text-left whitespace-nowrap">
                         <thead class="bg-gray-100 border-b">
                             <tr>
-                                <th class="p-3">編號 / 名稱</th>
-                                <th class="p-3">買進日期</th>
-                                <th class="p-3">買進單價</th>
-                                <th class="p-3">賣出日期</th>
-                                <th class="p-3">賣出單價</th>
-                                <th class="p-3 text-center">當沖</th>
-                                <th class="p-3">買入交割款</th>
-                                <th class="p-3">賣出交割款</th>
-                                <th class="p-3">買賣盈虧</th>
-                                <th class="p-3">報酬率(%)</th>
-                                <th class="p-3 text-center">操作</th>
+                                <th class="p-3">編號/名稱</th><th class="p-3">買進日</th><th class="p-3">買價</th>
+                                <th class="p-3">賣出日</th><th class="p-3">賣價</th><th class="p-3">當沖</th>
+                                <th class="p-3">買入款</th><th class="p-3">賣出款</th><th class="p-3">盈虧</th>
+                                <th class="p-3">報酬率</th><th class="p-3 text-center">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="reports-tbody">
-                            <!-- 資料由 JS 動態載入 -->
-                        </tbody>
+                        <tbody id="reports-tbody"></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 區塊：技術分析 (含疊加KD的圖表) -->
+        <div id="tab-analysis" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📊 AI 技術分析診斷室</h2>
+                
+                <div class="flex flex-wrap gap-4 mb-6 items-end">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-700">股票代號 (需先匯入資料)</label>
+                        <input type="text" id="analysis-stock-id" placeholder="例如: 3546" class="mt-1 w-full border rounded p-2 focus:border-blue-500 outline-none">
+                    </div>
+                    <button onclick="runAnalysis()" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">執行分析</button>
+                </div>
+
+                <!-- 分析結果顯示區 -->
+                <div id="analysis-result" class="hidden space-y-6">
+                    <!-- 最近20日 複合圖表區塊 -->
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner">
+                        <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
+                            <h3 class="text-white font-bold text-sm">📈 最近 20 日 K線、布林通道、成交量與 KD 指標</h3>
+                            <div class="text-xs text-gray-400 flex flex-wrap gap-3">
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 inline-block"></span> 漲 (紅)</span>
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 inline-block"></span> 跌 (綠)</span>
+                                <span class="text-yellow-400">■ MA5</span>
+                                <span class="text-cyan-400">■ MA10</span>
+                                <span class="text-purple-400">■ 布林通道(上中下)</span>
+                                <span class="text-blue-400">■ KD(K線)</span>
+                                <span class="text-orange-400">■ KD(D線)</span>
+                            </div>
+                        </div>
+                        <div class="w-full overflow-x-auto">
+                            <!-- 高度維持 450，以容納圖表資訊 -->
+                            <canvas id="candlestick-chart" width="900" height="450" class="w-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 全方位數據指標 8 宮格 -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 p-4 rounded border border-blue-200">
+                            <div class="text-sm text-gray-500">收盤價 / 漲跌</div>
+                            <div id="ana-close-spread" class="text-xl font-bold mt-1">-</div>
+                            <div id="ana-date" class="text-xs text-gray-400 mt-1">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">成交量 / OBV狀態</div>
+                            <div id="ana-vol" class="text-lg font-bold text-gray-700 mt-1">-</div>
+                            <div id="ana-ad" class="text-xs text-gray-500 mt-1">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">均線與乖離率 (月線)</div>
+                            <div id="ana-ma" class="text-sm font-bold text-gray-700 mt-1">-</div>
+                            <div id="ana-bias" class="text-sm font-bold text-gray-700 mt-1">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">布林通道 (20MA)</div>
+                            <div id="ana-bb" class="text-sm font-bold text-gray-700 mt-1 leading-tight">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">KD (9,3,3)</div>
+                            <div id="ana-kd" class="text-lg font-bold mt-1">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">MACD (12,26,9)</div>
+                            <div id="ana-macd" class="text-sm font-bold mt-1 leading-tight">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">RSI (14)</div>
+                            <div id="ana-rsi" class="text-lg font-bold text-gray-700 mt-1">-</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <div class="text-sm text-gray-500">DMI 趨向指標 (14)</div>
+                            <div id="ana-dmi" class="text-sm font-bold mt-1 leading-tight">-</div>
+                        </div>
+                    </div>
+
+                    <!-- 綜合診斷與操作建議區塊 -->
+                    <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-200 shadow-inner">
+                        <h3 class="font-bold text-yellow-800 mb-3 flex items-center gap-2">💡 AI 綜合診斷與操作建議</h3>
+                        <div class="space-y-4 text-sm text-gray-800 leading-relaxed" id="ana-suggestions"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 編輯專用的彈出視窗 (Modal) -->
+    <!-- 編輯彈窗 -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">✏️ 編輯買入記錄</h2>
             <form id="edit-form" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500">股票編號</label>
-                        <input type="text" id="edit-id" disabled class="mt-1 w-full border rounded p-2 bg-gray-100">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500">股票名稱</label>
-                        <input type="text" id="edit-name" disabled class="mt-1 w-full border rounded p-2 bg-gray-100">
-                    </div>
+                    <div><label class="block text-sm font-medium text-gray-500">股票編號</label><input type="text" id="edit-id" disabled class="mt-1 w-full border rounded p-2 bg-gray-100"></div>
+                    <div><label class="block text-sm font-medium text-gray-500">股票名稱</label><input type="text" id="edit-name" disabled class="mt-1 w-full border rounded p-2 bg-gray-100"></div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium">買進日期</label>
-                    <input type="date" id="edit-date" required class="mt-1 w-full border rounded p-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">買進單價</label>
-                    <input type="number" step="0.01" id="edit-price" required class="mt-1 w-full border rounded p-2">
-                </div>
+                <div><label class="block text-sm font-medium">買進日期</label><input type="date" id="edit-date" required class="mt-1 w-full border rounded p-2"></div>
+                <div><label class="block text-sm font-medium">買進單價</label><input type="number" step="0.01" id="edit-price" required class="mt-1 w-full border rounded p-2"></div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">取消</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存變更</button>
@@ -167,458 +231,536 @@
     <script>
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
-        
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let holdingsData = []; 
-        let currentEditId = null;
-        let currentSortMode = 'date_desc'; // 預設排序模式：買進日期新到舊
+        let holdingsData = [], currentEditId = null, currentSortMode = 'date_desc';
 
-        // 建立股票顏色分配機制
-        const colorPalette = [
-            'bg-red-100 text-red-800',
-            'bg-blue-100 text-blue-800',
-            'bg-green-100 text-green-800',
-            'bg-yellow-100 text-yellow-800',
-            'bg-purple-100 text-purple-800',
-            'bg-pink-100 text-pink-800',
-            'bg-indigo-100 text-indigo-800',
-            'bg-teal-100 text-teal-800',
-            'bg-orange-100 text-orange-800',
-            'bg-cyan-100 text-cyan-800'
-        ];
-        let stockColorMap = {};
-        let colorIndex = 0;
+        const colorPalette = ['bg-red-100 text-red-800', 'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-teal-100 text-teal-800'];
+        let stockColorMap = {}, colorIndex = 0;
 
         function getStockColorClass(stockId) {
-            if (!stockColorMap[stockId]) {
-                stockColorMap[stockId] = colorPalette[colorIndex % colorPalette.length];
-                colorIndex++;
-            }
+            if (!stockColorMap[stockId]) { stockColorMap[stockId] = colorPalette[colorIndex++ % colorPalette.length]; }
             return stockColorMap[stockId];
         }
-
         function formatCurrency(amount) {
-            return new Intl.NumberFormat('zh-TW', {
-                style: 'currency',
-                currency: 'TWD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(amount);
+            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(amount);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('add-date').value = today;
+            document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
             fetchHoldings();
-        });
-
-        document.getElementById('add-id').addEventListener('blur', async (e) => {
-            const stockId = e.target.value.trim();
-            if (!stockId) return;
-
-            const { data, error } = await supabaseClient
-                .from('twstk_stock_info')
-                .select('stock_name')
-                .eq('stock_id', stockId)
-                .single();
-
-            if (data && data.stock_name) {
-                document.getElementById('add-name').value = data.stock_name;
-            }
         });
 
         function switchTab(tabId) {
             document.getElementById('tab-dashboard').classList.toggle('hidden', tabId !== 'dashboard');
             document.getElementById('tab-report').classList.toggle('hidden', tabId !== 'report');
+            document.getElementById('tab-analysis').classList.toggle('hidden', tabId !== 'analysis');
             
-            document.getElementById('btn-dashboard').className = `px-4 py-2 ${tabId === 'dashboard' ? 'tab-active' : 'text-gray-500'}`;
-            document.getElementById('btn-report').className = `px-4 py-2 ${tabId === 'report' ? 'tab-active' : 'text-gray-500'}`;
+            document.getElementById('btn-dashboard').className = `px-4 py-2 whitespace-nowrap ${tabId === 'dashboard' ? 'tab-active' : 'text-gray-500'}`;
+            document.getElementById('btn-report').className = `px-4 py-2 whitespace-nowrap ${tabId === 'report' ? 'tab-active' : 'text-gray-500'}`;
+            document.getElementById('btn-analysis').className = `px-4 py-2 whitespace-nowrap ${tabId === 'analysis' ? 'tab-active' : 'text-gray-500'}`;
 
-            if(tabId === 'report') {
-                fetchReports();
-            } else if(tabId === 'dashboard') {
-                fetchHoldings();
+            if(tabId === 'report') fetchReports();
+            else if(tabId === 'dashboard') fetchHoldings();
+        }
+
+        async function clearStockInfoTable() {
+            if (!confirm('⚠️ 警告：確定要清除「twstk_stock_info」資料表中的所有股票資訊嗎？此動作無法復原！')) return;
+            const statusText = document.getElementById('import-status');
+            statusText.innerText = "正在清除 twstk_stock_info 資料...";
+            const { error } = await supabaseClient.from('twstk_stock_info').delete().neq('stock_id', '0');
+            if (error) {
+                statusText.innerText = "❌ 清除失敗：" + error.message;
+                alert("清除失敗: " + error.message);
+            } else {
+                statusText.innerText = "✅ 已成功清除 twstk_stock_info 資料表的所有資料！";
+                alert("「twstk_stock_info」資料表已清空！");
             }
         }
 
+        async function importCSV() {
+            const fileInput = document.getElementById('csv-file');
+            const statusText = document.getElementById('import-status');
+            if (!fileInput.files.length) return alert('請先選擇 daily.csv 檔案！');
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                statusText.innerText = "資料解析中...";
+                const lines = e.target.result.split('\n').filter(line => line.trim() !== '');
+                const headers = lines[0].split(',');
+                let insertData = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length === headers.length) {
+                        insertData.push({
+                            stock_id: cols[9].trim(), date: cols[4].trim(),
+                            open: parseFloat(cols[7]), max: parseFloat(cols[5]), min: parseFloat(cols[6]),
+                            close: parseFloat(cols[3]), spread: parseFloat(cols[8]),
+                            trading_volume: parseInt(cols[0]), trading_money: parseInt(cols[1]), trading_turnover: parseInt(cols[2])
+                        });
+                    }
+                }
+                if (insertData.length === 0) return statusText.innerText = "解析不到資料。";
+                
+                statusText.innerText = `匯入 ${insertData.length} 筆資料中...`;
+                const batchSize = 100; let successCount = 0;
+                for (let i = 0; i < insertData.length; i += batchSize) {
+                    const batch = insertData.slice(i, i + batchSize);
+                    const { error } = await supabaseClient.from('twstk_daily_data').upsert(batch, { onConflict: 'stock_id, date' });
+                    if (error) return statusText.innerText = "匯入失敗，請確認已關閉 Supabase RLS 權限。";
+                    successCount += batch.length;
+                    statusText.innerText = `已匯入 ${successCount} / ${insertData.length}`;
+                }
+                statusText.innerText = "✅ 匯入完成！";
+                if(confirm('匯入成功！是否立即前往技術分析？')) {
+                    document.getElementById('analysis-stock-id').value = insertData[0].stock_id;
+                    switchTab('analysis'); runAnalysis();
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- 核心技術分析邏輯與繪圖 ---
+        async function runAnalysis() {
+            const stockId = document.getElementById('analysis-stock-id').value.trim();
+            if (!stockId) return alert('請輸入股票代號');
+
+            const { data, error } = await supabaseClient.from('twstk_daily_data').select('*').eq('stock_id', stockId).order('date', { ascending: true });
+            if (error || !data || data.length === 0) return alert('找不到歷史資料。');
+
+            const closes = data.map(d => parseFloat(d.close));
+            const opens = data.map(d => parseFloat(d.open));
+            const highs = data.map(d => parseFloat(d.max));
+            const lows = data.map(d => parseFloat(d.min));
+            const volumes = data.map(d => parseInt(d.trading_volume));
+            const spreads = data.map(d => parseFloat(d.spread));
+            const dates = data.map(d => d.date);
+            
+            const currClose = closes[closes.length - 1];
+            const currSpread = spreads[spreads.length - 1];
+            const currVol = volumes[volumes.length - 1];
+
+            const ma5 = calcMA(closes, 5);
+            const ma10 = calcMA(closes, 10);
+            const ma20 = calcMA(closes, 20); // 布林通道與長天期判斷仍依賴MA20
+            const bias20 = calcBias(closes, ma20);
+            const currMA5 = ma5[ma5.length-1], currMA10 = ma10[ma10.length-1], currMA20 = ma20[ma20.length-1], currBias20 = bias20[bias20.length-1];
+
+            const bb = calcBollingerBands(closes, ma20, 20, 2);
+            const obv = calcOBV(closes, volumes);
+            const ad = calcAD(closes, highs, lows, volumes);
+            const currOBV = obv[obv.length-1], prevOBV = obv[obv.length-2] || currOBV;
+            
+            const kd = calcKD(closes, highs, lows, 9);
+            const rsi14 = calcRSI(closes, 14);
+            const macd = calcMACD(closes);
+            const currMacdLine = macd.macdLine[macd.macdLine.length-1];
+            const currMacdHist = macd.hist[macd.hist.length-1];
+
+            const dmi = calcDMI(closes, highs, lows, 14);
+            const currPDI = dmi.plusDI[dmi.plusDI.length-1];
+            const currMDI = dmi.minusDI[dmi.minusDI.length-1];
+            const currADX = dmi.adx[dmi.adx.length-1];
+
+            document.getElementById('analysis-result').classList.remove('hidden');
+
+            // 繪製複合圖表：傳入 ma10 取代原本繪圖用的 ma20，並加入 kd.k 與 kd.d
+            drawCandlestickChart(dates, opens, highs, lows, closes, volumes, ma5, ma10, bb.upper, bb.mid, bb.lower, kd.k, kd.d);
+            
+            const spreadColor = currSpread > 0 ? 'text-red-600' : (currSpread < 0 ? 'text-green-600' : 'text-gray-600');
+            const spreadSign = currSpread > 0 ? '+' : '';
+            document.getElementById('ana-close-spread').innerHTML = `<span class="text-blue-700">${currClose.toFixed(2)}</span> <span class="text-sm ${spreadColor}">(${spreadSign}${currSpread})</span>`;
+            document.getElementById('ana-date').innerText = `資料日期: ${dates[dates.length-1]}`;
+            
+            const obvStatus = currOBV > prevOBV ? '<span class="text-red-600">↑ 走升</span>' : '<span class="text-green-600">↓ 走跌</span>';
+            document.getElementById('ana-vol').innerHTML = `${currVol.toLocaleString()} 股 <br><span class="text-sm font-normal">OBV: ${obvStatus}</span>`;
+            document.getElementById('ana-ad').innerText = `AD線: ${ad[ad.length-1] > ad[ad.length-2] ? '資金流入' : '資金流出'}`;
+
+            document.getElementById('ana-ma').innerHTML = `5MA: ${currMA5?currMA5.toFixed(2):'-'} <br>20MA: ${currMA20?currMA20.toFixed(2):'-'}`;
+            document.getElementById('ana-bias').innerHTML = `乖離率: <span class="${currBias20 > 0 ? 'text-red-500' : 'text-green-500'}">${currBias20?currBias20.toFixed(2):'-'}%</span>`;
+
+            document.getElementById('ana-bb').innerHTML = `上軌: <span class="text-red-500">${bb.upper[bb.upper.length-1]?.toFixed(2) || '-'}</span><br>下軌: <span class="text-green-500">${bb.lower[bb.lower.length-1]?.toFixed(2) || '-'}</span>`;
+
+            const kVal = kd.k[kd.k.length-1], dVal = kd.d[kd.d.length-1];
+            document.getElementById('ana-kd').innerHTML = `<span class="${kVal > dVal ? 'text-red-600' : 'text-green-600'}">K: ${kVal.toFixed(1)}<br>D: ${dVal.toFixed(1)}</span>`;
+
+            document.getElementById('ana-macd').innerHTML = `柱狀體: <span class="${currMacdHist > 0 ? 'text-red-600' : 'text-green-600'}">${currMacdHist?.toFixed(3) || '-'}</span><br>MACD線: ${currMacdLine?.toFixed(2) || '-'}`;
+            document.getElementById('ana-rsi').innerText = rsi14[rsi14.length-1]?.toFixed(1) || '-';
+            document.getElementById('ana-dmi').innerHTML = `+DI: <span class="text-red-500">${currPDI?.toFixed(1) || '-'}</span><br>-DI: <span class="text-green-500">${currMDI?.toFixed(1) || '-'}</span><br>ADX: ${currADX?.toFixed(1) || '-'}`;
+
+            let textTrend = "", textVolume = "", textAction = "";
+            if (currMacdHist > 0 && currPDI > currMDI && currADX > 20) {
+                textTrend = "<strong>🔥 趨勢動能：強勢多頭。</strong> MACD 柱狀圖翻紅且 DMI 顯示多方(+DI)掌控局勢，ADX 趨勢正在轉強，屬於波段上漲格局。";
+            } else if (currMacdHist < 0 && currMDI > currPDI) {
+                textTrend = "<strong>❄️ 趨勢動能：空頭弱勢。</strong> MACD 綠柱且 -DI 大於 +DI，趨勢偏弱，空方動能主導。";
+            } else {
+                textTrend = "<strong>⚖️ 趨勢動能：盤整震盪。</strong> MACD 與 DMI 無明顯單邊趨勢，短線依賴 KD 區間操作。";
+            }
+
+            if (currOBV > prevOBV && ad[ad.length-1] > ad[ad.length-2]) {
+                textVolume = "<strong>💰 籌碼價量：資金進場。</strong> OBV 與 AD 線同步走升，顯示主力籌碼正在累積，價漲量增屬健康輪動。";
+            } else if (currOBV < prevOBV) {
+                textVolume = "<strong>💸 籌碼價量：動能消退。</strong> OBV 下滑，留意是否有價漲量縮或主力高檔出貨疑慮。";
+            }
+
+            if (currBias20 > 8 || currClose >= bb.upper[bb.upper.length-1]) {
+                textAction = "<strong>🚨 短期操作提醒：過熱拉回。</strong> 股價觸碰布林上軌或正乖離過大，極度容易引發獲利了結賣壓，持股者建議分批停利，空手者切忌追高。";
+            } else if (currBias20 < -8 || currClose <= bb.lower[bb.lower.length-1]) {
+                textAction = "<strong>🛡️ 短期操作提醒：超跌反彈。</strong> 股價觸及下軌或負乖離過大，技術面醞釀跌深反彈契機，若 KD 於低檔黃金交叉可嘗試摸底。";
+            } else {
+                textAction = "<strong>✅ 中長線建議：順勢而為。</strong> 乖離率適中，建議觀察 20MA(月線) 支撐，若未跌破月線可持續抱股；若跌破則嚴守停損。";
+            }
+
+            document.getElementById('ana-suggestions').innerHTML = `<p>${textTrend}</p><hr class="border-yellow-200"><p>${textVolume}</p><hr class="border-yellow-200"><p>${textAction}</p>`;
+        }
+
+        // --- 繪製 K線圖、布林通道(上中下)、成交量與疊加KD (Canvas) ---
+        function drawCandlestickChart(dates, opens, highs, lows, closes, volumes, ma5, ma10, bbUp, bbMid, bbDn, kdK, kdD) {
+            const canvas = document.getElementById('candlestick-chart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+
+            const sliceCount = 20;
+            const startIdx = Math.max(0, dates.length - sliceCount);
+            
+            const subDates = dates.slice(startIdx);
+            const subOpens = opens.slice(startIdx);
+            const subHighs = highs.slice(startIdx);
+            const subLows = lows.slice(startIdx);
+            const subCloses = closes.slice(startIdx);
+            const subVols = volumes.slice(startIdx);
+            const subMa5 = ma5.slice(startIdx);
+            const subMa10 = ma10.slice(startIdx);
+            const subBbUp = bbUp.slice(startIdx);
+            const subBbMid = bbMid.slice(startIdx);
+            const subBbDn = bbDn.slice(startIdx);
+            const subKdK = kdK.slice(startIdx);
+            const subKdD = kdD.slice(startIdx);
+
+            if (subCloses.length === 0) return;
+
+            const padding = 30;
+            // 上方 75% 畫價格，下方 25% 畫成交量與 KD 疊加
+            const priceAreaHeight = (height - padding * 2) * 0.75;
+            const volAreaHeight = (height - padding * 2) * 0.25;
+            const chartWidth = width - padding * 2;
+            const barWidth = chartWidth / subCloses.length;
+
+            const validBbUp = subBbUp.filter(v => v !== null);
+            const validBbDn = subBbDn.filter(v => v !== null);
+            const maxPrice = Math.max(...subHighs, ...(validBbUp.length ? validBbUp : []));
+            const minPrice = Math.min(...subLows, ...(validBbDn.length ? validBbDn : []));
+            const maxVol = Math.max(...subVols, 1);
+
+            function priceToY(price) {
+                if (maxPrice === minPrice) return padding + priceAreaHeight / 2;
+                return padding + priceAreaHeight - ((price - minPrice) / (maxPrice - minPrice)) * priceAreaHeight;
+            }
+
+            // KD 值轉換為 Y 軸座標 (0~100 映射到 volAreaHeight)
+            function kdToY(val) {
+                if (val === null || isNaN(val)) return null;
+                return (height - padding) - (val / 100) * volAreaHeight;
+            }
+
+            // 繪製價格區網格與標籤
+            ctx.strokeStyle = '#374151';
+            ctx.fillStyle = '#9CA3AF';
+            ctx.font = '10px sans-serif';
+            for (let i = 0; i <= 4; i++) {
+                let price = minPrice + (maxPrice - minPrice) * (i / 4);
+                let y = priceToY(price);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+                ctx.fillText(price.toFixed(1), width - padding + 5, y + 3);
+            }
+
+            // 繪製成交量/KD 頂部格線與標籤
+            let volTopY = padding + priceAreaHeight;
+            ctx.beginPath();
+            ctx.moveTo(padding, volTopY);
+            ctx.lineTo(width - padding, volTopY);
+            ctx.stroke();
+            // 在左側標示成交量最大值，右側標示 KD 100
+            ctx.fillText(maxVol.toLocaleString(), padding + 5, volTopY + 12);
+            ctx.fillText("KD 100", width - padding - 40, volTopY + 12);
+            ctx.fillText("KD 0", width - padding - 30, height - padding - 2);
+
+            // 繪製 K線與成交量柱狀圖
+            subCloses.forEach((close, i) => {
+                let open = subOpens[i];
+                let high = subHighs[i];
+                let low = subLows[i];
+                let vol = subVols[i];
+                
+                let x = padding + i * barWidth + barWidth / 2;
+                let yOpen = priceToY(open);
+                let yClose = priceToY(close);
+                let yHigh = priceToY(high);
+                let yLow = priceToY(low);
+
+                let isUp = close >= open;
+                let color = isUp ? '#EF4444' : '#10B981'; // 紅漲綠跌
+
+                // --- 畫 K 線 ---
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x, yHigh);
+                ctx.lineTo(x, yLow);
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                let bodyY = Math.min(yOpen, yClose);
+                let bodyHeight = Math.max(Math.abs(yClose - yOpen), 2);
+                ctx.fillRect(x - barWidth * 0.35, bodyY, barWidth * 0.7, bodyHeight);
+
+                // --- 畫成交量 (同 K 線顏色) ---
+                let volH = (vol / maxVol) * (volAreaHeight - 15);
+                let volY = height - padding - volH;
+                ctx.fillRect(x - barWidth * 0.35, volY, barWidth * 0.7, volH);
+
+                // X軸日期標籤
+                if (i % 3 === 0 || i === subCloses.length - 1) {
+                    ctx.fillStyle = '#9CA3AF';
+                    ctx.fillText(subDates[i].substring(5), x - 15, height - 10);
+                }
+            });
+
+            // 繪製 MA5 (黃) 與 MA10 (青)
+            drawLine(ctx, subMa5, priceToY, padding, barWidth, '#FACC15', 1.5);
+            drawLine(ctx, subMa10, priceToY, padding, barWidth, '#22D3EE', 1.5);
+            
+            // 繪製布林通道 上、中、下軌統一顏色 (紫色 #C084FC)
+            const bbColor = '#C084FC';
+            drawLine(ctx, subBbUp, priceToY, padding, barWidth, bbColor, 1);
+            drawLine(ctx, subBbMid, priceToY, padding, barWidth, bbColor, 1);
+            drawLine(ctx, subBbDn, priceToY, padding, barWidth, bbColor, 1);
+
+            // 繪製 KD 指標線 (疊加於成交量區塊上方)
+            drawLine(ctx, subKdK, kdToY, padding, barWidth, '#60A5FA', 1.5); // K線 (藍色)
+            drawLine(ctx, subKdD, kdToY, padding, barWidth, '#FB923C', 1.5); // D線 (橘色)
+        }
+
+        function drawLine(ctx, dataArray, yMappingFunc, padding, barWidth, color, lineWidth=1.5) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.beginPath();
+            let started = false;
+            dataArray.forEach((val, i) => {
+                if (val === null || isNaN(val)) return;
+                let y = yMappingFunc(val);
+                if (y === null) return; // 保護判斷
+                let x = padding + i * barWidth + barWidth / 2;
+                
+                if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+        }
+
+        // 技術指標數學函式
+        function calcMA(data, p) { return data.map((_, i) => i < p - 1 ? null : data.slice(i - p + 1, i + 1).reduce((a, b) => a + b, 0) / p); }
+        function calcBias(closes, ma) { return closes.map((c, i) => ma[i] !== null ? ((c - ma[i]) / ma[i]) * 100 : null); }
+        function calcBollingerBands(data, ma, p, mult) {
+            let upper = [], mid = [], lower = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < p - 1 || ma[i] === null) { upper.push(null); mid.push(null); lower.push(null); continue; }
+                let sumSq = 0;
+                for (let j = 0; j < p; j++) sumSq += Math.pow(data[i - j] - ma[i], 2);
+                let std = Math.sqrt(sumSq / p);
+                mid.push(ma[i]);
+                upper.push(ma[i] + (mult * std)); lower.push(ma[i] - (mult * std));
+            }
+            return { upper, mid, lower };
+        }
+        function calcOBV(closes, vols) {
+            let obv = [vols[0]];
+            for (let i = 1; i < closes.length; i++) {
+                if (closes[i] > closes[i - 1]) obv.push(obv[i - 1] + vols[i]);
+                else if (closes[i] < closes[i - 1]) obv.push(obv[i - 1] - vols[i]);
+                else obv.push(obv[i - 1]);
+            }
+            return obv;
+        }
+        function calcAD(closes, highs, lows, vols) {
+            let ad = []; let cur = 0;
+            for (let i = 0; i < closes.length; i++) {
+                let mfm = (highs[i] === lows[i]) ? 0 : ((closes[i] - lows[i]) - (highs[i] - closes[i])) / (highs[i] - lows[i]);
+                cur += mfm * vols[i]; ad.push(cur);
+            }
+            return ad;
+        }
+        function calcEMA(data, p) {
+            let res = new Array(data.length).fill(null);
+            if (data.length < p) return res;
+            let sum = 0; for(let i=0; i<p; i++) sum += data[i];
+            let ema = sum / p; res[p-1] = ema; let k = 2 / (p + 1);
+            for(let i=p; i<data.length; i++) { ema = (data[i] - ema) * k + ema; res[i] = ema; }
+            return res;
+        }
+        function calcMACD(closes) {
+            let ema12 = calcEMA(closes, 12), ema26 = calcEMA(closes, 26), macdLine = [];
+            for (let i = 0; i < closes.length; i++) macdLine.push(ema12[i] !== null && ema26[i] !== null ? ema12[i] - ema26[i] : null);
+            let validMacd = macdLine.filter(x => x !== null);
+            let signalValid = calcEMA(validMacd, 9);
+            let signal = new Array(closes.length - signalValid.length).fill(null).concat(signalValid);
+            let hist = macdLine.map((m, i) => m !== null && signal[i] !== null ? m - signal[i] : null);
+            return { macdLine, signal, hist };
+        }
+        function calcDMI(closes, highs, lows, p) {
+            let pDM = [], mDM = [], tr = [];
+            for (let i = 1; i < closes.length; i++) {
+                let up = highs[i] - highs[i - 1], dn = lows[i - 1] - lows[i];
+                pDM.push(up > dn && up > 0 ? up : 0); mDM.push(dn > up && dn > 0 ? dn : 0);
+                tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+            }
+            function smooth(data, p) {
+                let res = [], sum = 0; for(let i=0; i<p; i++) sum += data[i];
+                res.push(sum); let cur = sum;
+                for(let i=p; i<data.length; i++) { cur = cur - (cur/p) + data[i]; res.push(cur); }
+                return res;
+            }
+            let spDM = smooth(pDM, p), smDM = smooth(mDM, p), sTR = smooth(tr, p);
+            let pDI = [], mDI = [], dx = [];
+            for (let i = 0; i < sTR.length; i++) {
+                let plus = (spDM[i] / sTR[i]) * 100, minus = (smDM[i] / sTR[i]) * 100;
+                pDI.push(plus); mDI.push(minus); dx.push(Math.abs(plus - minus) / (plus + minus) * 100);
+            }
+            let adx = [], dxSum = 0; for(let i=0; i<p; i++) dxSum += dx[i];
+            let curAdx = dxSum / p; adx.push(curAdx);
+            for(let i=p; i<dx.length; i++) { curAdx = ((curAdx * (p-1)) + dx[i]) / p; adx.push(curAdx); }
+            const pad = (arr, total) => new Array(total - arr.length).fill(null).concat(arr);
+            return { plusDI: pad(pDI, closes.length), minusDI: pad(mDI, closes.length), adx: pad(adx, closes.length) };
+        }
+        function calcRSI(data, p) {
+            let res = [], gains = [], losses = [];
+            for (let i = 1; i < data.length; i++) {
+                let diff = data[i] - data[i - 1];
+                gains.push(diff > 0 ? diff : 0); losses.push(diff < 0 ? Math.abs(diff) : 0);
+            }
+            let avgG = 0, avgL = 0;
+            for (let i = 0; i < data.length; i++) {
+                if (i < p) { res.push(50); continue; }
+                if (i === p) { avgG = gains.slice(0, p).reduce((a,b)=>a+b)/p; avgL = losses.slice(0, p).reduce((a,b)=>a+b)/p; }
+                else { avgG = (avgG * (p - 1) + gains[i - 1]) / p; avgL = (avgL * (p - 1) + losses[i - 1]) / p; }
+                res.push(100 - (100 / (1 + (avgL === 0 ? 100 : avgG / avgL))));
+            }
+            return res;
+        }
+        function calcKD(closes, highs, lows, p) {
+            let k = [], d = [], curK = 50, curD = 50;
+            for (let i = 0; i < closes.length; i++) {
+                if (i < p - 1) { k.push(50); d.push(50); continue; }
+                let pH = Math.max(...highs.slice(i - p + 1, i + 1));
+                let pL = Math.min(...lows.slice(i - p + 1, i + 1));
+                let rsv = pH === pL ? 50 : ((closes[i] - pL) / (pH - pL)) * 100;
+                curK = (2/3)*curK + (1/3)*rsv; curD = (2/3)*curD + (1/3)*curK;
+                k.push(curK); d.push(curD);
+            }
+            return { k, d };
+        }
+
+        // --- 主儀表板與報表邏輯 ---
+        document.getElementById('add-id').addEventListener('blur', async (e) => {
+            const stockId = e.target.value.trim();
+            if (!stockId) return;
+            const { data } = await supabaseClient.from('twstk_stock_info').select('stock_name').eq('stock_id', stockId).single();
+            if (data?.stock_name) document.getElementById('add-name').value = data.stock_name;
+        });
         document.getElementById('add-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('add-id').value.trim();
-            const name = document.getElementById('add-name').value.trim();
-            const date = document.getElementById('add-date').value;
-            const price = parseFloat(document.getElementById('add-price').value);
-
-            const buyTotal = Math.round(price * 1000);
-            const buyFee = Math.round(buyTotal * 0.001425 * 0.6);
-            const buySettlement = buyTotal + buyFee;
-
-            const { error: insertError } = await supabaseClient
-                .from('twstk_stock_records') 
-                .insert([{
-                    stock_id: id,
-                    stock_name: name,
-                    buy_date: date,
-                    buy_price: price.toFixed(2), 
-                    buy_total: buyTotal,
-                    buy_fee: buyFee,
-                    buy_settlement: buySettlement,
-                    status: '持有中'
-                }]);
-
-            if (insertError) {
-                alert('新增失敗: ' + insertError.message);
-                return;
-            }
-
-            await supabaseClient
-                .from('twstk_stock_info')
-                .upsert([{ stock_id: id, stock_name: name }]);
-
-            alert('新增成功！');
-            document.getElementById('add-form').reset();
-            document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
-            fetchHoldings();
+            const id = document.getElementById('add-id').value.trim(), name = document.getElementById('add-name').value.trim();
+            const date = document.getElementById('add-date').value, price = parseFloat(document.getElementById('add-price').value);
+            const buyTotal = Math.round(price * 1000), buyFee = Math.round(buyTotal * 0.001425 * 0.6), buySettlement = buyTotal + buyFee;
+            
+            const { error } = await supabaseClient.from('twstk_stock_records').insert([{ stock_id: id, stock_name: name, buy_date: date, buy_price: price.toFixed(2), buy_total: buyTotal, buy_fee: buyFee, buy_settlement: buySettlement, status: '持有中' }]);
+            if (error) return alert('新增失敗: ' + error.message);
+            await supabaseClient.from('twstk_stock_info').upsert([{ stock_id: id, stock_name: name }]);
+            alert('新增成功！'); document.getElementById('add-form').reset(); fetchHoldings();
         });
-        
-        // 切換排序的專屬函式
         function toggleSort() {
-    const btn = document.getElementById('sort-toggle-btn');
-    // 如果當前是新到舊，則切換為編號日期
-    if (currentSortMode === 'date_desc') {
-        currentSortMode = 'id_date';
-        btn.innerText = '切換排序：目前為【編號 → 日期】';
-    } else {
-        // 如果當前是編號日期，則切換回新到舊
-        currentSortMode = 'date_desc';
-        btn.innerText = '切換排序：目前為【買進日期 (新到舊)】';
-    }
-    fetchHoldings(); 
-}
-
+            currentSortMode = currentSortMode === 'date_desc' ? 'id_date' : 'date_desc';
+            document.getElementById('sort-toggle-btn').innerText = `切換排序：目前為【${currentSortMode === 'date_desc' ? '買進日期 (新到舊)' : '編號 → 日期'}】`;
+            fetchHoldings(); 
+        }
         async function fetchHoldings() {
-            let query = supabaseClient
-                .from('twstk_stock_records')
-                .select('*')
-                .eq('status', '持有中');
-
-            if (currentSortMode === 'id_date') {
-                // 模式 A：編號遞增，日期較舊的在上
-                query = query.order('stock_id', { ascending: true })
-                             .order('buy_date', { ascending: true });
-            } else {
-                // 模式 B：原始設定，純粹依照買進日期，較新的在上
-                query = query.order('buy_date', { ascending: false });
-            }
-
-            const { data, error } = await query;
-            if (error) { console.error(error); return; }
-            holdingsData = data;
-            renderHoldings();
+            let query = supabaseClient.from('twstk_stock_records').select('*').eq('status', '持有中');
+            query = currentSortMode === 'id_date' ? query.order('stock_id').order('buy_date') : query.order('buy_date', { ascending: false });
+            const { data } = await query;
+            holdingsData = data || []; renderHoldings();
         }
-
         function renderHoldings() {
-            const tbody = document.getElementById('holdings-tbody');
-            tbody.innerHTML = '';
-            
-            holdingsData.forEach(stock => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b hover:bg-gray-50';
-                
-                // 取得專屬顏色 class
-                const stockColor = getStockColorClass(stock.stock_id);
-
+            const tbody = document.getElementById('holdings-tbody'); tbody.innerHTML = '';
+            holdingsData.forEach(s => {
+                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
                 tr.innerHTML = `
-                    <td class="p-3 font-medium">
-                        <span class="px-2 py-1 rounded-md ${stockColor}">
-                            ${stock.stock_id} ${stock.stock_name}
-                        </span>
-                    </td>
-                    <td class="p-3">${stock.buy_date}</td>
-                    <td class="p-3 text-red-600">${parseFloat(stock.buy_price).toFixed(2)}</td>
-                    <td class="p-3">${formatCurrency(stock.buy_settlement)}</td>
-                    <td class="p-3 bg-blue-50">
-                        <input type="number" step="0.1" placeholder="${parseFloat((stock.buy_settlement+3300)/1000).toFixed(1)}" class="border rounded p-1 w-20 test-price-input" data-id="${stock.id}">
-</td>
-                        <td class="p-3 bg-blue-50">
-                            <label class="text-xs text-gray-700 cursor-pointer flex items-center">
-                                <input type="checkbox" class="mr-1 day-trade-cb" data-id="${stock.id}"> 當沖
-                            </label>
-                        </td>
-                    
-                    <td class="p-3 bg-blue-50 font-bold" id="pnl-${stock.id}">-</td>
-                    <td class="p-3 bg-blue-50 font-bold" id="roi-${stock.id}">-</td>
-                    <td class="p-3 flex justify-center gap-2">
-                        <button onclick="processSell('${stock.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">賣出</button>
-                        <button onclick="openEditModal('${stock.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600">編輯</button>
-                        <button onclick="deleteStock('${stock.id}', false)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">刪除</button>
-                    </td>
+                    <td class="p-3"><span class="px-2 py-1 rounded-md ${getStockColorClass(s.stock_id)}">${s.stock_id} ${s.stock_name}</span></td>
+                    <td class="p-3">${s.buy_date}</td><td class="p-3 text-red-600">${s.buy_price}</td><td class="p-3">${formatCurrency(s.buy_settlement)}</td>
+                    <td class="p-3 bg-blue-50"><input type="number" step="0.1" class="border rounded p-1 w-20 test-price" data-id="${s.id}"></td>
+                    <td class="p-3 bg-blue-50"><input type="checkbox" class="day-trade" data-id="${s.id}"></td>
+                    <td class="p-3 bg-blue-50 font-bold pnl" id="pnl-${s.id}">-</td><td class="p-3 bg-blue-50 font-bold roi" id="roi-${s.id}">-</td>
+                    <td class="p-3 text-center"><button onclick="processSell('${s.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs mr-1">賣出</button><button onclick="deleteStock('${s.id}', false)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs">刪除</button></td>
                 `;
                 tbody.appendChild(tr);
             });
-
-            const handleTrialCalculation = (e) => {
-                const stockId = e.target.dataset.id;
-                const inputEl = document.querySelector(`.test-price-input[data-id="${stockId}"]`);
-                const cbEl = document.querySelector(`.day-trade-cb[data-id="${stockId}"]`);
-                
-                const sellPrice = parseFloat(inputEl.value);
-                const isDayTrade = cbEl.checked;
-                const stock = holdingsData.find(s => s.id === stockId);
-                
-                if (isNaN(sellPrice) || sellPrice <= 0) {
-                    document.getElementById(`pnl-${stockId}`).innerText = '-';
-                    document.getElementById(`pnl-${stockId}`).className = 'p-3 bg-blue-50 font-bold';
-                    document.getElementById(`roi-${stockId}`).innerText = '-';
-                    return;
-                }
-
-                const res = calculateSellResult(stock.buy_settlement, sellPrice, isDayTrade);
-                
-                const pnlTd = document.getElementById(`pnl-${stockId}`);
-                const roiTd = document.getElementById(`roi-${stockId}`);
-                
-                pnlTd.innerText = formatCurrency(res.pnl);
-                pnlTd.className = `p-3 bg-blue-50 font-bold ${res.pnl >= 0 ? 'text-red-600' : 'text-green-600'}`;
-                
-                roiTd.innerText = res.roi.toFixed(2) + '%';
-                roiTd.className = `p-3 bg-blue-50 font-bold ${res.roi >= 0 ? 'text-red-600' : 'text-green-600'}`;
+            const handleCalc = (e) => {
+                const id = e.target.dataset.id, s = holdingsData.find(x => x.id === id);
+                const price = parseFloat(document.querySelector(`.test-price[data-id="${id}"]`).value), isDt = document.querySelector(`.day-trade[data-id="${id}"]`).checked;
+                if(isNaN(price) || price <= 0) return;
+                const set = Math.round(s.buy_settlement), tot = Math.round(price * 1000), fee = Math.round(tot * 0.001425 * 0.6), tax = Math.round(tot * (isDt ? 0.0015 : 0.003));
+                const pnl = (tot - fee - tax) - set, roi = (pnl / set) * 100;
+                document.getElementById(`pnl-${id}`).innerText = formatCurrency(pnl); document.getElementById(`pnl-${id}`).className = `p-3 bg-blue-50 font-bold ${pnl>=0?'text-red-600':'text-green-600'}`;
+                document.getElementById(`roi-${id}`).innerText = roi.toFixed(2) + '%'; document.getElementById(`roi-${id}`).className = `p-3 bg-blue-50 font-bold ${roi>=0?'text-red-600':'text-green-600'}`;
             };
-
-            document.querySelectorAll('.test-price-input').forEach(input => {
-                input.addEventListener('input', handleTrialCalculation);
-            });
-            document.querySelectorAll('.day-trade-cb').forEach(cb => {
-                cb.addEventListener('change', handleTrialCalculation);
-            });
+            document.querySelectorAll('.test-price').forEach(i => i.addEventListener('input', handleCalc));
+            document.querySelectorAll('.day-trade').forEach(c => c.addEventListener('change', handleCalc));
         }
-
-        function calculateSellResult(buySettlement, sellPrice, isDayTrade) {
-            buySettlement = Math.round(parseFloat(buySettlement));
-            const sellTotal = Math.round(sellPrice * 1000);
-            const sellFee = Math.round(sellTotal * 0.001425 * 0.6);
-            
-            const taxRate = isDayTrade ? 0.0015 : 0.003;
-            const tax = Math.round(sellTotal * taxRate);
-            
-            const sellSettlement = sellTotal - sellFee - tax;
-            const pnl = sellSettlement - buySettlement;
-            const roi = (pnl / buySettlement) * 100;
-
-            return { sellTotal, sellFee, tax, sellSettlement, pnl, roi };
+        async function deleteStock(id, isRep) {
+            if(!confirm('確定刪除？無法復原。')) return;
+            await supabaseClient.from('twstk_stock_records').delete().eq('id', id);
+            isRep ? fetchReports() : fetchHoldings();
         }
-
-        async function deleteStock(dbId, isReportTab) {
-            if (!confirm('確定要刪除這筆紀錄嗎？此動作無法復原。')) return;
-
-            const { error } = await supabaseClient
-                .from('twstk_stock_records')
-                .delete()
-                .eq('id', dbId);
-
-            if (error) {
-                alert('刪除失敗: ' + error.message);
-            } else {
-                if (isReportTab) {
-                    fetchReports();
-                } else {
-                    fetchHoldings();
-                }
+        async function processSell(id) {
+            const pr = parseFloat(document.querySelector(`.test-price[data-id="${id}"]`).value);
+            if(isNaN(pr)) return alert('請輸入賣價');
+            const s = holdingsData.find(x => x.id === id), dt = document.querySelector(`.day-trade[data-id="${id}"]`).checked;
+            const date = prompt("賣出日期", new Date().toISOString().split('T')[0]); if(!date) return;
+            const set = Math.round(s.buy_settlement), tot = Math.round(pr * 1000), fee = Math.round(tot * 0.001425 * 0.6), tax = Math.round(tot * (dt ? 0.0015 : 0.003));
+            const ans = (tot - fee - tax) - set;
+            if(confirm(`確定賣出？預估盈虧：${formatCurrency(ans)}`)){
+                await supabaseClient.from('twstk_stock_records').update({sell_date: date, sell_price: pr.toFixed(2), sell_total: tot, sell_fee: fee, tax: tax, sell_settlement: tot-fee-tax, profit_loss: ans, roi: (ans/set*100).toFixed(3), status: '已售出'}).eq('id', id);
+                alert('賣出成功！'); fetchHoldings();
             }
         }
-
-        async function undoSell(dbId) {
-            if (!confirm('確定要撤銷這筆賣出紀錄嗎？\n狀態將恢復為「持有中」，您可以回到主儀表板重新執行賣出。')) return;
-
-            const { error } = await supabaseClient
-                .from('twstk_stock_records')
-                .update({
-                    sell_date: null,
-                    sell_price: null,
-                    sell_total: null,
-                    sell_fee: null,
-                    tax: null,
-                    sell_settlement: null,
-                    profit_loss: null,
-                    roi: null,
-                    status: '持有中'
-                })
-                .eq('id', dbId);
-
-            if (error) {
-                alert('撤銷失敗: ' + error.message);
-            } else {
-                alert('撤銷成功！該筆股票已移回「主儀表板 (持有中)」。');
-                fetchReports(); 
-            }
-        }
-
-        function openEditModal(dbId) {
-            const stock = holdingsData.find(s => s.id === dbId);
-            if (!stock) return;
-
-            currentEditId = dbId;
-            document.getElementById('edit-id').value = stock.stock_id;
-            document.getElementById('edit-name').value = stock.stock_name;
-            document.getElementById('edit-date').value = stock.buy_date;
-            document.getElementById('edit-price').value = parseFloat(stock.buy_price).toFixed(2);
-
-            document.getElementById('edit-modal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-            currentEditId = null;
-        }
-
-        document.getElementById('edit-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newDate = document.getElementById('edit-date').value;
-            const newPrice = parseFloat(document.getElementById('edit-price').value);
-
-            const buyTotal = Math.round(newPrice * 1000);
-            const buyFee = Math.round(buyTotal * 0.001425 * 0.6);
-            const buySettlement = buyTotal + buyFee;
-
-            const { error } = await supabaseClient
-                .from('twstk_stock_records')
-                .update({
-                    buy_date: newDate,
-                    buy_price: newPrice.toFixed(2), 
-                    buy_total: buyTotal,
-                    buy_fee: buyFee,
-                    buy_settlement: buySettlement
-                })
-                .eq('id', currentEditId);
-
-            if (error) {
-                alert('更新失敗: ' + error.message);
-            } else {
-                alert('更新成功！');
-                closeEditModal();
-                fetchHoldings();
-            }
-        });
-
-        async function processSell(dbId) {
-            const inputEl = document.querySelector(`.test-price-input[data-id="${dbId}"]`);
-            const cbEl = document.querySelector(`.day-trade-cb[data-id="${dbId}"]`);
-            const sellPrice = parseFloat(inputEl.value);
-            const isDayTrade = cbEl.checked;
-            
-            if (isNaN(sellPrice) || sellPrice <= 0) {
-                alert('請先在「試算賣出單價」欄位輸入正確的賣出價格！');
-                return;
-            }
-
-            const stock = holdingsData.find(s => s.id === dbId);
-            
-            const defaultDate = isDayTrade ? stock.buy_date : new Date().toISOString().split('T')[0];
-            const sellDate = prompt("請輸入賣出日期 (YYYY-MM-DD)", defaultDate);
-            if (!sellDate) return;
-
-            const res = calculateSellResult(stock.buy_settlement, sellPrice, isDayTrade);
-
-            const msgPrefix = isDayTrade ? '【當沖】' : '';
-            if(confirm(`確定要以單價 ${sellPrice} 賣出 ${msgPrefix}${stock.stock_name} 嗎？\n預估盈虧為：${formatCurrency(res.pnl)}`)){
-                const { error } = await supabaseClient
-                    .from('twstk_stock_records')
-                    .update({
-                        sell_date: sellDate,
-                        sell_price: sellPrice.toFixed(2),
-                        sell_total: res.sellTotal,
-                        sell_fee: res.sellFee,
-                        tax: res.tax,
-                        sell_settlement: res.sellSettlement,
-                        profit_loss: res.pnl,
-                        roi: res.roi.toFixed(3),
-                        status: '已售出'
-                    })
-                    .eq('id', dbId);
-
-                if (error) {
-                    alert('賣出失敗: ' + error.message);
-                } else {
-                    alert('賣出成功！紀錄已轉至計算報表。');
-                    fetchHoldings();
-                }
-            }
-        }
-
-        // 修改點：加入清除搜尋的功能
-        function clearSearch() {
-            document.getElementById('filter-start').value = '';
-            document.getElementById('filter-end').value = '';
-            document.getElementById('filter-keyword').value = '';
-            fetchReports();
-        }
-
+        function clearSearch() { document.getElementById('filter-start').value = ''; document.getElementById('filter-end').value = ''; document.getElementById('filter-keyword').value = ''; fetchReports(); }
         async function fetchReports() {
-            const start = document.getElementById('filter-start').value;
-            const end = document.getElementById('filter-end').value;
-            const keyword = document.getElementById('filter-keyword').value;
-
-            let query = supabaseClient.from('twstk_stock_records').select('*').eq('status', '已售出').order('sell_date', { ascending: false });
-
-            if (start) query = query.gte('sell_date', start);
-            if (end) query = query.lte('sell_date', end);
-            
-            const { data, error } = await query;
-            if (error) { console.error(error); return; }
-
-            let filteredData = data;
-            if (keyword) {
-                filteredData = data.filter(s => s.stock_id.includes(keyword) || s.stock_name.includes(keyword));
-            }
-
-            renderReports(filteredData);
+            const s = document.getElementById('filter-start').value, e = document.getElementById('filter-end').value, k = document.getElementById('filter-keyword').value;
+            let q = supabaseClient.from('twstk_stock_records').select('*').eq('status', '已售出').order('sell_date', { ascending: false });
+            if(s) q = q.gte('sell_date', s); if(e) q = q.lte('sell_date', e);
+            const { data } = await q; let filtered = data || [];
+            if(k) filtered = filtered.filter(x => x.stock_id.includes(k) || x.stock_name.includes(k));
+            renderReports(filtered);
         }
-
         function renderReports(data) {
-            const tbody = document.getElementById('reports-tbody');
-            tbody.innerHTML = '';
-            
-            let totalPnl = 0;
-
-            data.forEach(stock => {
-                totalPnl += parseFloat(stock.profit_loss);
-                const tr = document.createElement('tr');
-                tr.className = 'border-b hover:bg-gray-50';
-                const isWin = stock.profit_loss >= 0;
-                const colorClass = isWin ? 'text-red-600' : 'text-green-600';
-                
-                // 取得專屬顏色 class (已售出報表也一併套用)
-                const stockColor = getStockColorClass(stock.stock_id);
-
-                // 透過證交稅率反推是否為當沖 (< 0.2%)
-                const isDayTrade = (stock.tax / stock.sell_total) < 0.002;
-                const dayTradeBadge = isDayTrade ? '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">是</span>' : '<span class="text-gray-400">否</span>';
-                
-                tr.innerHTML = `
-                    <td class="p-3 font-medium">
-                        <span class="px-2 py-1 rounded-md ${stockColor}">
-                            ${stock.stock_id} ${stock.stock_name}
-                        </span>
-                    </td>
-                    <td class="p-3">${stock.buy_date}</td>
-                    <td class="p-3 text-red-600">${parseFloat(stock.buy_price).toFixed(2)}</td>
-                    <td class="p-3">${stock.sell_date}</td>
-                    <td class="p-3 text-blue-600">${parseFloat(stock.sell_price).toFixed(2)}</td>
-                    <td class="p-3 text-center">${dayTradeBadge}</td>
-                    <td class="p-3">${formatCurrency(stock.buy_settlement)}</td>
-                    <td class="p-3">${formatCurrency(stock.sell_settlement)}</td>
-                    <td class="p-3 font-bold ${colorClass}">${formatCurrency(stock.profit_loss)}</td>
-                    <td class="p-3 font-bold ${colorClass}">${parseFloat(stock.roi).toFixed(2)}%</td>
-                    <td class="p-3 flex justify-center gap-2">
-                        <button onclick="undoSell('${stock.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600">撤銷賣出</button>
-                        <button onclick="deleteStock('${stock.id}', true)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600">刪除</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            const tb = document.getElementById('reports-tbody'); tb.innerHTML = ''; let tPnl = 0;
+            data.forEach(s => {
+                tPnl += parseFloat(s.profit_loss);
+                const isW = s.profit_loss >= 0, col = isW ? 'text-red-600' : 'text-green-600', dt = (s.tax/s.sell_total)<0.002 ? '<span class="bg-blue-100 text-blue-800 px-2 rounded">是</span>' : '否';
+                tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-3"><span class="px-2 py-1 rounded-md ${getStockColorClass(s.stock_id)}">${s.stock_id}</span></td><td class="p-3">${s.buy_date}</td><td class="p-3 text-red-600">${s.buy_price}</td><td class="p-3">${s.sell_date}</td><td class="p-3 text-blue-600">${s.sell_price}</td><td class="p-3">${dt}</td><td class="p-3">${formatCurrency(s.buy_settlement)}</td><td class="p-3">${formatCurrency(s.sell_settlement)}</td><td class="p-3 font-bold ${col}">${formatCurrency(s.profit_loss)}</td><td class="p-3 font-bold ${col}">${s.roi}%</td><td class="p-3"><button onclick="deleteStock('${s.id}', true)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs">刪除</button></td></tr>`;
             });
-
-            const totalEl = document.getElementById('report-total-pnl');
-            totalEl.innerText = formatCurrency(totalPnl);
-            totalEl.className = `text-2xl ${totalPnl >= 0 ? 'text-red-600' : 'text-green-600'}`;
+            document.getElementById('report-total-pnl').innerText = formatCurrency(tPnl);
+            document.getElementById('report-total-pnl').className = `text-2xl ${tPnl>=0?'text-red-600':'text-green-600'}`;
         }
     </script>
 </body>
