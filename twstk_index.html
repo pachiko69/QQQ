@@ -124,7 +124,7 @@
             </div>
         </div>
 
-        <!-- 區塊：技術分析 (含疊加KD的圖表) -->
+        <!-- 區塊：技術分析 -->
         <div id="tab-analysis" class="hidden">
             <div class="bg-white p-6 rounded-lg shadow mb-8">
                 <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📊 AI 技術分析診斷室</h2>
@@ -138,23 +138,29 @@
                 </div>
 
                 <!-- 分析結果顯示區 -->
-                <div id="analysis-result" class="hidden space-y-6">
-                    <!-- 最近20日 複合圖表區塊 -->
+                <div id="analysis-result" class="hidden space-y-6 mb-8">
+                    <!-- 動態切換週期的複合圖表區塊 -->
                     <div class="bg-gray-900 p-4 rounded-lg shadow-inner">
                         <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
-                            <h3 class="text-white font-bold text-sm">📈 最近 20 日 K線、布林通道、成交量與 KD 指標</h3>
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-white font-bold text-sm">📈 K線與技術指標圖</h3>
+                                <select id="chart-period-select" onchange="updateChartPeriod()" class="bg-gray-800 text-white text-xs border border-gray-600 rounded px-2 py-1 outline-none cursor-pointer">
+                                    <option value="10">最近 10 日</option>
+                                    <option value="20" selected>最近 20 日</option>
+                                    <option value="60">最近 60 日</option>
+                                </select>
+                            </div>
                             <div class="text-xs text-gray-400 flex flex-wrap gap-3">
-                                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 inline-block"></span> 漲 (紅)</span>
-                                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 inline-block"></span> 跌 (綠)</span>
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 inline-block"></span> 漲</span>
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 inline-block"></span> 跌</span>
                                 <span class="text-yellow-400">■ MA5</span>
                                 <span class="text-cyan-400">■ MA10</span>
-                                <span class="text-purple-400">■ 布林通道(上中下)</span>
-                                <span class="text-blue-400">■ KD(K線)</span>
-                                <span class="text-orange-400">■ KD(D線)</span>
+                                <span class="text-purple-400">■ 布林通道</span>
+                                <span class="text-blue-400">■ K線(KD)</span>
+                                <span class="text-orange-400">■ D線(KD)</span>
                             </div>
                         </div>
                         <div class="w-full overflow-x-auto">
-                            <!-- 高度維持 450，以容納圖表資訊 -->
                             <canvas id="candlestick-chart" width="900" height="450" class="w-full"></canvas>
                         </div>
                     </div>
@@ -198,17 +204,45 @@
                         </div>
                     </div>
 
+                    <!-- K線型態與波段結構解析 -->
+                    <div class="bg-indigo-50 p-5 rounded-lg border border-indigo-200 shadow-inner">
+                        <h3 class="font-bold text-indigo-800 mb-3 flex items-center gap-2">🕯️ K線型態與波段結構解析 (近60日結構 & 近3日K線)</h3>
+                        <div id="ana-k-pattern" class="space-y-3 text-sm text-gray-800 leading-relaxed"></div>
+                    </div>
+
                     <!-- 綜合診斷與操作建議區塊 -->
                     <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-200 shadow-inner">
-                        <h3 class="font-bold text-yellow-800 mb-3 flex items-center gap-2">💡 AI 綜合診斷與操作建議</h3>
+                        <h3 class="font-bold text-yellow-800 mb-3 flex items-center gap-2">💡 AI 綜合技術指標診斷與操作建議</h3>
                         <div class="space-y-4 text-sm text-gray-800 leading-relaxed" id="ana-suggestions"></div>
                     </div>
                 </div>
+
+                <!-- 雲端技術名詞小辭典區塊 (Supabase 支援) -->
+                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 mt-6 shadow">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2">📖 雲端技術名詞小辭典 (Supabase 同步)</h3>
+                        <button onclick="openDictModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 font-medium transition-colors">＋ 新增自訂名詞</button>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-3">辭庫已全面儲存於雲端，換電腦也能同步存取！請在下方輸入關鍵字進行模糊查詢。</p>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="dict-search-input" oninput="searchDictionary()" placeholder="例如：黑三鴉、W底、孕育線、MACD..." class="flex-1 border border-slate-300 rounded p-2 focus:border-blue-500 outline-none text-sm">
+                        <button onclick="searchDictionary()" class="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700 text-sm">搜尋</button>
+                    </div>
+                    
+                    <div id="dict-results" class="space-y-3 max-h-64 overflow-y-auto pr-2 text-sm">
+                        <!-- 由 Supabase 動態載入 -->
+                    </div>
+                    
+                    <div class="mt-4 text-right">
+                        <button onclick="initDefaultDictionary()" class="text-xs text-blue-500 hover:text-blue-700 underline">初始化預設辭庫 (若雲端無資料)</button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- 編輯彈窗 -->
+    <!-- 編輯買入紀錄彈窗 -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">✏️ 編輯買入記錄</h2>
@@ -227,13 +261,176 @@
         </div>
     </div>
 
+    <!-- 新增 / 修改技術名詞彈窗 -->
+    <div id="dict-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h2 id="dict-modal-title" class="text-xl font-bold mb-4 text-blue-800">📖 新增自訂技術名詞</h2>
+            <form id="dict-form" class="space-y-4" onsubmit="saveDictTerm(event)">
+                <input type="hidden" id="dict-edit-id">
+                <div>
+                    <label class="block text-sm font-medium">名詞名稱 (例如: 三尊頭、均線糾結)</label>
+                    <input type="text" id="dict-term" required class="mt-1 w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">解釋與說明</label>
+                    <textarea id="dict-desc" required rows="4" placeholder="請輸入該技術名詞的含義或操作建議..." class="mt-1 w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeDictModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存至雲端</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- 執行邏輯 -->
     <script>
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let holdingsData = [], currentEditId = null, currentSortMode = 'date_desc';
+        
+        let chartDataCache = null;
+        let cloudDictionaryData = []; // 雲端辭庫快取
 
+        // --- Supabase 雲端辭庫邏輯 ---
+        async function fetchDictionaryFromCloud() {
+            const { data, error } = await supabaseClient.from('twstk_dictionary').select('*').order('created_at', { ascending: false });
+            if (error) {
+                console.error("載入辭庫失敗: ", error.message);
+                return;
+            }
+            cloudDictionaryData = data || [];
+            searchDictionary(); // 更新顯示
+        }
+
+        async function initDefaultDictionary() {
+            if(!confirm("是否要將經典技術名詞（黑三鴉、W底、MACD等）批次匯入您的 Supabase 雲端辭庫？")) return;
+            
+            const defaults = [
+                { term: "黑三鴉 (Three Black Crows)", desc: "連續三根黑K實體，且收盤價屢創新低。<br><span class='text-slate-500'>進階說明：</span>強烈的看跌反轉型態，通常發生在上升趨勢頂部，顯示多方動能耗盡，空軍完全接管市場。" },
+                { term: "紅三兵 (Three White Soldiers)", desc: "連續三根紅K實體，且收盤價屢創新高。<br><span class='text-slate-500'>進階說明：</span>強烈的看漲反轉或延續型態，通常出現在下降趨勢末端，代表多頭強勢反撲。" },
+                { term: "M頭 / M頭雛形 (Double Top)", desc: "在波段高檔出現兩個位置相近的高點，形狀像英文字母 M。<br><span class='text-slate-500'>進階說明：</span>經典的頭部反轉型態。若跌破兩個高點之間的低點(頸線)，則代表頭部確立，通常會有一段明顯的跌勢。" },
+                { term: "W底 / W底雛形 (Double Bottom)", desc: "在波段低檔出現兩個位置相近的低點，形狀像英文字母 W。<br><span class='text-slate-500'>進階說明：</span>經典的底部反轉型態。若帶量突破兩個低點之間的高點(頸線)，則底部確立，代表長線買點浮現。" },
+                { term: "空頭孕育線 (Bearish Harami)", desc: "上漲趨勢中，出現一根長紅K，隔天卻出現一根完全被前一日紅K包覆的小黑K。<br><span class='text-slate-500'>進階說明：</span>代表原本強勢的上漲動能突然停滯，多空陷入猶豫，是趨勢可能反轉的高檔警告。" },
+                { term: "多頭孕育線 (Bullish Harami)", desc: "下跌趨勢中，出現一根長黑K，隔天卻出現一根完全被前一日黑K包覆的小紅K。<br><span class='text-slate-500'>進階說明：</span>代表空方殺盤力道減弱，多方開始抵抗，可能正在醞釀反彈。" },
+                { term: "多頭吞噬 (Bullish Engulfing)", desc: "今日長紅實體完全包覆昨日黑K。<br><span class='text-slate-500'>進階說明：</span>代表多方力量完全壓制空方，是強烈的底部反轉訊號。" },
+                { term: "空頭吞噬 (Bearish Engulfing)", desc: "今日長黑實體完全包覆昨日紅K。<br><span class='text-slate-500'>進階說明：</span>代表高檔賣壓湧現，空頭一舉吞滅前一日的多方心血，是強烈的頭部反轉訊號。" },
+                { term: "晨星 (Morning Star)", desc: "由三根K線組成：長黑K -> 跳空小K線(十字或實體很小) -> 長紅K。<br><span class='text-slate-500'>進階說明：</span>就像早晨的星星，代表黑暗(跌勢)即將結束，黎明(漲勢)到來，是非常明確的底部反轉。" },
+                { term: "夜星 (Evening Star)", desc: "由三根K線組成：長紅K -> 跳空小K線(十字或實體很小) -> 長黑K。<br><span class='text-slate-500'>進階說明：</span>如同夜晚降臨，代表漲勢即將結束，進入修正期，是明確的頭部訊號。" },
+                { term: "烏雲罩頂 (Dark Cloud Cover)", desc: "上漲趨勢中，今日跳空開高，但收盤卻深跌入昨日長紅K的實體中點之下。<br><span class='text-slate-500'>進階說明：</span>猶如晴空飄來烏雲，顯示高檔套牢與獲利了結賣壓沉重。" },
+                { term: "貫穿線 (Piercing Pattern)", desc: "下跌趨勢中，今日跳空開低，但收盤卻強勢站上昨日長黑K的實體中點之上。<br><span class='text-slate-500'>進階說明：</span>多頭強勢反擊，是烏雲罩頂的相反型態，屬於見底訊號。" },
+                { term: "十字線 (Doji)", desc: "開盤價與收盤價幾乎相同，留有上下影線。<br><span class='text-slate-500'>進階說明：</span>多空在此交戰激烈、僵持不下。若發生在波段的高檔或低檔，通常是趨勢即將反轉（變盤）的預警。" },
+                { term: "MACD (平滑異同移動平均線)", desc: "利用短期與長期EMA(指數移動平均)的距離來判斷趨勢。<br><span class='text-slate-500'>進階說明：</span>柱狀體由綠翻紅代表多方動能轉強；快線(MACD)向上穿越慢線(Signal)為黃金交叉(買進訊號)。" },
+                { term: "KD指標 (隨機指標)", desc: "反映近期收盤價在過去一段時間高低點區間的位置。<br><span class='text-slate-500'>進階說明：</span>數值 0~100。K大於D且在低檔(如20以下)交叉向上稱為黃金交叉(宜買進)；高檔(80以上)K小於D交叉向下為死亡交叉(宜賣出)。" },
+                { term: "布林通道 (Bollinger Bands)", desc: "由中軌(20MA)、上軌(+2標準差)、下軌(-2標準差)組成。<br><span class='text-slate-500'>進階說明：</span>股價有95%的機率在通道內波動。碰觸上軌易有壓力拉回，碰觸下軌易有支撐反彈；通道由緊縮轉為擴張時，常伴隨大行情爆發。" }
+            ];
+
+            const { error } = await supabaseClient.from('twstk_dictionary').insert(defaults);
+            if(error) {
+                alert("匯入失敗: " + error.message);
+            } else {
+                alert("成功初始化預設辭庫至 Supabase！");
+                fetchDictionaryFromCloud();
+            }
+        }
+
+        function searchDictionary() {
+            const keyword = document.getElementById('dict-search-input').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('dict-results');
+            resultsContainer.innerHTML = '';
+
+            const filteredTerms = cloudDictionaryData.filter(item => 
+                (item.term && item.term.toLowerCase().includes(keyword)) || 
+                (item.desc && item.desc.toLowerCase().includes(keyword))
+            );
+
+            if (filteredTerms.length === 0) {
+                resultsContainer.innerHTML = `<div class="text-slate-500 p-2">找不到符合「${keyword}」的名詞。若為空，請點擊下方「初始化預設辭庫」。</div>`;
+                return;
+            }
+
+            filteredTerms.forEach(item => {
+                // 將 desc 內部的 <br> 還原成 \n 以便帶入修改表單
+                const rawDesc = item.desc ? item.desc.replace(/<br\s*[\/]?>/gi, '\n') : '';
+                resultsContainer.innerHTML += `
+                    <div class="p-3 bg-white border border-slate-200 rounded hover:bg-slate-50 transition-colors relative group">
+                        <div class="flex justify-between items-start">
+                            <div class="font-bold text-slate-800 text-base mb-1">${item.term}</div>
+                            <div class="space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="openEditDictModal('${item.id}', '${encodeURIComponent(item.term)}', '${encodeURIComponent(rawDesc)}')" class="text-blue-500 hover:text-blue-700 text-xs">✏️ 修改</button>
+                                <button onclick="deleteDictTerm('${item.id}')" class="text-red-400 hover:text-red-600 text-xs">🗑️ 刪除</button>
+                            </div>
+                        </div>
+                        <div class="text-slate-600">${item.desc}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function openDictModal() {
+            document.getElementById('dict-modal-title').innerText = "📖 新增自訂技術名詞";
+            document.getElementById('dict-edit-id').value = "";
+            document.getElementById('dict-form').reset();
+            document.getElementById('dict-modal').classList.remove('hidden');
+            document.getElementById('dict-term').focus();
+        }
+
+        function openEditDictModal(id, encodedTerm, encodedDesc) {
+            document.getElementById('dict-modal-title').innerText = "📖 修改技術名詞";
+            document.getElementById('dict-edit-id').value = id;
+            document.getElementById('dict-term').value = decodeURIComponent(encodedTerm);
+            document.getElementById('dict-desc').value = decodeURIComponent(encodedDesc);
+            document.getElementById('dict-modal').classList.remove('hidden');
+            document.getElementById('dict-term').focus();
+        }
+
+        function closeDictModal() {
+            document.getElementById('dict-modal').classList.add('hidden');
+            document.getElementById('dict-form').reset();
+        }
+
+        async function saveDictTerm(e) {
+            e.preventDefault();
+            const editId = document.getElementById('dict-edit-id').value;
+            const term = document.getElementById('dict-term').value.trim();
+            const desc = document.getElementById('dict-desc').value.trim().replace(/\n/g, "<br>");
+            
+            if(!term || !desc) return;
+            
+            let error = null;
+            if (editId) {
+                // 執行更新
+                const res = await supabaseClient.from('twstk_dictionary').update({ term, desc }).eq('id', editId);
+                error = res.error;
+            } else {
+                // 執行新增
+                const res = await supabaseClient.from('twstk_dictionary').insert([{ term, desc }]);
+                error = res.error;
+            }
+
+            if (error) {
+                alert("儲存至雲端失敗: " + error.message);
+            } else {
+                closeDictModal();
+                document.getElementById('dict-search-input').value = '';
+                fetchDictionaryFromCloud();
+                alert(editId ? '成功更新雲端辭庫！' : '成功新增名詞至 Supabase 雲端辭庫！');
+            }
+        }
+
+        async function deleteDictTerm(id) {
+            if(!confirm(`確定要從雲端辭庫中刪除此名詞嗎？`)) return;
+            const { error } = await supabaseClient.from('twstk_dictionary').delete().eq('id', id);
+            if (error) {
+                alert("刪除失敗: " + error.message);
+            } else {
+                fetchDictionaryFromCloud();
+            }
+        }
+
+
+        // --- 原有系統的共用邏輯與繪圖功能 ---
         const colorPalette = ['bg-red-100 text-red-800', 'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-teal-100 text-teal-800'];
         let stockColorMap = {}, colorIndex = 0;
 
@@ -248,6 +445,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
             fetchHoldings();
+            fetchDictionaryFromCloud(); // 載入雲端辭庫
         });
 
         function switchTab(tabId) {
@@ -321,7 +519,6 @@
             reader.readAsText(file);
         }
 
-        // --- 核心技術分析邏輯與繪圖 ---
         async function runAnalysis() {
             const stockId = document.getElementById('analysis-stock-id').value.trim();
             if (!stockId) return alert('請輸入股票代號');
@@ -343,7 +540,7 @@
 
             const ma5 = calcMA(closes, 5);
             const ma10 = calcMA(closes, 10);
-            const ma20 = calcMA(closes, 20); // 布林通道與長天期判斷仍依賴MA20
+            const ma20 = calcMA(closes, 20); 
             const bias20 = calcBias(closes, ma20);
             const currMA5 = ma5[ma5.length-1], currMA10 = ma10[ma10.length-1], currMA20 = ma20[ma20.length-1], currBias20 = bias20[bias20.length-1];
 
@@ -365,8 +562,14 @@
 
             document.getElementById('analysis-result').classList.remove('hidden');
 
-            // 繪製複合圖表：傳入 ma10 取代原本繪圖用的 ma20，並加入 kd.k 與 kd.d
-            drawCandlestickChart(dates, opens, highs, lows, closes, volumes, ma5, ma10, bb.upper, bb.mid, bb.lower, kd.k, kd.d);
+            chartDataCache = {
+                dates, opens, highs, lows, closes, volumes, 
+                ma5, ma10, 
+                bbUp: bb.upper, bbMid: bb.mid, bbDn: bb.lower, 
+                kdK: kd.k, kdD: kd.d
+            };
+            
+            updateChartPeriod();
             
             const spreadColor = currSpread > 0 ? 'text-red-600' : (currSpread < 0 ? 'text-green-600' : 'text-gray-600');
             const spreadSign = currSpread > 0 ? '+' : '';
@@ -388,6 +591,15 @@
             document.getElementById('ana-macd').innerHTML = `柱狀體: <span class="${currMacdHist > 0 ? 'text-red-600' : 'text-green-600'}">${currMacdHist?.toFixed(3) || '-'}</span><br>MACD線: ${currMacdLine?.toFixed(2) || '-'}`;
             document.getElementById('ana-rsi').innerText = rsi14[rsi14.length-1]?.toFixed(1) || '-';
             document.getElementById('ana-dmi').innerHTML = `+DI: <span class="text-red-500">${currPDI?.toFixed(1) || '-'}</span><br>-DI: <span class="text-green-500">${currMDI?.toFixed(1) || '-'}</span><br>ADX: ${currADX?.toFixed(1) || '-'}`;
+
+            const patternResults = analyzeCandlestickPatterns(opens, highs, lows, closes);
+            const patternHtml = patternResults.map(p => {
+                let badge = p.type === 'bull' ? '<span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold border border-red-300">多方訊號</span>' :
+                            p.type === 'bear' ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-bold border border-green-300">空方訊號</span>' :
+                            '<span class="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-xs font-bold border border-gray-400">中性/結構</span>';
+                return `<div class="flex items-start gap-2"><div class="mt-0.5">${badge}</div><div><strong class="text-indigo-900">${p.name}:</strong> ${p.desc}</div></div>`;
+            }).join('');
+            document.getElementById('ana-k-pattern').innerHTML = patternHtml || "目前 K 線與型態均在常態波動範圍內，無明顯反轉或特殊型態特徵。";
 
             let textTrend = "", textVolume = "", textAction = "";
             if (currMacdHist > 0 && currPDI > currMDI && currADX > 20) {
@@ -415,7 +627,78 @@
             document.getElementById('ana-suggestions').innerHTML = `<p>${textTrend}</p><hr class="border-yellow-200"><p>${textVolume}</p><hr class="border-yellow-200"><p>${textAction}</p>`;
         }
 
-        // --- 繪製 K線圖、布林通道(上中下)、成交量與疊加KD (Canvas) ---
+        function analyzeCandlestickPatterns(opens, highs, lows, closes) {
+            let results = [];
+            const n = closes.length;
+            if (n < 60) return [{type: 'neutral', name: '資料不足', desc: '需要至少 60 天的資料以進行完整的型態學與 K 線掃描。'}];
+
+            const d1 = { o: opens[n-3], h: highs[n-3], l: lows[n-3], c: closes[n-3] };
+            const d2 = { o: opens[n-2], h: highs[n-2], l: lows[n-2], c: closes[n-2] };
+            const d3 = { o: opens[n-1], h: highs[n-1], l: lows[n-1], c: closes[n-1] };
+
+            const body3 = Math.abs(d3.c - d3.o), range3 = d3.h - d3.l;
+            const upper3 = d3.h - Math.max(d3.o, d3.c), lower3 = Math.min(d3.o, d3.c) - d3.l;
+            const isBull3 = d3.c > d3.o, isBear3 = d3.c < d3.o;
+
+            const body2 = Math.abs(d2.c - d2.o);
+            const isBull2 = d2.c > d2.o, isBear2 = d2.c < d2.o;
+            const isBull1 = d1.c > d1.o, isBear1 = d1.c < d1.o;
+            const avgBody = (Math.abs(d1.c-d1.o) + Math.abs(d2.c-d2.o) + body3) / 3;
+            
+            if (body3 > avgBody * 2 && isBull3) results.push({type: 'bull', name: '長紅K線 (Long White)', desc: '當日強勢收高，多方企圖明顯，具備強力支撐意義。'});
+            if (body3 > avgBody * 2 && isBear3) results.push({type: 'bear', name: '長黑K線 (Long Black)', desc: '當日弱勢收低，空方強力宣洩，為短期壓力所在。'});
+            if (range3 > 0 && body3 <= range3 * 0.1 && (upper3 > 0 || lower3 > 0)) {
+                if (upper3 > range3 * 0.4 && lower3 > range3 * 0.4) results.push({type: 'neutral', name: '十字線 (Doji)', desc: '多空在此交戰激烈，僵持不下，若發生在波段高低檔通常是變盤預警。'});
+                else if (lower3 > range3 * 0.8) results.push({type: 'bull', name: '蜻蜓十字 / 槌子線 (Hammer)', desc: '下影線極長，顯示低檔承接買盤強烈，若在跌勢末端出現為反轉契機。'});
+                else if (upper3 > range3 * 0.8) results.push({type: 'bear', name: '墓碑十字 / 流星線 (Shooting Star)', desc: '上影線極長，顯示高檔賣壓沉重，若在漲勢末端出現易形成短線頭部。'});
+            }
+
+            if (isBear2 && isBull3 && d3.o <= d2.c && d3.c >= d2.o && body3 > body2) results.push({type: 'bull', name: '多頭吞噬 (Bullish Engulfing)', desc: '今日長紅實體完全包覆昨日黑K，代表多頭強勢逆轉空方格局。'});
+            if (isBull2 && isBear3 && d3.o >= d2.c && d3.c <= d2.o && body3 > body2) results.push({type: 'bear', name: '空頭吞噬 (Bearish Engulfing)', desc: '今日長黑實體完全包覆昨日紅K，代表高檔賣壓湧現，空頭掌控局勢。'});
+            if (isBear2 && isBull3 && d3.o >= d2.c && d3.c <= d2.o && body2 > body3 * 2) results.push({type: 'bull', name: '多頭孕育線 (Bullish Harami)', desc: '下跌趨勢中出現被前一根長黑包覆的小紅K，跌勢可能在此踩煞車。'});
+            if (isBull2 && isBear3 && d3.o <= d2.c && d3.c >= d2.o && body2 > body3 * 2) results.push({type: 'bear', name: '空頭孕育線 (Bearish Harami)', desc: '上漲趨勢中出現被前一根長紅包覆的小黑K，顯示上漲動能衰退。'});
+            if (isBull2 && isBear3 && d3.o > d2.h && d3.c < d2.o + (body2/2)) results.push({type: 'bear', name: '烏雲罩頂 (Dark Cloud Cover)', desc: '跳空開高卻收在前日紅K實體中點之下，高檔反轉意味濃厚。'});
+            if (isBear2 && isBull3 && d3.o < d2.l && d3.c > d2.o - (body2/2)) results.push({type: 'bull', name: '貫穿線 (Piercing Pattern)', desc: '跳空開低卻強勢收在前日黑K實體中點之上，為低檔強力反轉特徵。'});
+
+            if (isBear1 && Math.abs(d2.c-d2.o) < avgBody*0.5 && isBull3 && d3.c > d1.o-(Math.abs(d1.c-d1.o)/2)) results.push({type: 'bull', name: '晨星 (Morning Star)', desc: '經典三日底部反轉：長黑跌勢 -> 隔日跳空留小K線 -> 第三日長紅逆襲，確立底部。'});
+            if (isBull1 && Math.abs(d2.c-d2.o) < avgBody*0.5 && isBear3 && d3.c < d1.o+(Math.abs(d1.c-d1.o)/2)) results.push({type: 'bear', name: '夜星 (Evening Star)', desc: '經典三日頭部反轉：長紅漲勢 -> 隔日跳空留小K線 -> 第三日長黑下殺，確立頭部。'});
+            if (isBull1 && isBull2 && isBull3 && d2.c > d1.c && d3.c > d2.c) results.push({type: 'bull', name: '紅三兵 (Three White Soldiers)', desc: '連續三根紅K且收盤價屢創新高，多頭兵臨城下，推升力道強勁。'});
+            if (isBear1 && isBear2 && isBear3 && d2.c < d1.c && d3.c < d2.c) results.push({type: 'bear', name: '黑三鴉 (Three Black Crows)', desc: '連續三根黑K且收盤價屢創新低，空頭大軍壓境，為強烈崩跌訊號。'});
+
+            const subCloses = closes.slice(n - 60);
+            let localMax = [], localMin = [];
+            for (let i = 2; i < subCloses.length - 2; i++) {
+                if (subCloses[i] > subCloses[i-1] && subCloses[i] > subCloses[i+1]) localMax.push({idx: i, val: subCloses[i]});
+                if (subCloses[i] < subCloses[i-1] && subCloses[i] < subCloses[i+1]) localMin.push({idx: i, val: subCloses[i]});
+            }
+            if (localMin.length >= 2) {
+                let m1 = localMin[localMin.length-2], m2 = localMin[localMin.length-1];
+                let diff = Math.abs(m1.val - m2.val) / m1.val;
+                if (diff < 0.03 && (m2.idx - m1.idx) > 5) {
+                    results.push({type: 'bull', name: 'W底雛形 (Double Bottom)', desc: '近60日內出現兩個位置相近的低點，打底跡象浮現，若能帶量突破兩者間的頸線高點則型態確立。'});
+                }
+            }
+            if (localMax.length >= 2) {
+                let m1 = localMax[localMax.length-2], m2 = localMax[localMax.length-1];
+                let diff = Math.abs(m1.val - m2.val) / m1.val;
+                if (diff < 0.03 && (m2.idx - m1.idx) > 5) {
+                    results.push({type: 'bear', name: 'M頭雛形 (Double Top)', desc: '近60日內出現兩個位置相近的高點，上方壓力沉重，若跌破兩者間的頸線低點則將面臨波段修正。'});
+                }
+            }
+            return results;
+        }
+
+        function updateChartPeriod() {
+            if (!chartDataCache) return;
+            drawCandlestickChart(
+                chartDataCache.dates, chartDataCache.opens, chartDataCache.highs, chartDataCache.lows, 
+                chartDataCache.closes, chartDataCache.volumes, 
+                chartDataCache.ma5, chartDataCache.ma10, 
+                chartDataCache.bbUp, chartDataCache.bbMid, chartDataCache.bbDn, 
+                chartDataCache.kdK, chartDataCache.kdD
+            );
+        }
+
         function drawCandlestickChart(dates, opens, highs, lows, closes, volumes, ma5, ma10, bbUp, bbMid, bbDn, kdK, kdD) {
             const canvas = document.getElementById('candlestick-chart');
             const ctx = canvas.getContext('2d');
@@ -424,7 +707,7 @@
             
             ctx.clearRect(0, 0, width, height);
 
-            const sliceCount = 20;
+            const sliceCount = parseInt(document.getElementById('chart-period-select').value) || 20;
             const startIdx = Math.max(0, dates.length - sliceCount);
             
             const subDates = dates.slice(startIdx);
@@ -444,7 +727,6 @@
             if (subCloses.length === 0) return;
 
             const padding = 30;
-            // 上方 75% 畫價格，下方 25% 畫成交量與 KD 疊加
             const priceAreaHeight = (height - padding * 2) * 0.75;
             const volAreaHeight = (height - padding * 2) * 0.25;
             const chartWidth = width - padding * 2;
@@ -461,13 +743,11 @@
                 return padding + priceAreaHeight - ((price - minPrice) / (maxPrice - minPrice)) * priceAreaHeight;
             }
 
-            // KD 值轉換為 Y 軸座標 (0~100 映射到 volAreaHeight)
             function kdToY(val) {
                 if (val === null || isNaN(val)) return null;
                 return (height - padding) - (val / 100) * volAreaHeight;
             }
 
-            // 繪製價格區網格與標籤
             ctx.strokeStyle = '#374151';
             ctx.fillStyle = '#9CA3AF';
             ctx.font = '10px sans-serif';
@@ -481,18 +761,17 @@
                 ctx.fillText(price.toFixed(1), width - padding + 5, y + 3);
             }
 
-            // 繪製成交量/KD 頂部格線與標籤
             let volTopY = padding + priceAreaHeight;
             ctx.beginPath();
             ctx.moveTo(padding, volTopY);
             ctx.lineTo(width - padding, volTopY);
             ctx.stroke();
-            // 在左側標示成交量最大值，右側標示 KD 100
             ctx.fillText(maxVol.toLocaleString(), padding + 5, volTopY + 12);
             ctx.fillText("KD 100", width - padding - 40, volTopY + 12);
             ctx.fillText("KD 0", width - padding - 30, height - padding - 2);
 
-            // 繪製 K線與成交量柱狀圖
+            const labelStep = Math.max(1, Math.floor(sliceCount / 6));
+
             subCloses.forEach((close, i) => {
                 let open = subOpens[i];
                 let high = subHighs[i];
@@ -506,9 +785,8 @@
                 let yLow = priceToY(low);
 
                 let isUp = close >= open;
-                let color = isUp ? '#EF4444' : '#10B981'; // 紅漲綠跌
+                let color = isUp ? '#EF4444' : '#10B981';
 
-                // --- 畫 K 線 ---
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
@@ -521,31 +799,26 @@
                 let bodyHeight = Math.max(Math.abs(yClose - yOpen), 2);
                 ctx.fillRect(x - barWidth * 0.35, bodyY, barWidth * 0.7, bodyHeight);
 
-                // --- 畫成交量 (同 K 線顏色) ---
                 let volH = (vol / maxVol) * (volAreaHeight - 15);
                 let volY = height - padding - volH;
                 ctx.fillRect(x - barWidth * 0.35, volY, barWidth * 0.7, volH);
 
-                // X軸日期標籤
-                if (i % 3 === 0 || i === subCloses.length - 1) {
+                if (i % labelStep === 0 || i === subCloses.length - 1) {
                     ctx.fillStyle = '#9CA3AF';
                     ctx.fillText(subDates[i].substring(5), x - 15, height - 10);
                 }
             });
 
-            // 繪製 MA5 (黃) 與 MA10 (青)
             drawLine(ctx, subMa5, priceToY, padding, barWidth, '#FACC15', 1.5);
             drawLine(ctx, subMa10, priceToY, padding, barWidth, '#22D3EE', 1.5);
             
-            // 繪製布林通道 上、中、下軌統一顏色 (紫色 #C084FC)
             const bbColor = '#C084FC';
             drawLine(ctx, subBbUp, priceToY, padding, barWidth, bbColor, 1);
             drawLine(ctx, subBbMid, priceToY, padding, barWidth, bbColor, 1);
             drawLine(ctx, subBbDn, priceToY, padding, barWidth, bbColor, 1);
 
-            // 繪製 KD 指標線 (疊加於成交量區塊上方)
-            drawLine(ctx, subKdK, kdToY, padding, barWidth, '#60A5FA', 1.5); // K線 (藍色)
-            drawLine(ctx, subKdD, kdToY, padding, barWidth, '#FB923C', 1.5); // D線 (橘色)
+            drawLine(ctx, subKdK, kdToY, padding, barWidth, '#60A5FA', 1.5); 
+            drawLine(ctx, subKdD, kdToY, padding, barWidth, '#FB923C', 1.5); 
         }
 
         function drawLine(ctx, dataArray, yMappingFunc, padding, barWidth, color, lineWidth=1.5) {
@@ -556,20 +829,14 @@
             dataArray.forEach((val, i) => {
                 if (val === null || isNaN(val)) return;
                 let y = yMappingFunc(val);
-                if (y === null) return; // 保護判斷
+                if (y === null) return; 
                 let x = padding + i * barWidth + barWidth / 2;
-                
-                if (!started) {
-                    ctx.moveTo(x, y);
-                    started = true;
-                } else {
-                    ctx.lineTo(x, y);
-                }
+                if (!started) { ctx.moveTo(x, y); started = true; } 
+                else { ctx.lineTo(x, y); }
             });
             ctx.stroke();
         }
 
-        // 技術指標數學函式
         function calcMA(data, p) { return data.map((_, i) => i < p - 1 ? null : data.slice(i - p + 1, i + 1).reduce((a, b) => a + b, 0) / p); }
         function calcBias(closes, ma) { return closes.map((c, i) => ma[i] !== null ? ((c - ma[i]) / ma[i]) * 100 : null); }
         function calcBollingerBands(data, ma, p, mult) {
@@ -671,7 +938,7 @@
             return { k, d };
         }
 
-        // --- 主儀表板與報表邏輯 ---
+        // 主儀表板與報表邏輯
         document.getElementById('add-id').addEventListener('blur', async (e) => {
             const stockId = e.target.value.trim();
             if (!stockId) return;
