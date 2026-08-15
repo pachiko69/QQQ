@@ -11,27 +11,57 @@
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
-    <div class="max-w-7xl mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">📈 股票交易記錄與全方位分析系統</h1>
+
+    <!-- 登入/註冊覆蓋層 -->
+    <div id="auth-overlay" class="fixed inset-0 bg-gray-900 z-[100] flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-700">🔐 股票系統登入</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="auth-email" placeholder="example@mail.com" class="mt-1 w-full border rounded p-2 focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">密碼</label>
+                    <input type="password" id="auth-password" class="mt-1 w-full border rounded p-2 focus:border-blue-500 outline-none">
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button onclick="handleLogin()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium">登入</button>
+                    <button onclick="handleRegister()" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 font-medium">註冊</button>
+                </div>
+                <div id="auth-message" class="text-sm text-center text-red-500 font-medium h-4 mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主應用程式介面 -->
+    <div id="app-container" class="max-w-7xl mx-auto p-6 hidden">
+        <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+            <h1 class="text-3xl font-bold text-blue-700">📈 股票交易記錄與全方位分析系統</h1>
+            <div class="flex items-center gap-4">
+                <span id="user-display" class="text-sm text-gray-600 font-medium"></span>
+                <button onclick="handleLogout()" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-300 text-sm font-bold transition">登出系統</button>
+            </div>
+        </div>
 
         <!-- 匯入 CSV 與 管理控制區塊 -->
         <div class="mb-6 p-4 bg-white rounded-lg shadow flex flex-wrap items-center gap-4">
             <h2 class="text-lg font-bold text-gray-700">📂 匯入歷史股價</h2>
             <input type="file" id="csv-file" accept=".csv" class="border p-1 rounded text-sm">
-            <button onclick="importCSV()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm font-medium">開始匯入歷史股價</button>
-            <button onclick="clearStockInfoTable()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium ml-auto">🗑️ 清除歷史股價記錄表</button>
+            <button onclick="importCSV()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm font-medium transition">開始匯入歷史股價</button>
+            <button onclick="clearStockInfoTable()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium ml-auto transition">🗑️ 清除我的歷史股價</button>
             <span id="import-status" class="text-sm text-gray-500 font-medium w-full"></span>
         </div>
 
         <!-- 頁籤選單 -->
         <div class="flex border-b mb-6 overflow-x-auto">
-            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 tab-active whitespace-nowrap">主儀表板</button>
-            <button onclick="switchTab('report')" id="btn-report" class="px-4 py-2 text-gray-500 whitespace-nowrap">計算報表</button>
-            <button onclick="switchTab('analysis')" id="btn-analysis" class="px-4 py-2 text-gray-500 whitespace-nowrap">技術分析</button>
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 whitespace-nowrap bg-red-200 rounded-t-md text-gray-500">主儀表板</button>
+            <button onclick="switchTab('report')" id="btn-report" class="px-4 py-2 whitespace-nowrap bg-green-200 rounded-t-md text-gray-500">計算報表</button>
+            <button onclick="switchTab('analysis')" id="btn-analysis" class="px-4 py-2 tab-active whitespace-nowrap bg-blue-200 rounded-t-md">技術分析</button>
         </div>
 
         <!-- 區塊：主儀表板 -->
-        <div id="tab-dashboard" class="block">
+        <div id="tab-dashboard" class="hidden">
             <div class="bg-white p-6 rounded-lg shadow mb-8">
                 <h2 class="text-xl font-bold mb-4">＋ 新增買入記錄</h2>
                 <form id="add-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -59,7 +89,7 @@
                         </select>
                     </div>
                     <div class="md:col-span-5 text-right mt-2">
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">儲存買入紀錄</button>
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">儲存買入紀錄</button>
                     </div>
                 </form>
             </div>
@@ -116,14 +146,14 @@
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="fetchReports()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full flex-1">查詢</button>
-                        <button onclick="clearSearch()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 w-full flex-1">清除</button>
+                        <button onclick="fetchReports()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full flex-1 transition">查詢</button>
+                        <button onclick="clearSearch()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 w-full flex-1 transition">清除</button>
                     </div>
                 </div>
                 <div class="p-4 bg-gray-50 border rounded text-lg font-bold mb-4 flex flex-wrap gap-4 items-center">
                     <div>查詢區間總盈虧：<span id="report-total-pnl" class="text-2xl">$0</span></div>
-                    <div class="text-sm font-medium text-gray-600 bg-white px-3 py-1 border rounded">真實盈虧：<span id="report-real-pnl" class="ml-1">$0</span></div>
-                    <div class="text-sm font-medium text-gray-600 bg-white px-3 py-1 border rounded">虛擬盈虧：<span id="report-virtual-pnl" class="ml-1">$0</span></div>
+                    <div class="text-sm font-medium text-gray-600 bg-white px-3 py-1 border rounded shadow-sm">真實盈虧：<span id="report-real-pnl" class="ml-1">$0</span></div>
+                    <div class="text-sm font-medium text-gray-600 bg-white px-3 py-1 border rounded shadow-sm">虛擬盈虧：<span id="report-virtual-pnl" class="ml-1">$0</span></div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm text-left whitespace-nowrap">
@@ -144,12 +174,11 @@
         </div>
 
         <!-- 區塊：技術分析 -->
-        <div id="tab-analysis" class="hidden">
+        <div id="tab-analysis" class="block">
             <div class="bg-white p-6 rounded-lg shadow mb-8">
                 <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📊 AI 技術分析診斷室</h2>
                 
                 <div class="flex flex-wrap gap-4 mb-6 items-end">
-                    <!-- 新版清單式選擇輸入 -->
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-gray-700">
                             股票代號<span id="data-volume-info" class="text-xs text-blue-600 font-normal ml-2"></span>
@@ -158,56 +187,29 @@
                             <option value="">請先載入清單...</option>
                         </select>
                     </div>
-                    <button onclick="runAnalysis()" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">執行分析</button>
+                    <button onclick="runAnalysis()" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 transition">執行分析</button>
                 </div>
 
-                <!-- 分析結果與編輯資訊顯示區 -->
                 <div id="analysis-result" class="hidden space-y-6 mb-8">
                     
-                    <!-- 股票基本資料與自訂策略編輯面板 (含備註日期) -->
+                    <!-- 股票基本資料與自訂策略編輯面板 -->
                     <div class="bg-blue-50 p-5 rounded-lg border border-blue-200 shadow">
-                        <h3 class="font-bold text-blue-900 mb-3 flex items-center gap-2">📝 股票策略與指標重點筆記 (twstk_stock_info)</h3>
+                        <h3 class="font-bold text-blue-900 mb-3 flex items-center gap-2">📝 股票策略與指標重點筆記</h3>
                         <form id="stock-info-edit-form" onsubmit="saveStockInfoEdit(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">股票代號</label>
-                                <input type="text" id="info-edit-id" readonly class="mt-1 w-full border rounded p-2 bg-gray-100 text-sm font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">股票名稱</label>
-                                <input type="text" id="info-edit-name" required class="mt-1 w-full border rounded p-2 bg-white text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">現股目前價位</label>
-                                <input type="number" step="0.01" id="info-edit-current-price" class="mt-1 w-full border rounded p-2 bg-white text-sm" placeholder="例如: 85.5">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">備註填寫日期</label>
-                                <input type="date" id="info-edit-note-date" required class="mt-1 w-full border rounded p-2 bg-white text-sm font-bold text-blue-700">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">預備買入價格</label>
-                                <input type="number" step="0.01" id="info-edit-target-buy" class="mt-1 w-full border rounded p-2 bg-white text-sm text-red-600 font-bold" placeholder="例如: 80.0">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">預備賣出價格</label>
-                                <input type="number" step="0.01" id="info-edit-target-sell" class="mt-1 w-full border rounded p-2 bg-white text-sm text-green-600 font-bold" placeholder="例如: 100.0">
-                            </div>
+                            <div><label class="block text-xs font-bold text-gray-600">股票代號</label><input type="text" id="info-edit-id" readonly class="mt-1 w-full border rounded p-2 bg-gray-100 text-sm font-bold"></div>
+                            <div><label class="block text-xs font-bold text-gray-600">股票名稱</label><input type="text" id="info-edit-name" required class="mt-1 w-full border rounded p-2 bg-white text-sm"></div>
+                            <div><label class="block text-xs font-bold text-gray-600">現股目前價位</label><input type="number" step="0.01" id="info-edit-current-price" class="mt-1 w-full border rounded p-2 bg-white text-sm"></div>
+                            <div><label class="block text-xs font-bold text-gray-600">備註填寫日期</label><input type="date" id="info-edit-note-date" required class="mt-1 w-full border rounded p-2 bg-white text-sm font-bold text-blue-700"></div>
+                            <div><label class="block text-xs font-bold text-gray-600">預備買入價格</label><input type="number" step="0.01" id="info-edit-target-buy" class="mt-1 w-full border rounded p-2 bg-white text-sm text-red-600 font-bold"></div>
+                            <div><label class="block text-xs font-bold text-gray-600">預備賣出價格</label><input type="number" step="0.01" id="info-edit-target-sell" class="mt-1 w-full border rounded p-2 bg-white text-sm text-green-600 font-bold"></div>
                             <div class="md:col-span-2"></div>
-                            <div class="md:col-span-4">
-                                <label class="block text-xs font-bold text-gray-600">股票指標重點分析</label>
-                                <textarea id="info-edit-indicator" rows="2" class="mt-1 w-full border rounded p-2 bg-white text-sm" placeholder="記錄重要支撐壓力、指標型態特徵..."></textarea>
-                            </div>
-                            <div class="md:col-span-4">
-                                <label class="block text-xs font-bold text-gray-600">備註</label>
-                                <textarea id="info-edit-notes" rows="2" class="mt-1 w-full border rounded p-2 bg-white text-sm" placeholder="輸入其他操作心得或觀察重點..."></textarea>
-                            </div>
-                            <div class="md:col-span-4 text-right">
-                                <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-sm font-medium">💾 儲存股票分析與價格設定</button>
-                            </div>
+                            <div class="md:col-span-4"><label class="block text-xs font-bold text-gray-600">股票指標重點分析</label><textarea id="info-edit-indicator" rows="2" class="mt-1 w-full border rounded p-2 bg-white text-sm"></textarea></div>
+                            <div class="md:col-span-4"><label class="block text-xs font-bold text-gray-600">備註</label><textarea id="info-edit-notes" rows="2" class="mt-1 w-full border rounded p-2 bg-white text-sm"></textarea></div>
+                            <div class="md:col-span-4 text-right"><button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-sm font-medium transition">💾 儲存股票分析與價格設定</button></div>
                         </form>
                     </div>
 
-                    <!-- 動態切換週期的複合圖表區塊 -->
+                    <!-- K線與技術指標圖 -->
                     <div class="bg-gray-900 p-4 rounded-lg shadow-inner">
                         <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
                             <div class="flex items-center gap-3">
@@ -239,77 +241,42 @@
 
                     <!-- 全方位數據指標 8 宮格 -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-blue-50 p-4 rounded border border-blue-200">
-                            <div class="text-sm text-gray-500">收盤價 / 漲跌</div>
-                            <div id="ana-close-spread" class="text-xl font-bold mt-1">-</div>
-                            <div id="ana-date" class="text-xs text-gray-400 mt-1">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">成交量 / OBV狀態</div>
-                            <div id="ana-vol" class="text-lg font-bold text-gray-700 mt-1">-</div>
-                            <div id="ana-ad" class="text-xs text-gray-500 mt-1">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">均線與乖離率 (月線)</div>
-                            <div id="ana-ma" class="text-sm font-bold text-gray-700 mt-1">-</div>
-                            <div id="ana-bias" class="text-sm font-bold text-gray-700 mt-1">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">布林通道 (20MA)</div>
-                            <div id="ana-bb" class="text-sm font-bold text-gray-700 mt-1 leading-tight">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">KD (9,3,3)</div>
-                            <div id="ana-kd" class="text-lg font-bold mt-1">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">MACD (12,26,9)</div>
-                            <div id="ana-macd" class="text-sm font-bold mt-1 leading-tight">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">RSI (14)</div>
-                            <div id="ana-rsi" class="text-lg font-bold text-gray-700 mt-1">-</div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="text-sm text-gray-500">DMI 趨向指標 (14)</div>
-                            <div id="ana-dmi" class="text-sm font-bold mt-1 leading-tight">-</div>
-                        </div>
+                        <div class="bg-blue-50 p-4 rounded border border-blue-200"><div class="text-sm text-gray-500">收盤價 / 漲跌</div><div id="ana-close-spread" class="text-xl font-bold mt-1">-</div><div id="ana-date" class="text-xs text-gray-400 mt-1">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">成交量 / OBV狀態</div><div id="ana-vol" class="text-lg font-bold text-gray-700 mt-1">-</div><div id="ana-ad" class="text-xs text-gray-500 mt-1">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">均線與乖離率 (月線)</div><div id="ana-ma" class="text-sm font-bold text-gray-700 mt-1">-</div><div id="ana-bias" class="text-sm font-bold text-gray-700 mt-1">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">布林通道 (20MA)</div><div id="ana-bb" class="text-sm font-bold text-gray-700 mt-1 leading-tight">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">KD (9,3,3)</div><div id="ana-kd" class="text-lg font-bold mt-1">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">MACD (12,26,9)</div><div id="ana-macd" class="text-sm font-bold mt-1 leading-tight">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">RSI (14)</div><div id="ana-rsi" class="text-lg font-bold text-gray-700 mt-1">-</div></div>
+                        <div class="bg-gray-50 p-4 rounded border"><div class="text-sm text-gray-500">DMI 趨向指標 (14)</div><div id="ana-dmi" class="text-sm font-bold mt-1 leading-tight">-</div></div>
                     </div>
 
-                    <!-- K線型態與波段結構解析 -->
                     <div class="bg-indigo-50 p-5 rounded-lg border border-indigo-200 shadow-inner">
-                        <h3 class="font-bold text-indigo-800 mb-3 flex items-center gap-2">🕯️ K線型態與波段結構解析 (近60日結構 & 近3日K線)</h3>
+                        <h3 class="font-bold text-indigo-800 mb-3 flex items-center gap-2">🕯️ K線型態與波段結構解析</h3>
                         <div id="ana-k-pattern" class="space-y-3 text-sm text-gray-800 leading-relaxed"></div>
                     </div>
 
-                    <!-- 綜合診斷與操作建議區塊 -->
                     <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-200 shadow-inner">
                         <h3 class="font-bold text-yellow-800 mb-3 flex items-center gap-2">💡 AI 綜合技術指標診斷與操作建議</h3>
                         <div class="space-y-4 text-sm text-gray-800 leading-relaxed" id="ana-suggestions"></div>
                     </div>
                 </div>
 
-                <!-- 技術名詞小辭典區塊 (Supabase 支援) -->
+                <!-- 全站共用辭庫 -->
                 <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 mt-6 shadow">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2">📖 技術名詞小辭典</h3>
-                        <button onclick="openDictModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 font-medium transition-colors">＋ 新增自訂名詞</button>
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2">📖 技術名詞小辭典 (全站共用)</h3>
+                        <button onclick="openDictModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 font-medium transition">＋ 新增自訂名詞</button>
                     </div>
-                    <p class="text-xs text-slate-500 mb-3">請在下方輸入關鍵字進行模糊查詢</p>
                     <div class="flex gap-2 mb-4">
-                        <input type="text" id="dict-search-input" oninput="searchDictionary()" placeholder="例如：黑三鴉、W底、孕育線、MACD..." class="flex-1 border border-slate-300 rounded p-2 focus:border-blue-500 outline-none text-sm">
-                        <button onclick="searchDictionary()" class="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700 text-sm">搜尋</button>
+                        <input type="text" id="dict-search-input" oninput="searchDictionary()" placeholder="搜尋共用辭庫..." class="flex-1 border border-slate-300 rounded p-2 focus:border-blue-500 outline-none text-sm">
+                        <button onclick="searchDictionary()" class="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700 text-sm transition">搜尋</button>
                     </div>
-                    
-                    <div id="dict-results" class="space-y-3 max-h-64 overflow-y-auto pr-2 text-sm">
-                        <!-- 由 Supabase 動態載入 -->
-                    </div>
-                    
+                    <div id="dict-results" class="space-y-3 max-h-64 overflow-y-auto pr-2 text-sm"></div>
                     <div class="mt-4 text-right">
                         <button onclick="initDefaultDictionary()" class="text-xs text-blue-500 hover:text-blue-700 underline">初始化預設辭庫</button>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -333,49 +300,103 @@
                     </select>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">取消</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存變更</button>
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">儲存變更</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 新增 / 修改技術名詞彈窗 -->
+    <!-- 辭庫編輯彈窗 -->
     <div id="dict-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 id="dict-modal-title" class="text-xl font-bold mb-4 text-blue-800">📖 新增自訂技術名詞</h2>
             <form id="dict-form" class="space-y-4" onsubmit="saveDictTerm(event)">
                 <input type="hidden" id="dict-edit-id">
-                <div>
-                    <label class="block text-sm font-medium">名詞名稱 (例如: 三尊頭、均線糾結)</label>
-                    <input type="text" id="dict-term" required class="mt-1 w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">解釋與說明</label>
-                    <textarea id="dict-desc" required rows="4" placeholder="請輸入該技術名詞的含義或操作建議..." class="mt-1 w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none"></textarea>
-                </div>
+                <div><label class="block text-sm font-medium">名詞名稱</label><input type="text" id="dict-term" required class="mt-1 w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none"></div>
+                <div><label class="block text-sm font-medium">解釋與說明</label><textarea id="dict-desc" required rows="4" class="mt-1 w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none"></textarea></div>
                 <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="closeDictModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">取消</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存至雲端</button>
+                    <button type="button" onclick="closeDictModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">儲存</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 執行邏輯 -->
     <script>
+        // Supabase 初始化
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let holdingsData = [], currentEditId = null, currentSortMode = 'date_desc';
         
+        let currentUser = null;
+        let holdingsData = [], currentEditId = null, currentSortMode = 'date_desc';
         let chartDataCache = null;
         let cloudDictionaryData = [];
-        let isAnalysisListLoaded = false; // 新增：控制是否已經載入清單
+        let isAnalysisListLoaded = false;
 
-        // --- 股票資訊管理與編輯邏輯 ---
+        // --- 登入與權限管理 ---
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('auth-overlay').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('user-display').innerText = `👤 ${currentUser.email}`;
+                initApp();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-overlay').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+            }
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) document.getElementById('auth-message').innerText = error.message;
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const { error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                document.getElementById('auth-message').innerText = error.message;
+            } else {
+                alert('註冊成功！請檢查 Email 進行驗證，或直接登入。');
+            }
+        }
+
+        async function handleLogout() {
+            await supabaseClient.auth.signOut();
+        }
+
+        function initApp() {
+            document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
+            fetchDictionaryFromCloud(); 
+            switchTab('analysis'); 
+        }
+
+        // --- 共用顏色與數字格式化 ---
+        const colorPalette = ['bg-red-100 text-red-800', 'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-teal-100 text-teal-800'];
+        let stockColorMap = {}, colorIndex = 0;
+        function getStockColorClass(stockId) {
+            if (!stockColorMap[stockId]) { stockColorMap[stockId] = colorPalette[colorIndex++ % colorPalette.length]; }
+            return stockColorMap[stockId];
+        }
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(amount);
+        }
+
+        // --- 股票資訊管理與編輯邏輯 (綁定 user_id) ---
         async function loadStockInfoCard(stockId) {
-            const { data, error } = await supabaseClient.from('twstk_stock_info').select('*').eq('stock_id', stockId).maybeSingle();
+            const { data, error } = await supabaseClient.from('twstk_stock_info')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('stock_id', stockId)
+                .maybeSingle();
+
             document.getElementById('info-edit-id').value = stockId;
             const todayStr = new Date().toISOString().split('T')[0];
 
@@ -388,12 +409,8 @@
                 document.getElementById('info-edit-notes').value = data.notes || '';
                 document.getElementById('info-edit-note-date').value = data.note_date || todayStr;
             } else {
-                document.getElementById('info-edit-name').value = '';
-                document.getElementById('info-edit-current-price').value = '';
-                document.getElementById('info-edit-target-buy').value = '';
-                document.getElementById('info-edit-target-sell').value = '';
-                document.getElementById('info-edit-indicator').value = '';
-                document.getElementById('info-edit-notes').value = '';
+                document.getElementById('stock-info-edit-form').reset();
+                document.getElementById('info-edit-id').value = stockId;
                 document.getElementById('info-edit-note-date').value = todayStr;
             }
         }
@@ -401,39 +418,31 @@
         async function saveStockInfoEdit(e) {
             e.preventDefault();
             const stockId = document.getElementById('info-edit-id').value.trim();
-            const stock_name = document.getElementById('info-edit-name').value.trim();
-            const current_price = parseFloat(document.getElementById('info-edit-current-price').value) || null;
-            const target_buy_price = parseFloat(document.getElementById('info-edit-target-buy').value) || null;
-            const target_sell_price = parseFloat(document.getElementById('info-edit-target-sell').value) || null;
-            const indicator_analysis = document.getElementById('info-edit-indicator').value.trim();
-            const notes = document.getElementById('info-edit-notes').value.trim();
-            const note_date = document.getElementById('info-edit-note-date').value;
-
-            const { error } = await supabaseClient.from('twstk_stock_info').upsert([{
+            const payload = {
+                user_id: currentUser.id,
                 stock_id: stockId,
-                stock_name,
-                current_price,
-                target_buy_price,
-                target_sell_price,
-                indicator_analysis,
-                notes,
-                note_date
-            }], { onConflict: 'stock_id' });
+                stock_name: document.getElementById('info-edit-name').value.trim(),
+                current_price: parseFloat(document.getElementById('info-edit-current-price').value) || null,
+                target_buy_price: parseFloat(document.getElementById('info-edit-target-buy').value) || null,
+                target_sell_price: parseFloat(document.getElementById('info-edit-target-sell').value) || null,
+                indicator_analysis: document.getElementById('info-edit-indicator').value.trim(),
+                notes: document.getElementById('info-edit-notes').value.trim(),
+                note_date: document.getElementById('info-edit-note-date').value
+            };
 
+            const { error } = await supabaseClient.from('twstk_stock_info').upsert([payload], { onConflict: 'user_id,stock_id' });
             if (error) alert("儲存股票資訊失敗: " + error.message);
-            else alert("✅ 股票策略與價格設定及備註日期已成功儲存至資料庫！");
+            else alert("✅ 股票策略與價格設定及備註日期已成功儲存！");
         }
 
-        // --- Supabase 雲端辭庫邏輯 ---
+        // --- Supabase 雲端辭庫邏輯 (全域共用，不綁定 user_id) ---
         async function fetchDictionaryFromCloud() {
             const { data, error } = await supabaseClient.from('twstk_dictionary').select('*').order('created_at', { ascending: false });
-            if (error) { console.error("載入辭庫失敗: ", error.message); return; }
-            cloudDictionaryData = data || [];
-            searchDictionary();
+            if (!error) { cloudDictionaryData = data || []; searchDictionary(); }
         }
 
         async function initDefaultDictionary() {
-            if(!confirm("是否要將經典技術名詞批次匯入您的雲端辭庫？")) return;
+            if(!confirm("是否要將經典技術名詞批次匯入全站共用的雲端辭庫？")) return;
             const defaults = [
                 { term: "黑三鴉 (Three Black Crows)", desc: "連續三根黑K實體，且收盤價屢創新低。<br><span class='text-slate-500'>進階說明：</span>強烈的看跌反轉型態，通常發生在上升趨勢頂部，顯示多方動能耗盡。" },
                 { term: "紅三兵 (Three White Soldiers)", desc: "連續三根紅K實體，且收盤價屢創新高。<br><span class='text-slate-500'>進階說明：</span>強烈的看漲反轉或延續型態，通常出現在下降趨勢末端。" },
@@ -444,8 +453,7 @@
                 { term: "布林通道 (Bollinger Bands)", desc: "由中軌與上下軌組成。<br><span class='text-slate-500'>進階說明：</span>觸軌易有反彈或拉回壓力。" }
             ];
             const { error } = await supabaseClient.from('twstk_dictionary').insert(defaults);
-            if(error) alert("匯入失敗: " + error.message);
-            else { alert("成功初始化預設辭庫！"); fetchDictionaryFromCloud(); }
+            if(error) alert("匯入失敗: " + error.message); else { alert("成功初始化預設辭庫！"); fetchDictionaryFromCloud(); }
         }
 
         function searchDictionary() {
@@ -510,87 +518,61 @@
         async function deleteDictTerm(id) {
             if(!confirm(`確定要刪除此名詞嗎？`)) return;
             const { error } = await supabaseClient.from('twstk_dictionary').delete().eq('id', id);
-            if (error) alert("刪除失敗: " + error.message);
-            else fetchDictionaryFromCloud();
+            if (error) alert("刪除失敗: " + error.message); else fetchDictionaryFromCloud();
         }
 
-        // --- 核心技術分析與繪圖邏輯 ---
-        const colorPalette = ['bg-red-100 text-red-800', 'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800', 'bg-indigo-100 text-indigo-800', 'bg-teal-100 text-teal-800'];
-        let stockColorMap = {}, colorIndex = 0;
-
-        function getStockColorClass(stockId) {
-            if (!stockColorMap[stockId]) { stockColorMap[stockId] = colorPalette[colorIndex++ % colorPalette.length]; }
-            return stockColorMap[stockId];
-        }
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(amount);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('add-date').value = new Date().toISOString().split('T')[0];
-            fetchHoldings();
-            fetchDictionaryFromCloud();
-            switchTab('analysis');
-        });
-
-        // --- 載入技術分析股票清單與計算資料量 ---
-async function loadAnalysisStockList() {
-    if (isAnalysisListLoaded) return; 
-    
-    const selectEl = document.getElementById('analysis-stock-id');
-    const infoEl = document.getElementById('data-volume-info');
-    infoEl.innerText = "(正在計算資料量與抓取清單...)";
-    
-    try {
-        // 1. 取得總筆數
-        const { count } = await supabaseClient
-            .from('twstk_daily_data')
-            .select('*', { count: 'exact', head: true });
+        // --- 分頁與清單載入 (綁定 user_id) ---
+        async function loadAnalysisStockList() {
+            if (isAnalysisListLoaded) return; 
             
-        // 2. 使用分批抓取 (Pagination) 突破 1000 筆限制
-        let allStockIds = new Set();
-        let from = 0;
-        const step = 1000;
-        let hasMore = true;
-        
-        while (hasMore) {
-            const { data, error } = await supabaseClient
-                .from('twstk_daily_data')
-                .select('stock_id')
-                .range(from, from + step - 1);
+            const selectEl = document.getElementById('analysis-stock-id');
+            const infoEl = document.getElementById('data-volume-info');
+            infoEl.innerText = "(正在抓取您的專屬清單...)";
+            
+            try {
+                let allStockIds = new Set();
+                let from = 0;
+                const step = 1000;
+                let hasMore = true;
                 
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
-                data.forEach(d => allStockIds.add(d.stock_id));
-                if (data.length < step) {
-                    hasMore = false; // 該批次少於 1000 筆，代表抓完了
-                } else {
-                    from += step;
+                while (hasMore) {
+                    const { data, error } = await supabaseClient
+                        .from('twstk_daily_data')
+                        .select('stock_id')
+                        .eq('user_id', currentUser.id)
+                        .range(from, from + step - 1);
+                        
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        data.forEach(d => allStockIds.add(d.stock_id));
+                        if (data.length < step) {
+                            hasMore = false; 
+                        } else {
+                            from += step;
+                        }
+                    } else {
+                        hasMore = false;
+                    }
                 }
-            } else {
-                hasMore = false;
+                
+                const uniqueStocks = [...allStockIds].sort();
+                
+                if (uniqueStocks.length > 0) {
+                    infoEl.innerText = `(共 ${uniqueStocks.length} 檔股票)`;
+                    selectEl.innerHTML = '<option value="">-- 請選擇要分析的股票 --</option>' + 
+                        uniqueStocks.map(id => `<option value="${id}">${id}</option>`).join('');
+                    isAnalysisListLoaded = true;
+                } else {
+                    infoEl.innerText = "(目前無任何歷史資料)";
+                    selectEl.innerHTML = '<option value="">請先匯入 CSV 資料</option>';
+                }
+            } catch (err) {
+                console.error("載入清單失敗:", err);
+                infoEl.innerText = "(資料計算失敗)";
+                selectEl.innerHTML = '<option value="">載入發生錯誤</option>';
             }
         }
-        
-        // 3. 排序並生成選單
-        const uniqueStocks = [...allStockIds].sort();
-        
-        if (uniqueStocks.length > 0) {
-            infoEl.innerText = `(共 ${uniqueStocks.length} 檔股票，總歷史資料 ${count} 筆)`;
-            selectEl.innerHTML = '<option value="">-- 請選擇要分析的股票 --</option>' + 
-                uniqueStocks.map(id => `<option value="${id}">${id}</option>`).join('');
-            isAnalysisListLoaded = true;
-        } else {
-            infoEl.innerText = "(目前無任何歷史資料)";
-            selectEl.innerHTML = '<option value="">請先匯入 CSV 資料</option>';
-        }
-    } catch (err) {
-        console.error("載入清單失敗:", err);
-        infoEl.innerText = "(資料計算失敗)";
-        selectEl.innerHTML = '<option value="">載入發生錯誤</option>';
-    }
-}
 
         function switchTab(tabId) {
             document.getElementById('tab-dashboard').classList.toggle('hidden', tabId !== 'dashboard');
@@ -606,23 +588,38 @@ async function loadAnalysisStockList() {
             } else if(tabId === 'dashboard') {
                 fetchHoldings();
             } else if (tabId === 'analysis') {
-                // 切換到技術分析時，載入下拉選單清單與計算資料量
                 loadAnalysisStockList();
             }
         }
 
+        // --- 匯入與清空歷史股價 (綁定 user_id) ---
         async function clearStockInfoTable() {
-            if (!confirm('⚠️ 警告：確定要清除「twstk_daily_data」資料表中的所有股票資訊嗎？此動作無法復原！')) return;
-            const statusText = document.getElementById('import-status');
-            statusText.innerText = "正在清除 twstk_daily_data 資料...";
-            const { error } = await supabaseClient.from('twstk_daily_data').delete().neq('stock_id', '0');
-            if (error) alert("清除失敗: " + error.message);
-            else { 
-                statusText.innerText = "✅ 已成功清除！"; 
-                alert("已清空！"); 
-                isAnalysisListLoaded = false; // 清除快取狀態，下次重抓 
-            }
-        }
+    if (!confirm('⚠️ 警告：確定要清除「您的」資料表中的所有股票資訊嗎？此動作無法復原！')) return;
+    
+    const statusText = document.getElementById('import-status');
+    statusText.innerText = "正在清除資料...";
+    
+    // 注意：結尾加上 .select()，Supabase 才會回傳實際被刪除的資料陣列
+    const { data, error } = await supabaseClient
+        .from('twstk_daily_data')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .select();
+
+    if (error) {
+        alert("清除失敗: " + error.message);
+        statusText.innerText = "清除失敗";
+    } else if (data && data.length === 0) {
+        // 如果 error 是 null，但回傳的資料長度是 0，代表沒刪到任何東西
+        alert("⚠️ 未刪除任何資料！請檢查 Supabase 後台的 RLS (DELETE) 權限是否已開啟。");
+        statusText.innerText = "權限阻擋或無資料可刪除";
+    } else { 
+        statusText.innerText = `✅ 已成功清除 ${data.length} 筆資料！`; 
+        alert(`已清空！共刪除 ${data.length} 筆歷史紀錄。`); 
+        isAnalysisListLoaded = false; 
+        switchTab('analysis');
+    }
+}
 
         async function importCSV() {
             const fileInput = document.getElementById('csv-file');
@@ -639,11 +636,18 @@ async function loadAnalysisStockList() {
                     const cols = lines[i].split(',');
                     if (cols.length === headers.length) {
                         insertData.push({
-                            stock_id: cols[9].trim(), date: cols[4].trim(),
-                            open: parseFloat(cols[7]), max: parseFloat(cols[5]), min: parseFloat(cols[6]),
-                            close: parseFloat(cols[3]), spread: parseFloat(cols[8]),
-                            trading_volume: parseInt(cols[0]), trading_money: parseInt(cols[1]), trading_turnover: parseInt(cols[2])
-                        });
+    user_id: currentUser.id, 
+    date: cols[0].trim(), 
+    stock_id: cols[1].trim(),
+    trading_volume: parseInt(cols[2]), 
+    trading_money: Number(cols[3]), // 注意這裡的修改
+    open: parseFloat(cols[4]), 
+    max: parseFloat(cols[5]), 
+    min: parseFloat(cols[6]),
+    close: parseFloat(cols[7]), 
+    spread: parseFloat(cols[8]),
+    trading_turnover: parseInt(cols[9])
+});
                     }
                 }
                 if (insertData.length === 0) return statusText.innerText = "解析不到資料。";
@@ -651,18 +655,18 @@ async function loadAnalysisStockList() {
                 const batchSize = 100; let successCount = 0;
                 for (let i = 0; i < insertData.length; i += batchSize) {
                     const batch = insertData.slice(i, i + batchSize);
-                    const { error } = await supabaseClient.from('twstk_daily_data').upsert(batch, { onConflict: 'stock_id, date' });
-                    if (error) return statusText.innerText = "匯入失敗，請確認已關閉 RLS 權限。";
+                    const { error } = await supabaseClient.from('twstk_daily_data').upsert(batch, { onConflict: 'user_id,stock_id,date' });
+                    if (error) return statusText.innerText = "匯入失敗，請檢查資料或網路狀態。";
                     successCount += batch.length;
                     statusText.innerText = `已匯入 ${successCount} / ${insertData.length}`;
                 }
                 
                 statusText.innerText = "✅ 匯入完成！";
-                isAnalysisListLoaded = false; // 匯入新資料，需重新整理清單
+                isAnalysisListLoaded = false; 
                 
                 if(confirm('匯入成功！是否立即前往技術分析？')) {
                     switchTab('analysis'); 
-                    await loadAnalysisStockList(); // 確保清單已經載入
+                    await loadAnalysisStockList(); 
                     document.getElementById('analysis-stock-id').value = insertData[0].stock_id;
                     runAnalysis();
                 }
@@ -670,13 +674,199 @@ async function loadAnalysisStockList() {
             reader.readAsText(file);
         }
 
+        // --- 主儀表板買賣與編輯邏輯 (綁定 user_id) ---
+        document.getElementById('add-id').addEventListener('blur', async (e) => {
+            const stockId = e.target.value.trim(); if (!stockId) return;
+            const { data } = await supabaseClient.from('twstk_stock_info').select('stock_name').eq('user_id', currentUser.id).eq('stock_id', stockId).maybeSingle();
+            if (data?.stock_name) document.getElementById('add-name').value = data.stock_name;
+        });
+
+        document.getElementById('add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('add-id').value.trim(), name = document.getElementById('add-name').value.trim();
+            const date = document.getElementById('add-date').value, price = parseFloat(document.getElementById('add-price').value);
+            const isVirtual = document.getElementById('add-is-virtual').value === 'true'; 
+            const buyTotal = Math.round(price * 1000), buyFee = Math.round(buyTotal * 0.001425 * 0.6), buySettlement = buyTotal + buyFee;
+            
+            const { error } = await supabaseClient.from('twstk_stock_records').insert([{ 
+                user_id: currentUser.id,
+                stock_id: id, stock_name: name, buy_date: date, buy_price: price.toFixed(2), 
+                buy_total: buyTotal, buy_fee: buyFee, buy_settlement: buySettlement, status: '持有中',
+                is_virtual: isVirtual
+            }]);
+            
+            if (error) return alert('新增失敗: ' + error.message);
+            await supabaseClient.from('twstk_stock_info').upsert([{ user_id: currentUser.id, stock_id: id, stock_name: name }], { onConflict: 'user_id,stock_id' });
+            alert('新增成功！'); document.getElementById('add-form').reset(); fetchHoldings();
+        });
+
+        function toggleSort() {
+            currentSortMode = currentSortMode === 'date_desc' ? 'id_date' : 'date_desc';
+            document.getElementById('sort-toggle-btn').innerText = `切換排序：目前為【${currentSortMode === 'date_desc' ? '買進日期 (新到舊)' : '編號 → 日期'}】`;
+            fetchHoldings(); 
+        }
+
+        async function fetchHoldings() {
+            let query = supabaseClient.from('twstk_stock_records').select('*').eq('user_id', currentUser.id).eq('status', '持有中');
+            query = currentSortMode === 'id_date' ? query.order('stock_id').order('buy_date') : query.order('buy_date', { ascending: false });
+            const { data } = await query; holdingsData = data || []; renderHoldings();
+        }
+
+        function renderHoldings() {
+            const tbody = document.getElementById('holdings-tbody'); tbody.innerHTML = '';
+            holdingsData.forEach(s => {
+                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
+                const typeBadge = s.is_virtual ? '<span class="bg-purple-100 text-purple-800 px-1 py-0.5 rounded text-xs ml-2">虛擬</span>' : '<span class="bg-green-100 text-green-800 px-1 py-0.5 rounded text-xs ml-2">真實</span>';
+                
+                tr.innerHTML = `
+                    <td class="p-3"><span class="px-2 py-1 rounded-md ${getStockColorClass(s.stock_id)}">${s.stock_id} ${s.stock_name}</span>${typeBadge}</td>
+                    <td class="p-3">${s.buy_date}</td><td class="p-3 text-red-600">${s.buy_price}</td><td class="p-3">${formatCurrency(s.buy_settlement)}</td>
+                    <td class="p-3 bg-blue-50"><input type="number" step="0.1" placeholder="${parseFloat((s.buy_settlement+3300)/1000).toFixed(1)}" class="border rounded p-1 w-20 test-price" data-id="${s.id}"></td>
+                    <td class="p-3 bg-blue-50"><input type="checkbox" class="day-trade" data-id="${s.id}"></td>
+                    <td class="p-3 bg-blue-50 font-bold pnl" id="pnl-${s.id}">-</td><td class="p-3 bg-blue-50 font-bold roi" id="roi-${s.id}">-</td>
+                    <td class="p-3 text-center">
+                        <button onclick="openEditRecordModal('${s.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs mr-1 transition">編輯</button>
+                        <button onclick="processSell('${s.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs mr-1 transition">賣出</button>
+                        <button onclick="deleteStock('${s.id}', false)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs transition">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            const handleCalc = (e) => {
+                const id = e.target.dataset.id, s = holdingsData.find(x => x.id === id);
+                const price = parseFloat(document.querySelector(`.test-price[data-id="${id}"]`).value), isDt = document.querySelector(`.day-trade[data-id="${id}"]`).checked;
+                if(isNaN(price) || price <= 0) return;
+                const set = Math.round(s.buy_settlement), tot = Math.round(price * 1000), fee = Math.round(tot * 0.001425 * 0.6), tax = Math.round(tot * (isDt ? 0.0015 : 0.003));
+                const pnl = (tot - fee - tax) - set, roi = (pnl / set) * 100;
+                document.getElementById(`pnl-${id}`).innerText = formatCurrency(pnl); document.getElementById(`pnl-${id}`).className = `p-3 bg-blue-50 font-bold ${pnl>=0?'text-red-600':'text-green-600'}`;
+                document.getElementById(`roi-${id}`).innerText = roi.toFixed(2) + '%'; document.getElementById(`roi-${id}`).className = `p-3 bg-blue-50 font-bold ${roi>=0?'text-red-600':'text-green-600'}`;
+            };
+            document.querySelectorAll('.test-price').forEach(i => i.addEventListener('input', handleCalc));
+            document.querySelectorAll('.day-trade').forEach(c => c.addEventListener('change', handleCalc));
+        }
+
+        function openEditRecordModal(id) {
+            const record = holdingsData.find(x => x.id === id);
+            if (!record) return;
+            currentEditId = id;
+            document.getElementById('edit-id').value = record.stock_id;
+            document.getElementById('edit-name').value = record.stock_name;
+            document.getElementById('edit-date').value = record.buy_date;
+            document.getElementById('edit-price').value = parseFloat(record.buy_price);
+            document.getElementById('edit-is-virtual').value = record.is_virtual ? "true" : "false";
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            currentEditId = null;
+        }
+
+        async function saveEditRecord(e) {
+            e.preventDefault();
+            if (!currentEditId) return;
+            const date = document.getElementById('edit-date').value;
+            const price = parseFloat(document.getElementById('edit-price').value);
+            const isVirtual = document.getElementById('edit-is-virtual').value === 'true';
+            const buyTotal = Math.round(price * 1000), buyFee = Math.round(buyTotal * 0.001425 * 0.6), buySettlement = buyTotal + buyFee;
+
+            const { error } = await supabaseClient.from('twstk_stock_records')
+                .update({ 
+                    buy_date: date, buy_price: price.toFixed(2), buy_total: buyTotal, 
+                    buy_fee: buyFee, buy_settlement: buySettlement, is_virtual: isVirtual
+                }).eq('id', currentEditId).eq('user_id', currentUser.id);
+
+            if (error) { alert('編輯失敗: ' + error.message); } 
+            else { alert('編輯成功！'); closeEditModal(); fetchHoldings(); }
+        }
+
+        async function deleteStock(id, isRep) {
+            if(!confirm('確定刪除？無法復原。')) return;
+            await supabaseClient.from('twstk_stock_records').delete().eq('id', id).eq('user_id', currentUser.id);
+            isRep ? fetchReports() : fetchHoldings();
+        }
+
+        async function processSell(id) {
+            const pr = parseFloat(document.querySelector(`.test-price[data-id="${id}"]`).value);
+            if(isNaN(pr)) return alert('請輸入賣價');
+            const s = holdingsData.find(x => x.id === id), dt = document.querySelector(`.day-trade[data-id="${id}"]`).checked;
+            const date = prompt("賣出日期", new Date().toISOString().split('T')[0]); if(!date) return;
+            const set = Math.round(s.buy_settlement), tot = Math.round(pr * 1000), fee = Math.round(tot * 0.001425 * 0.6), tax = Math.round(tot * (dt ? 0.0015 : 0.003));
+            const ans = (tot - fee - tax) - set;
+            if(confirm(`確定賣出？預估盈虧：${formatCurrency(ans)}`)){
+                await supabaseClient.from('twstk_stock_records').update({sell_date: date, sell_price: pr.toFixed(2), sell_total: tot, sell_fee: fee, tax: tax, sell_settlement: tot-fee-tax, profit_loss: ans, roi: (ans/set*100).toFixed(3), status: '已售出'}).eq('id', id).eq('user_id', currentUser.id);
+                alert('賣出成功！'); fetchHoldings();
+            }
+        }
+
+        async function undoSell(id) {
+            if(!confirm('確定要撤銷這筆賣出紀錄嗎？這會將其恢復至「持有中」狀態。')) return;
+            const { error } = await supabaseClient.from('twstk_stock_records')
+                .update({ status: '持有中', sell_date: null, sell_price: null, sell_total: null, sell_fee: null, tax: null, sell_settlement: null, profit_loss: null, roi: null })
+                .eq('id', id).eq('user_id', currentUser.id);
+            if (error) { alert('撤銷失敗: ' + error.message); } 
+            else { alert('撤銷成功！已恢復為持有中。'); fetchReports(); }
+        }
+
+        // --- 計算報表邏輯 (綁定 user_id) ---
+        function clearSearch() { document.getElementById('filter-start').value = ''; document.getElementById('filter-end').value = ''; document.getElementById('filter-keyword').value = ''; document.getElementById('filter-type').value = 'all'; fetchReports(); }
+
+        async function fetchReports() {
+            const s = document.getElementById('filter-start').value, e = document.getElementById('filter-end').value;
+            const k = document.getElementById('filter-keyword').value, t = document.getElementById('filter-type').value;
+            
+            let q = supabaseClient.from('twstk_stock_records').select('*').eq('user_id', currentUser.id).eq('status', '已售出').order('sell_date', { ascending: false });
+            if(s) q = q.gte('sell_date', s); if(e) q = q.lte('sell_date', e);
+            
+            const { data } = await q; let filtered = data || [];
+            if(k) filtered = filtered.filter(x => x.stock_id.includes(k) || x.stock_name.includes(k));
+            if (t !== 'all') { const isVirtualFilter = t === 'true'; filtered = filtered.filter(x => !!x.is_virtual === isVirtualFilter); }
+            renderReports(filtered);
+        }
+
+        function renderReports(data) {
+            const tb = document.getElementById('reports-tbody'); tb.innerHTML = ''; 
+            let tPnl = 0, rPnl = 0, vPnl = 0;
+            
+            data.forEach(s => {
+                const pnlVal = parseFloat(s.profit_loss);
+                tPnl += pnlVal;
+                if (s.is_virtual) { vPnl += pnlVal; } else { rPnl += pnlVal; }
+
+                const isW = s.profit_loss >= 0, col = isW ? 'text-red-600' : 'text-green-600';
+                const dt = (s.tax/s.sell_total)<0.002 ? '<span class="bg-blue-100 text-blue-800 px-2 rounded">是</span>' : '否';
+                const typeBadge = s.is_virtual ? '<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-bold">虛擬</span>' : '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">真實</span>';
+                
+                tb.innerHTML += `<tr class="border-b hover:bg-gray-50">
+                    <td class="p-3"><span class="px-2 py-1 rounded-md ${getStockColorClass(s.stock_id)}">${s.stock_id}</span></td>
+                    <td class="p-3">${typeBadge}</td>
+                    <td class="p-3">${s.buy_date}</td><td class="p-3 text-red-600">${s.buy_price}</td>
+                    <td class="p-3">${s.sell_date}</td><td class="p-3 text-blue-600">${s.sell_price}</td><td class="p-3">${dt}</td>
+                    <td class="p-3">${formatCurrency(s.buy_settlement)}</td><td class="p-3">${formatCurrency(s.sell_settlement)}</td>
+                    <td class="p-3 font-bold ${col}">${formatCurrency(s.profit_loss)}</td><td class="p-3 font-bold ${col}">${s.roi}%</td>
+                    <td class="p-3">
+                        <button onclick="undoSell('${s.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 transition">撤銷</button>
+                        <button onclick="deleteStock('${s.id}', true)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs transition">刪除</button>
+                    </td>
+                </tr>`;
+            });
+            
+            document.getElementById('report-total-pnl').innerText = formatCurrency(tPnl);
+            document.getElementById('report-total-pnl').className = `text-2xl ${tPnl>=0?'text-red-600':'text-green-600'}`;
+            document.getElementById('report-real-pnl').innerText = formatCurrency(rPnl);
+            document.getElementById('report-real-pnl').className = `ml-1 ${rPnl>=0?'text-red-600':'text-green-600'}`;
+            document.getElementById('report-virtual-pnl').innerText = formatCurrency(vPnl);
+            document.getElementById('report-virtual-pnl').className = `ml-1 ${vPnl>=0?'text-red-600':'text-green-600'}`;
+        }
+
+        // --- 核心技術分析與繪圖邏輯 (完整保留) ---
         async function runAnalysis() {
             const stockId = document.getElementById('analysis-stock-id').value.trim();
             if (!stockId) return alert('請選擇要分析的股票代號');
 
             await loadStockInfoCard(stockId);
 
-            const { data, error } = await supabaseClient.from('twstk_daily_data').select('*').eq('stock_id', stockId).order('date', { ascending: true });
+            const { data, error } = await supabaseClient.from('twstk_daily_data').select('*').eq('user_id', currentUser.id).eq('stock_id', stockId).order('date', { ascending: true });
             if (error || !data || data.length === 0) return alert('找不到歷史價格資料。');
 
             const closes = data.map(d => parseFloat(d.close));
@@ -975,236 +1165,6 @@ async function loadAnalysisStockList() {
                 k.push(curK); d.push(curD);
             }
             return { k, d };
-        }
-
-        // --- 主儀表板買賣邏輯 ---
-        document.getElementById('add-id').addEventListener('blur', async (e) => {
-            const stockId = e.target.value.trim(); if (!stockId) return;
-            const { data } = await supabaseClient.from('twstk_stock_info').select('stock_name').eq('stock_id', stockId).single();
-            if (data?.stock_name) document.getElementById('add-name').value = data.stock_name;
-        });
-
-        document.getElementById('add-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('add-id').value.trim(), name = document.getElementById('add-name').value.trim();
-            const date = document.getElementById('add-date').value, price = parseFloat(document.getElementById('add-price').value);
-            const isVirtual = document.getElementById('add-is-virtual').value === 'true'; 
-            const buyTotal = Math.round(price * 1000), buyFee = Math.round(buyTotal * 0.001425 * 0.6), buySettlement = buyTotal + buyFee;
-            
-            const { error } = await supabaseClient.from('twstk_stock_records').insert([{ 
-                stock_id: id, stock_name: name, buy_date: date, buy_price: price.toFixed(2), 
-                buy_total: buyTotal, buy_fee: buyFee, buy_settlement: buySettlement, status: '持有中',
-                is_virtual: isVirtual
-            }]);
-            
-            if (error) return alert('新增失敗: ' + error.message);
-            await supabaseClient.from('twstk_stock_info').upsert([{ stock_id: id, stock_name: name }], { onConflict: 'stock_id' });
-            alert('新增成功！'); document.getElementById('add-form').reset(); fetchHoldings();
-        });
-
-        function toggleSort() {
-            currentSortMode = currentSortMode === 'date_desc' ? 'id_date' : 'date_desc';
-            document.getElementById('sort-toggle-btn').innerText = `切換排序：目前為【${currentSortMode === 'date_desc' ? '買進日期 (新到舊)' : '編號 → 日期'}】`;
-            fetchHoldings(); 
-        }
-
-        async function fetchHoldings() {
-            let query = supabaseClient.from('twstk_stock_records').select('*').eq('status', '持有中');
-            query = currentSortMode === 'id_date' ? query.order('stock_id').order('buy_date') : query.order('buy_date', { ascending: false });
-            const { data } = await query; holdingsData = data || []; renderHoldings();
-        }
-
-        function renderHoldings() {
-            const tbody = document.getElementById('holdings-tbody'); tbody.innerHTML = '';
-            holdingsData.forEach(s => {
-                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
-                const typeBadge = s.is_virtual ? '<span class="bg-purple-100 text-purple-800 px-1 py-0.5 rounded text-xs ml-2">虛擬</span>' : '<span class="bg-green-100 text-green-800 px-1 py-0.5 rounded text-xs ml-2">真實</span>';
-                
-                tr.innerHTML = `
-                    <td class="p-3"><span class="px-2 py-1 rounded-md ${getStockColorClass(s.stock_id)}">${s.stock_id} ${s.stock_name}</span>${typeBadge}</td>
-                    <td class="p-3">${s.buy_date}</td><td class="p-3 text-red-600">${s.buy_price}</td><td class="p-3">${formatCurrency(s.buy_settlement)}</td>
-                    <td class="p-3 bg-blue-50"><input type="number" step="0.1" placeholder="${parseFloat((s.buy_settlement+3300)/1000).toFixed(1)}" class="border rounded p-1 w-20 test-price" data-id="${s.id}"></td>
-                    <td class="p-3 bg-blue-50"><input type="checkbox" class="day-trade" data-id="${s.id}"></td>
-                    <td class="p-3 bg-blue-50 font-bold pnl" id="pnl-${s.id}">-</td><td class="p-3 bg-blue-50 font-bold roi" id="roi-${s.id}">-</td>
-                    <td class="p-3 text-center">
-                        <button onclick="openEditRecordModal('${s.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs mr-1">編輯</button>
-                        <button onclick="processSell('${s.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs mr-1">賣出</button>
-                        <button onclick="deleteStock('${s.id}', false)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs">刪除</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            const handleCalc = (e) => {
-                const id = e.target.dataset.id, s = holdingsData.find(x => x.id === id);
-                const price = parseFloat(document.querySelector(`.test-price[data-id="${id}"]`).value), isDt = document.querySelector(`.day-trade[data-id="${id}"]`).checked;
-                if(isNaN(price) || price <= 0) return;
-                const set = Math.round(s.buy_settlement), tot = Math.round(price * 1000), fee = Math.round(tot * 0.001425 * 0.6), tax = Math.round(tot * (isDt ? 0.0015 : 0.003));
-                const pnl = (tot - fee - tax) - set, roi = (pnl / set) * 100;
-                document.getElementById(`pnl-${id}`).innerText = formatCurrency(pnl); document.getElementById(`pnl-${id}`).className = `p-3 bg-blue-50 font-bold ${pnl>=0?'text-red-600':'text-green-600'}`;
-                document.getElementById(`roi-${id}`).innerText = roi.toFixed(2) + '%'; document.getElementById(`roi-${id}`).className = `p-3 bg-blue-50 font-bold ${roi>=0?'text-red-600':'text-green-600'}`;
-            };
-            document.querySelectorAll('.test-price').forEach(i => i.addEventListener('input', handleCalc));
-            document.querySelectorAll('.day-trade').forEach(c => c.addEventListener('change', handleCalc));
-        }
-
-        // --- 編輯功能邏輯 (新增) ---
-        function openEditRecordModal(id) {
-            const record = holdingsData.find(x => x.id === id);
-            if (!record) return;
-            currentEditId = id;
-            document.getElementById('edit-id').value = record.stock_id;
-            document.getElementById('edit-name').value = record.stock_name;
-            document.getElementById('edit-date').value = record.buy_date;
-            document.getElementById('edit-price').value = parseFloat(record.buy_price);
-            document.getElementById('edit-is-virtual').value = record.is_virtual ? "true" : "false";
-            document.getElementById('edit-modal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-            currentEditId = null;
-        }
-
-        async function saveEditRecord(e) {
-            e.preventDefault();
-            if (!currentEditId) return;
-
-            const date = document.getElementById('edit-date').value;
-            const price = parseFloat(document.getElementById('edit-price').value);
-            const isVirtual = document.getElementById('edit-is-virtual').value === 'true';
-
-            // 重新計算買入成本
-            const buyTotal = Math.round(price * 1000);
-            const buyFee = Math.round(buyTotal * 0.001425 * 0.6);
-            const buySettlement = buyTotal + buyFee;
-
-            const { error } = await supabaseClient.from('twstk_stock_records')
-                .update({ 
-                    buy_date: date, 
-                    buy_price: price.toFixed(2), 
-                    buy_total: buyTotal, 
-                    buy_fee: buyFee, 
-                    buy_settlement: buySettlement,
-                    is_virtual: isVirtual
-                })
-                .eq('id', currentEditId);
-
-            if (error) {
-                alert('編輯失敗: ' + error.message);
-            } else {
-                alert('編輯成功！');
-                closeEditModal();
-                fetchHoldings();
-            }
-        }
-        // -------------------------
-
-        async function deleteStock(id, isRep) {
-            if(!confirm('確定刪除？無法復原。')) return;
-            await supabaseClient.from('twstk_stock_records').delete().eq('id', id);
-            isRep ? fetchReports() : fetchHoldings();
-        }
-
-        async function processSell(id) {
-            const pr = parseFloat(document.querySelector(`.test-price[data-id="${id}"]`).value);
-            if(isNaN(pr)) return alert('請輸入賣價');
-            const s = holdingsData.find(x => x.id === id), dt = document.querySelector(`.day-trade[data-id="${id}"]`).checked;
-            const date = prompt("賣出日期", new Date().toISOString().split('T')[0]); if(!date) return;
-            const set = Math.round(s.buy_settlement), tot = Math.round(pr * 1000), fee = Math.round(tot * 0.001425 * 0.6), tax = Math.round(tot * (dt ? 0.0015 : 0.003));
-            const ans = (tot - fee - tax) - set;
-            if(confirm(`確定賣出？預估盈虧：${formatCurrency(ans)}`)){
-                await supabaseClient.from('twstk_stock_records').update({sell_date: date, sell_price: pr.toFixed(2), sell_total: tot, sell_fee: fee, tax: tax, sell_settlement: tot-fee-tax, profit_loss: ans, roi: (ans/set*100).toFixed(3), status: '已售出'}).eq('id', id);
-                alert('賣出成功！'); fetchHoldings();
-            }
-        }
-
-        // --- 撤銷賣出邏輯 (新增) ---
-        async function undoSell(id) {
-            if(!confirm('確定要撤銷這筆賣出紀錄嗎？這會將其恢復至「持有中」狀態。')) return;
-
-            const { error } = await supabaseClient.from('twstk_stock_records')
-                .update({ 
-                    status: '持有中',
-                    sell_date: null,
-                    sell_price: null,
-                    sell_total: null,
-                    sell_fee: null,
-                    tax: null,
-                    sell_settlement: null,
-                    profit_loss: null,
-                    roi: null
-                })
-                .eq('id', id);
-
-            if (error) {
-                alert('撤銷失敗: ' + error.message);
-            } else {
-                alert('撤銷成功！已恢復為持有中。');
-                fetchReports(); // 重新整理報表
-            }
-        }
-        // --------------------------
-
-        function clearSearch() { document.getElementById('filter-start').value = ''; document.getElementById('filter-end').value = ''; document.getElementById('filter-keyword').value = ''; document.getElementById('filter-type').value = 'all'; fetchReports(); }
-
-        async function fetchReports() {
-            const s = document.getElementById('filter-start').value, e = document.getElementById('filter-end').value;
-            const k = document.getElementById('filter-keyword').value, t = document.getElementById('filter-type').value;
-            
-            let q = supabaseClient.from('twstk_stock_records').select('*').eq('status', '已售出').order('sell_date', { ascending: false });
-            if(s) q = q.gte('sell_date', s); if(e) q = q.lte('sell_date', e);
-            
-            const { data } = await q; let filtered = data || [];
-            if(k) filtered = filtered.filter(x => x.stock_id.includes(k) || x.stock_name.includes(k));
-            
-            if (t !== 'all') {
-                const isVirtualFilter = t === 'true';
-                filtered = filtered.filter(x => !!x.is_virtual === isVirtualFilter);
-            }
-            
-            renderReports(filtered);
-        }
-
-        function renderReports(data) {
-            const tb = document.getElementById('reports-tbody'); tb.innerHTML = ''; 
-            let tPnl = 0, rPnl = 0, vPnl = 0;
-            
-            data.forEach(s => {
-                const pnlVal = parseFloat(s.profit_loss);
-                tPnl += pnlVal;
-                if (s.is_virtual) {
-                    vPnl += pnlVal;
-                } else {
-                    rPnl += pnlVal;
-                }
-
-                const isW = s.profit_loss >= 0, col = isW ? 'text-red-600' : 'text-green-600';
-                const dt = (s.tax/s.sell_total)<0.002 ? '<span class="bg-blue-100 text-blue-800 px-2 rounded">是</span>' : '否';
-                const typeBadge = s.is_virtual ? '<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-bold">虛擬</span>' : '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">真實</span>';
-                
-                // 【新增撤銷按鈕】
-                tb.innerHTML += `<tr class="border-b hover:bg-gray-50">
-                    <td class="p-3"><span class="px-2 py-1 rounded-md ${getStockColorClass(s.stock_id)}">${s.stock_id}</span></td>
-                    <td class="p-3">${typeBadge}</td>
-                    <td class="p-3">${s.buy_date}</td><td class="p-3 text-red-600">${s.buy_price}</td>
-                    <td class="p-3">${s.sell_date}</td><td class="p-3 text-blue-600">${s.sell_price}</td><td class="p-3">${dt}</td>
-                    <td class="p-3">${formatCurrency(s.buy_settlement)}</td><td class="p-3">${formatCurrency(s.sell_settlement)}</td>
-                    <td class="p-3 font-bold ${col}">${formatCurrency(s.profit_loss)}</td><td class="p-3 font-bold ${col}">${s.roi}%</td>
-                    <td class="p-3">
-                        <button onclick="undoSell('${s.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1">撤銷</button>
-                        <button onclick="deleteStock('${s.id}', true)" class="bg-gray-500 text-white px-2 py-1 rounded text-xs">刪除</button>
-                    </td>
-                </tr>`;
-            });
-            
-            document.getElementById('report-total-pnl').innerText = formatCurrency(tPnl);
-            document.getElementById('report-total-pnl').className = `text-2xl ${tPnl>=0?'text-red-600':'text-green-600'}`;
-            
-            document.getElementById('report-real-pnl').innerText = formatCurrency(rPnl);
-            document.getElementById('report-real-pnl').className = `ml-1 ${rPnl>=0?'text-red-600':'text-green-600'}`;
-            
-            document.getElementById('report-virtual-pnl').innerText = formatCurrency(vPnl);
-            document.getElementById('report-virtual-pnl').className = `ml-1 ${vPnl>=0?'text-red-600':'text-green-600'}`;
         }
     </script>
 </body>
