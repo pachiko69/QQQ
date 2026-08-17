@@ -209,11 +209,11 @@
                         </form>
                     </div>
 
-                    <!-- K線與技術指標圖 -->
+                    <!-- K線與技術指標圖 (基礎版) -->
                     <div class="bg-gray-900 p-4 rounded-lg shadow-inner">
                         <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
                             <div class="flex items-center gap-3">
-                                <h3 class="text-white font-bold text-sm">📈 K線與技術指標圖</h3>
+                                <h3 class="text-white font-bold text-sm">📈 K線與技術指標圖 (基礎版)</h3>
                                 <select id="chart-period-select" onchange="updateChartPeriod()" class="bg-gray-800 text-white text-xs border border-gray-600 rounded px-2 py-1 outline-none cursor-pointer">
                                     <option value="10">最近 10 日</option>
                                     <option value="20" selected>最近 20 日</option>
@@ -236,6 +236,19 @@
                         </div>
                         <div class="w-full overflow-x-auto">
                             <canvas id="candlestick-chart" width="900" height="450" class="w-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 自定分析圖-1 -->
+                    <div class="bg-gray-900 p-4 rounded-lg shadow-inner mt-6">
+                        <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
+                            <h3 class="text-white font-bold text-sm">📊 自定分析圖-1 (20EMA & 20WMA + 成交量/KD整合 + MACD)</h3>
+                            <div class="text-xs text-gray-400">
+                                提醒：時間區間由上方選單同步控制 (垂直白線代表當日成交量高於平均1/3)
+                            </div>
+                        </div>
+                        <div class="w-full overflow-x-auto">
+                            <canvas id="custom-chart-1" width="900" height="800" class="w-full"></canvas>
                         </div>
                     </div>
 
@@ -283,6 +296,7 @@
 
     <!-- 編輯買入紀錄彈窗 -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <!-- 保留原本程式碼... (未更動) -->
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">✏️ 編輯買入記錄</h2>
             <form id="edit-form" class="space-y-4" onsubmit="saveEditRecord(event)">
@@ -309,6 +323,7 @@
 
     <!-- 辭庫編輯彈窗 -->
     <div id="dict-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <!-- 保留原本程式碼... (未更動) -->
         <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 id="dict-modal-title" class="text-xl font-bold mb-4 text-blue-800">📖 新增自訂技術名詞</h2>
             <form id="dict-form" class="space-y-4" onsubmit="saveDictTerm(event)">
@@ -594,32 +609,30 @@
 
         // --- 匯入與清空歷史股價 (綁定 user_id) ---
         async function clearStockInfoTable() {
-    if (!confirm('⚠️ 警告：確定要清除「您的」資料表中的所有股票資訊嗎？此動作無法復原！')) return;
-    
-    const statusText = document.getElementById('import-status');
-    statusText.innerText = "正在清除資料...";
-    
-    // 注意：結尾加上 .select()，Supabase 才會回傳實際被刪除的資料陣列
-    const { data, error } = await supabaseClient
-        .from('twstk_daily_data')
-        .delete()
-        .eq('user_id', currentUser.id)
-        .select();
+            if (!confirm('⚠️ 警告：確定要清除「您的」資料表中的所有股票資訊嗎？此動作無法復原！')) return;
+            
+            const statusText = document.getElementById('import-status');
+            statusText.innerText = "正在清除資料...";
+            
+            const { data, error } = await supabaseClient
+                .from('twstk_daily_data')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .select();
 
-    if (error) {
-        alert("清除失敗: " + error.message);
-        statusText.innerText = "清除失敗";
-    } else if (data && data.length === 0) {
-        // 如果 error 是 null，但回傳的資料長度是 0，代表沒刪到任何東西
-        alert("⚠️ 未刪除任何資料！請檢查 Supabase 後台的 RLS (DELETE) 權限是否已開啟。");
-        statusText.innerText = "權限阻擋或無資料可刪除";
-    } else { 
-        statusText.innerText = `✅ 已成功清除 ${data.length} 筆資料！`; 
-        alert(`已清空！共刪除 ${data.length} 筆歷史紀錄。`); 
-        isAnalysisListLoaded = false; 
-        switchTab('analysis');
-    }
-}
+            if (error) {
+                alert("清除失敗: " + error.message);
+                statusText.innerText = "清除失敗";
+            } else if (data && data.length === 0) {
+                alert("⚠️ 未刪除任何資料！請檢查 Supabase 後台的 RLS (DELETE) 權限是否已開啟。");
+                statusText.innerText = "權限阻擋或無資料可刪除";
+            } else { 
+                statusText.innerText = `✅ 已成功清除 ${data.length} 筆資料！`; 
+                alert(`已清空！共刪除 ${data.length} 筆歷史紀錄。`); 
+                isAnalysisListLoaded = false; 
+                switchTab('analysis');
+            }
+        }
 
         async function importCSV() {
             const fileInput = document.getElementById('csv-file');
@@ -636,18 +649,18 @@
                     const cols = lines[i].split(',');
                     if (cols.length === headers.length) {
                         insertData.push({
-    user_id: currentUser.id, 
-    date: cols[0].trim(), 
-    stock_id: cols[1].trim(),
-    trading_volume: parseInt(cols[2]), 
-    trading_money: Number(cols[3]), // 注意這裡的修改
-    open: parseFloat(cols[4]), 
-    max: parseFloat(cols[5]), 
-    min: parseFloat(cols[6]),
-    close: parseFloat(cols[7]), 
-    spread: parseFloat(cols[8]),
-    trading_turnover: parseInt(cols[9])
-});
+                            user_id: currentUser.id, 
+                            date: cols[0].trim(), 
+                            stock_id: cols[1].trim(),
+                            trading_volume: parseInt(cols[2]), 
+                            trading_money: Number(cols[3]),
+                            open: parseFloat(cols[4]), 
+                            max: parseFloat(cols[5]), 
+                            min: parseFloat(cols[6]),
+                            close: parseFloat(cols[7]), 
+                            spread: parseFloat(cols[8]),
+                            trading_turnover: parseInt(cols[9])
+                        });
                     }
                 }
                 if (insertData.length === 0) return statusText.innerText = "解析不到資料。";
@@ -859,7 +872,7 @@
             document.getElementById('report-virtual-pnl').className = `ml-1 ${vPnl>=0?'text-red-600':'text-green-600'}`;
         }
 
-        // --- 核心技術分析與繪圖邏輯 (完整保留) ---
+        // --- 核心技術分析與繪圖邏輯 ---
         async function runAnalysis() {
             const stockId = document.getElementById('analysis-stock-id').value.trim();
             if (!stockId) return alert('請選擇要分析的股票代號');
@@ -906,13 +919,23 @@
             const currMDI = dmi.minusDI[dmi.minusDI.length-1];
             const currADX = dmi.adx[dmi.adx.length-1];
 
+            const customPeriods = [20];
+            const emas = {}, wmas = {};
+            customPeriods.forEach(p => {
+                emas[`ema${p}`] = calcEMA(closes, p);
+                wmas[`wma${p}`] = calcWMA(closes, p);
+            });
+
             document.getElementById('analysis-result').classList.remove('hidden');
 
             chartDataCache = {
                 dates, opens, highs, lows, closes, volumes, 
                 ma5, ma10, 
                 bbUp: bb.upper, bbMid: bb.mid, bbDn: bb.lower, 
-                kdK: kd.k, kdD: kd.d
+                kdK: kd.k, kdD: kd.d,
+                macd: macd,     
+                emas: emas,     
+                wmas: wmas      
             };
             
             updateChartPeriod();
@@ -996,7 +1019,21 @@
 
         function updateChartPeriod() {
             if (!chartDataCache) return;
-            drawCandlestickChart(chartDataCache.dates, chartDataCache.opens, chartDataCache.highs, chartDataCache.lows, chartDataCache.closes, chartDataCache.volumes, chartDataCache.ma5, chartDataCache.ma10, chartDataCache.bbUp, chartDataCache.bbMid, chartDataCache.bbDn, chartDataCache.kdK, chartDataCache.kdD);
+            
+            // 基礎版 K 線繪圖
+            drawCandlestickChart(
+                chartDataCache.dates, chartDataCache.opens, chartDataCache.highs, chartDataCache.lows, 
+                chartDataCache.closes, chartDataCache.volumes, chartDataCache.ma5, chartDataCache.ma10, 
+                chartDataCache.bbUp, chartDataCache.bbMid, chartDataCache.bbDn, chartDataCache.kdK, chartDataCache.kdD
+            );
+            
+            // 自定分析圖-1 的連動繪製
+            drawCustomChart1(
+                chartDataCache.dates, chartDataCache.opens, chartDataCache.highs, chartDataCache.lows, 
+                chartDataCache.closes, chartDataCache.volumes, 
+                chartDataCache.emas, chartDataCache.wmas, 
+                chartDataCache.macd, chartDataCache.kdK, chartDataCache.kdD
+            );
         }
 
         function drawCandlestickChart(dates, opens, highs, lows, closes, volumes, ma5, ma10, bbUp, bbMid, bbDn, kdK, kdD) {
@@ -1018,6 +1055,10 @@
             const minPrice = Math.min(...subLows, ...(validBbDn.length ? validBbDn : []));
             const maxVol = Math.max(...subVols, 1);
 
+            // 計算平均成交量與爆量門檻 (高於平均1/3)
+            const avgVol = subVols.reduce((a, b) => a + b, 0) / subVols.length;
+            const volThreshold = avgVol * 1.3333;
+
             function priceToY(price) { return maxPrice === minPrice ? padding + priceAreaHeight / 2 : padding + priceAreaHeight - ((price - minPrice) / (maxPrice - minPrice)) * priceAreaHeight; }
             function kdToY(val) { return (val === null || isNaN(val)) ? null : (height - padding) - (val / 100) * volAreaHeight; }
 
@@ -1029,6 +1070,19 @@
             }
             let volTopY = padding + priceAreaHeight;
             ctx.beginPath(); ctx.moveTo(padding, volTopY); ctx.lineTo(width - padding, volTopY); ctx.stroke();
+
+            // === 基礎版新增：爆量垂直白線 ===
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            subVols.forEach((vol, i) => {
+                if (vol >= volThreshold) {
+                    let x = padding + i * barWidth + barWidth / 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding);
+                    ctx.lineTo(x, height - padding);
+                    ctx.stroke();
+                }
+            });
 
             const labelStep = Math.max(1, Math.floor(sliceCount / 6));
             subCloses.forEach((close, i) => {
@@ -1059,6 +1113,158 @@
             drawLine(ctx, subKdD, kdToY, padding, barWidth, '#60A5FA', 1.5); 
         }
 
+        // --- 自定分析圖-1 繪圖邏輯 ---
+        function drawCustomChart1(dates, opens, highs, lows, closes, volumes, emas, wmas, macd, kdK, kdD) {
+            const canvas = document.getElementById('custom-chart-1');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width, height = canvas.height;
+            ctx.clearRect(0, 0, width, height);
+            
+            const sliceCount = parseInt(document.getElementById('chart-period-select').value) || 20;
+            const startIdx = Math.max(0, dates.length - sliceCount);
+
+            const subDates = dates.slice(startIdx), subOpens = opens.slice(startIdx), subHighs = highs.slice(startIdx);
+            const subLows = lows.slice(startIdx), subCloses = closes.slice(startIdx), subVols = volumes.slice(startIdx);
+            if (subCloses.length === 0) return;
+
+            const subMacdLine = macd.macdLine.slice(startIdx);
+            const subSignal = macd.signal.slice(startIdx);
+            const subHist = macd.hist.slice(startIdx);
+            const subKdK = kdK.slice(startIdx);
+            const subKdD = kdD.slice(startIdx);
+
+            const customPeriods = [20];
+            const subEmas = {}, subWmas = {};
+            customPeriods.forEach(p => {
+                subEmas[p] = emas[`ema${p}`].slice(startIdx);
+                subWmas[p] = wmas[`wma${p}`].slice(startIdx);
+            });
+
+            const padding = 30;
+            const chartW = width - padding * 2;
+            const barW = chartW / subCloses.length;
+
+            const innerH = height - padding * 2;
+            const priceH = innerH * 0.50;   
+            const volKdH = innerH * 0.25;   
+            const macdH = innerH * 0.25;    
+
+            const priceTop = padding;
+            const volKdTop = priceTop + priceH;
+            const macdTop = volKdTop + volKdH;
+
+            const maxPrice = Math.max(...subHighs);
+            const minPrice = Math.min(...subLows);
+            const maxVol = Math.max(...subVols, 1);
+            
+            const avgVol = subVols.reduce((a, b) => a + b, 0) / subVols.length;
+            const volThreshold = avgVol * 1.3333; 
+
+            const validMacd = [...subMacdLine, ...subSignal, ...subHist].filter(x => x !== null);
+            const maxMacd = validMacd.length > 0 ? Math.max(...validMacd) : 0.001;
+            const minMacd = validMacd.length > 0 ? Math.min(...validMacd) : -0.001;
+            const absMaxMacd = Math.max(Math.abs(maxMacd), Math.abs(minMacd));
+
+            const priceY = (p) => p === null ? null : priceTop + priceH - ((p - minPrice) / (maxPrice - minPrice || 1)) * priceH;
+            const volY = (v) => v === null ? null : volKdTop + volKdH - (v / maxVol) * (volKdH * 0.8);
+            const kdY = (v) => v === null ? null : volKdTop + volKdH - (v / 100) * volKdH;
+            const macdY = (m) => m === null ? null : macdTop + (macdH / 2) - (m / absMaxMacd) * (macdH / 2);
+
+            ctx.strokeStyle = '#374151'; ctx.fillStyle = '#9CA3AF'; ctx.font = '10px sans-serif';
+            const drawHLine = (y, text) => {
+                ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(width - padding, y); ctx.stroke();
+                if(text) ctx.fillText(text, width - padding + 5, y + 3);
+            };
+
+            for(let i=0; i<=4; i++) {
+                let p = minPrice + (maxPrice - minPrice) * (i / 4);
+                drawHLine(priceY(p), p.toFixed(1));
+            }
+            drawHLine(volKdTop, ''); drawHLine(macdTop, ''); drawHLine(height - padding, '');
+
+            ctx.strokeStyle = '#6B7280'; ctx.setLineDash([5, 5]);
+            drawHLine(macdY(0), '0');
+            drawHLine(kdY(80), '80'); drawHLine(kdY(50), '50'); drawHLine(kdY(20), '20');
+            ctx.setLineDash([]);
+
+            // 爆量垂直白線
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            subVols.forEach((vol, i) => {
+                if (vol >= volThreshold) {
+                    let x = padding + i * barW + barW / 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding);
+                    ctx.lineTo(x, height - padding);
+                    ctx.stroke();
+                }
+            });
+
+            subCloses.forEach((close, i) => {
+                let open = subOpens[i], vol = subVols[i];
+                let x = padding + i * barW + barW / 2;
+                let isUp = close >= open;
+                ctx.fillStyle = isUp ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)';
+                let vY = volY(vol);
+                ctx.fillRect(x - barW * 0.35, vY, barW * 0.7, (volKdTop + volKdH) - vY);
+            });
+
+            const drawLineSafe = (data, mapFn, color, width=1.2) => {
+                ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+                let started = false;
+                data.forEach((val, i) => {
+                    if (val === null || isNaN(val)) return;
+                    let y = mapFn(val);
+                    if (y === null) return;
+                    let x = padding + i * barW + barW / 2;
+                    if (!started) { ctx.moveTo(x, y); started = true; }
+                    else { ctx.lineTo(x, y); }
+                });
+                ctx.stroke();
+            };
+
+            drawLineSafe(subKdK, kdY, '#FF0000', 1.5); 
+            drawLineSafe(subKdD, kdY, '#60A5FA', 1.5); 
+
+            subHist.forEach((h, i) => {
+                if (h === null) return;
+                let x = padding + i * barW + barW / 2;
+                let isUp = h >= 0;
+                ctx.fillStyle = isUp ? '#EF4444' : '#10B981';
+                let y = macdY(h), zeroY = macdY(0);
+                ctx.fillRect(x - barW * 0.3, Math.min(y, zeroY), barW * 0.6, Math.abs(y - zeroY));
+            });
+            drawLineSafe(subMacdLine, macdY, '#FBBF24', 1.5); 
+            drawLineSafe(subSignal, macdY, '#C084FC', 1.5);   
+
+            drawLineSafe(subEmas[20], priceY, '#FACC15', 1.5); 
+            drawLineSafe(subWmas[20], priceY, '#22D3EE', 1.5); 
+
+            subCloses.forEach((close, i) => {
+                let open = subOpens[i], high = subHighs[i], low = subLows[i];
+                let x = padding + i * barW + barW / 2;
+                let yOpen = priceY(open), yClose = priceY(close), yHigh = priceY(high), yLow = priceY(low);
+                let isUp = close >= open, color = isUp ? '#EF4444' : '#10B981';
+                
+                ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(x, yHigh); ctx.lineTo(x, yLow); ctx.stroke();
+                ctx.fillStyle = color;
+                ctx.fillRect(x - barW * 0.35, Math.min(yOpen, yClose), barW * 0.7, Math.max(Math.abs(yClose - yOpen), 2));
+                
+                const labelStep = Math.max(1, Math.floor(sliceCount / 6));
+                if (i % labelStep === 0 || i === subCloses.length - 1) {
+                    ctx.fillStyle = '#9CA3AF'; 
+                    ctx.fillText(subDates[i].substring(5), x - 15, height - 10);
+                }
+            });
+
+            ctx.font = '10px sans-serif';
+            ctx.fillStyle = '#D1D5DB';
+            ctx.fillText(`主圖: 20EMA (黃) / 20WMA (青)`, padding + 10, priceTop + 15);
+            ctx.fillText(`副圖一: Volume + KD(9,3,3) 紅:K線 / 藍:D線`, padding + 10, volKdTop + 15);
+            ctx.fillText(`副圖二: MACD(12,26,9) 橘黃:DIF / 紫:MACD`, padding + 10, macdTop + 15);
+        }
+
         function drawLine(ctx, dataArray, yMappingFunc, padding, barWidth, color, lineWidth=1.5) {
             ctx.strokeStyle = color; ctx.lineWidth = lineWidth; ctx.beginPath(); let started = false;
             dataArray.forEach((val, i) => {
@@ -1070,7 +1276,7 @@
             ctx.stroke();
         }
 
-        // 技術指標數學函式
+        // --- 技術指標數學函式 ---
         function calcMA(data, p) { return data.map((_, i) => i < p - 1 ? null : data.slice(i - p + 1, i + 1).reduce((a, b) => a + b, 0) / p); }
         function calcBias(closes, ma) { return closes.map((c, i) => ma[i] !== null ? ((c - ma[i]) / ma[i]) * 100 : null); }
         function calcBollingerBands(data, ma, p, mult) {
@@ -1107,6 +1313,20 @@
             for(let i=p; i<data.length; i++) { ema = (data[i] - ema) * k + ema; res[i] = ema; }
             return res;
         }
+        
+        function calcWMA(data, p) {
+            let res = new Array(data.length).fill(null);
+            let denominator = (p * (p + 1)) / 2;
+            for (let i = p - 1; i < data.length; i++) {
+                let sum = 0;
+                for (let j = 0; j < p; j++) {
+                    sum += data[i - j] * (p - j);
+                }
+                res[i] = sum / denominator;
+            }
+            return res;
+        }
+
         function calcMACD(closes) {
             let ema12 = calcEMA(closes, 12), ema26 = calcEMA(closes, 26), macdLine = [];
             for (let i = 0; i < closes.length; i++) macdLine.push(ema12[i] !== null && ema26[i] !== null ? ema12[i] - ema26[i] : null);
