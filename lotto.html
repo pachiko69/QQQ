@@ -20,6 +20,7 @@
         button:hover { background: #2980b9; }
         
         .btn-add-purchase { background: #2ecc71; font-weight: bold; padding: 12px; margin-bottom: 0; }
+        .btn-manage-purchase { background: #2980b9; font-weight: bold; padding: 12px; margin-bottom: 0; }
         .btn-golden-hand { background: #f1c40f; color: #d35400; font-weight: bold; padding: 10px; margin: 5px; }
         .btn-cold-hand { background: #3498db; color: white; font-weight: bold; padding: 10px; margin: 5px; }
         .btn-middle-hand { background: #9b59b6; color: white; font-weight: bold; padding: 10px; margin: 5px; }
@@ -27,6 +28,12 @@
         .btn-chart:hover { background: #732d91; }
         .btn-reverse { background: #e67e22; color: white; font-weight: bold; }
         .btn-reverse:hover { background: #d35400; }
+        .btn-consecutive { background: #16a085; color: white; font-weight: bold; }
+        .btn-consecutive:hover { background: #1abc9c; }
+        .btn-digit { background: #2980b9; color: white; font-weight: bold; }
+        .btn-digit:hover { background: #2471a3; }
+        .btn-greedy { background: #d35400; color: white; font-weight: bold; }
+        .btn-greedy:hover { background: #ba4a00; }
 
         .number-pad { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; margin-bottom: 15px; }
         .num-btn { background-color: #f0f0f0; border: 1px solid #ccc; padding: 10px 0; font-size: 16px; border-radius: 4px; color: #333; cursor: pointer; }
@@ -44,7 +51,7 @@
         .flex-buttons button { margin-bottom: 0; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: #fff; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
+        .modal-content { background: #fff; padding: 30px; border-radius: 8px; width: 90%; max-width: 650px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto; }
         .modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: #888; }
         .modal-close:hover { color: #333; }
         .btn-save { background: #e74c3c; margin-top: 10px; }
@@ -54,29 +61,17 @@
         
         .crud-form { background: #fdfdfd; padding: 15px; border: 1px solid #e1e8ed; border-radius: 6px; margin-bottom: 15px; }
         
-        .chart-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .chart-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
         .chart-controls select { width: auto; margin-bottom: 0; padding: 6px 12px; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💰 樂透記錄與分析系統</h1>
+        <h1>💰 今彩539/39樂合 記錄與分析</h1>
 
-        <!-- 1. 滙入開獎記錄 (改為按鈕開啟彈出視窗) -->
-        <div class="card" style="text-align: center;">
-            <h2>📥 1. 滙入開獎記錄</h2>
-            <button class="btn-cold-hand" style="font-weight: bold; padding: 12px; margin-bottom: 0;" onclick="openImportModal()">📥 滙入資料</button>
-        </div>
-
-        <!-- 2. 新增購買清單按鈕 -->
-        <div class="card" style="text-align: center;">
-            <h2>🛒 2. 購買清單管理</h2>
-            <button class="btn-add-purchase" onclick="openPurchaseModal()">🛒 新增購買清單</button>
-        </div>
-
-        <!-- 3. 獎號分析功能 -->
+        <!-- AI分析功能 -->
         <div class="card">
-            <h2>📊 3. 獎號分析功能</h2>
+            <h2>📊 AI分析功能</h2>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                 <button class="btn-golden-hand" style="flex: 1;" onclick="calculateHand('golden')">🏆 黃金之手 (高)</button>
                 <button class="btn-middle-hand" style="flex: 1;" onclick="calculateHand('middle')">🤝 兩相好 (中)</button>
@@ -87,25 +82,39 @@
             <div style="margin-bottom: 30px;">
                 <h3>進階數據與圖表分析</h3>
                 <div class="flex-buttons">
-                    <button onclick="analyzeFrequencies()" style="flex: 1;">產生號碼機率分析</button>
-                    <!-- 新增的 K線圖 按鈕 -->
-                    <button onclick="showKLineChart()" class="btn-chart" style="flex: 1;">📈 K線圖 (均線分析)</button>
-                    <!-- 新增的 平均值反推 按鈕 -->
-                    <button onclick="reverseAverage()" class="btn-reverse" style="flex: 1;">🔍 平均值反推</button>
+                    <button onclick="analyzeFrequencies()" style="flex: 1;">號碼機率分析</button>
+                    <button onclick="showKLineChart()" class="btn-chart" style="flex: 1;">📈 布林通道分析</button>
+                    <button onclick="openReverseModal()" class="btn-reverse" style="flex: 1;">🔍 平均值反推</button>
+                    <button onclick="analyzeConsecutive()" class="btn-consecutive" style="flex: 1;">🔗 連號分析</button>
+                    <button onclick="analyzeLastDigit()" class="btn-digit" style="flex: 1;">🔢 尾號分析</button>
+                    <button onclick="greedySelection()" class="btn-greedy" style="flex: 1;">🤖 貪婪選號法</button>
                 </div>
-                <!-- 顯示機率與反推結果的區塊 -->
                 <div class="result-box" id="freqResult"></div>
-                <!-- 顯示K線圖的區塊 -->
                 <div class="chart-box" id="chartResult">
                     <div class="chart-controls" id="chartControls" style="display: none;">
-                        <label>顯示期數：</label>
-                        <select id="chartPeriodSelect" onchange="updateChartPeriod()">
-                            <option value="30" selected>最近 30 期</option>
-                            <option value="60">最近 60 期</option>
-                            <option value="90">最近 90 期</option>
-                            <option value="120">最近 120 期</option>
-                            <option value="all">全部歷史</option>
-                        </select>
+                        <div>
+                            <label style="display:inline; margin-right:5px;">顯示期數：</label>
+                            <select id="chartPeriodSelect" onchange="renderChart()">
+                                <option value="30">最近 30 期</option>
+                                <option value="60">最近 60 期</option>
+                                <option value="90" selected>最近 90 期</option>
+                                <option value="120">最近 120 期</option>
+                                <option value="all">全部歷史</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:inline; margin-right:5px;">標準差倍數 (σ)：</label>
+                            <select id="stdDevMultiplierSelect" onchange="renderChart()">
+                                <option value="0.4">0.4 倍</option>
+                                <option value="0.6">0.6 倍</option>
+                                <option value="0.8">0.8 倍</option>
+                                <option value="1.0">1.0 倍</option>
+                                <option value="1.2" selected>1.2 倍</option>
+                                <option value="1.4">1.4 倍</option>
+                                <option value="1.5">1.5 倍</option>
+                                <option value="1.6">1.6 倍</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="chartHeader" style="text-align: center; margin-bottom: 10px; font-size: 16px;"></div>
                     <div style="position: relative; height: 400px; width: 100%;">
@@ -117,15 +126,16 @@
             <h3>歷史號碼搜尋 (將另開新分頁顯示全紀錄)</h3>
             <div id="searchNumberPad" class="number-pad"></div>
             <div class="flex-buttons">
-                <button onclick="searchHistory()" style="flex: 3;">搜尋歷史期數</button>
+                <button onclick="searchHistory()" style="flex: 2;">搜尋歷史期數</button>
+                <button onclick="pasteContextNumbers()" style="flex: 1; background-color: #27ae60;">📋 貼上</button>
                 <button onclick="clearSearchNumbers()" style="flex: 1; background-color: #95a5a6;">清空選取</button>
             </div>
             <div class="result-box" id="searchResult"></div>
         </div>
 
-        <!-- 4. 獎號維護管理 (新增、編輯、刪除) -->
+        <!-- 4. 獎號維護管理 -->
         <div class="card">
-            <h2>📝 4. 獎號維護管理 (手動新增/編輯/刪除)</h2>
+            <h2>📝 獎號維護管理</h2>
             <div class="crud-form">
                 <h3 id="crudFormTitle" style="margin-top:0; font-size:16px; color:#2c3e50;">新增一筆開獎記錄</h3>
                 <input type="hidden" id="crudEditId">
@@ -180,7 +190,18 @@
                 </table>
             </div>
         </div>
-    </div>
+
+        <!-- 2. 購買清單管理 -->
+        <div class="card" >
+            <h2>🛒 虛擬購買驗證管理</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-add-purchase" style="flex: 1;" onclick="openPurchaseModal()">🛒 新增購買清單</button>
+                <button class="btn-manage-purchase" style="flex: 1;" onclick="openPurchaseListModal()">📋 購買記錄</button>
+                <button class="btn-add-purchase" style="flex: 1;"" onclick="openImportModal()">📥 滙入資料</button>
+            </div>
+        </div>
+
+        
 
     <!-- 彈出視窗：滙入資料 -->
     <div class="modal-overlay" id="importModal">
@@ -194,11 +215,25 @@
         </div>
     </div>
 
-    <!-- 彈出視窗：新增購買清單 -->
+    <!-- 彈出視窗：區間平均值反推設定 -->
+    <div class="modal-overlay" id="reverseModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="modal-close" onclick="closeReverseModal()">&times;</span>
+            <h2>🔍 區間平均值反推設定</h2>
+            <label>最小平均值：</label>
+            <input type="number" id="reverseMinAvg" step="0.1" placeholder="例如: 18">
+            <label>最大平均值：</label>
+            <input type="number" id="reverseMaxAvg" step="0.1" placeholder="例如: 22">
+            <button onclick="executeReverseAverage()" style="background: #e67e22; margin-top: 10px; margin-bottom: 0;">開始反推運算</button>
+        </div>
+    </div>
+
+    <!-- 彈出視窗：新增/編輯購買清單 -->
     <div class="modal-overlay" id="purchaseModal">
         <div class="modal-content">
             <span class="modal-close" onclick="closePurchaseModal()">&times;</span>
-            <h2>🛒 新增購買記錄</h2>
+            <h2 id="purchaseModalTitle">🛒 新增購買記錄</h2>
+            <input type="hidden" id="purchaseEditId">
             <label>選擇遊戲類型：</label>
             <select id="gameType" onchange="updateNumberInputs()">
                 <option value="539">今彩539 (選5號, $50)</option>
@@ -210,8 +245,47 @@
             <input type="text" id="betPeriod" placeholder="例如: 115000100">
             <label>請輸入號碼 (01~39)：</label>
             <div class="inline-inputs" id="numberInputsContainer"></div>
-            <button class="btn-save" onclick="savePurchase()">儲存購買記錄</button>
-            <div id="purchaseStatus" style="margin-top: 10px; font-size: 14px; text-align: center;"></div>
+            
+            <button class="btn-save" onclick="savePurchase()" style="width: 100%; margin-top: 10px; margin-bottom: 0;">儲存購買記錄</button>
+            <div id="purchaseStatus" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- 彈出視窗：購買記錄管理 -->
+    <div class="modal-overlay" id="purchaseListModal">
+        <div class="modal-content" style="max-width: 750px;">
+            <span class="modal-close" onclick="closePurchaseListModal()">&times;</span>
+            <h2>📋 購買記錄管理與對獎</h2>
+            <div class="result-box" style="margin-top: 15px;">
+                <table id="purchaseTable">
+                    <thead>
+                        <tr>
+                            <th>期別</th>
+                            <th>類型</th>
+                            <th>號碼</th>
+                            <th>花費</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchaseTableBody">
+                        <tr><td colspan="5">載入中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 滑鼠右鍵 1~39 快捷選號矩陣 Modal -->
+    <div class="modal-overlay" id="rightClickMatrixModal" onclick="checkCloseRightClickMatrix(event)">
+        <div class="modal-content" style="max-width: 320px; padding: 20px; text-align: center;">
+            <span class="modal-close" onclick="closeRightClickMatrix()">&times;</span>
+            <h3 style="margin-top: 0; margin-bottom: 5px; color: #2c3e50;">🎯 快捷選號與複製</h3>
+            <p style="font-size: 12px; color: #666; margin-top: 0; margin-bottom: 10px;">點擊數字進行核選，再按一次取消。</p>
+            
+            <div id="contextNumberPad" class="number-pad" style="grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px;"></div>
+            
+            <button class="btn-save" onclick="copySelectedNumbers()" style="background: #27ae60; margin-top: 5px; margin-bottom: 0; padding: 8px; font-size: 14px;">📋 複製已核選號碼</button>
+            <div id="matrixStatus" style="margin-top: 8px; font-size: 13px; font-weight: bold;"></div>
         </div>
     </div>
 
@@ -229,6 +303,7 @@
         ];
 
         const selectedSearchNumbers = new Set();
+        const contextSelectedNumbers = new Set(); 
         let myKLineChart = null; 
         let globalChartData = []; 
         let globalOverallAvg = 0; 
@@ -246,17 +321,41 @@
             document.getElementById('importModal').style.display = 'none';
         }
 
+        function openReverseModal() {
+            document.getElementById('reverseModal').style.display = 'flex';
+            document.getElementById('reverseMinAvg').value = '';
+            document.getElementById('reverseMaxAvg').value = '';
+        }
+
+        function closeReverseModal() {
+            document.getElementById('reverseModal').style.display = 'none';
+        }
+
         function openPurchaseModal() {
+            if (!document.getElementById('purchaseEditId').value) {
+                document.getElementById('purchaseEditId').value = '';
+                document.getElementById('purchaseModalTitle').innerText = '🛒 新增購買記錄';
+                document.getElementById('betPeriod').value = '';
+                updateNumberInputs();
+            }
             document.getElementById('purchaseModal').style.display = 'flex';
             document.getElementById('purchaseStatus').innerHTML = '';
-            updateNumberInputs();
         }
 
         function closePurchaseModal() {
             document.getElementById('purchaseModal').style.display = 'none';
         }
 
-        function updateNumberInputs() {
+        function openPurchaseListModal() {
+            document.getElementById('purchaseListModal').style.display = 'flex';
+            loadPurchaseList();
+        }
+
+        function closePurchaseListModal() {
+            document.getElementById('purchaseListModal').style.display = 'none';
+        }
+
+        function updateNumberInputs(existingNumbers = []) {
             const gameType = document.getElementById('gameType').value;
             const container = document.getElementById('numberInputsContainer');
             container.innerHTML = '';
@@ -267,6 +366,9 @@
                 input.min = 1; input.max = 39;
                 input.placeholder = `號碼 ${i}`;
                 input.className = 'bet-num';
+                if (existingNumbers[i - 1] !== undefined) {
+                    input.value = existingNumbers[i - 1];
+                }
                 container.appendChild(input);
             }
         }
@@ -312,6 +414,93 @@
         }
 
         initSearchNumberPad();
+
+        function pasteContextNumbers() {
+            if (contextSelectedNumbers.size === 0) {
+                alert('右鍵選號記錄中目前沒有任何號碼！');
+                return;
+            }
+
+            clearSearchNumbers();
+            
+            const searchButtons = document.querySelectorAll('#searchNumberPad .num-btn');
+            contextSelectedNumbers.forEach(num => {
+                if (num >= 1 && num <= 39) {
+                    if (selectedSearchNumbers.size >= 10) return; 
+                    selectedSearchNumbers.add(num);
+                    const btn = searchButtons[num - 1];
+                    if (btn) {
+                        btn.classList.add('selected');
+                        btn.style.backgroundColor = numColors[num];
+                        btn.style.color = '#333';
+                    }
+                }
+            });
+        }
+
+        function initContextNumberPad() {
+            const pad = document.getElementById('contextNumberPad');
+            pad.innerHTML = '';
+            for (let i = 1; i <= 39; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'num-btn';
+                btn.style.padding = '6px 0';
+                btn.style.fontSize = '14px';
+                btn.innerText = String(i).padStart(2, '0');
+                btn.onclick = () => toggleContextNumber(i, btn);
+                pad.appendChild(btn);
+            }
+        }
+        initContextNumberPad();
+
+        function toggleContextNumber(num, btn) {
+            if (contextSelectedNumbers.has(num)) {
+                contextSelectedNumbers.delete(num);
+                btn.classList.remove('selected');
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+            } else {
+                contextSelectedNumbers.add(num);
+                btn.classList.add('selected');
+                btn.style.backgroundColor = numColors[num];
+                btn.style.color = '#333';
+            }
+        }
+
+        window.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            const statusDiv = document.getElementById('matrixStatus');
+            if (statusDiv) statusDiv.innerHTML = '';
+            document.getElementById('rightClickMatrixModal').style.display = 'flex';
+        });
+
+        function closeRightClickMatrix() {
+            document.getElementById('rightClickMatrixModal').style.display = 'none';
+        }
+
+        function checkCloseRightClickMatrix(event) {
+            if (event.target.id === 'rightClickMatrixModal') {
+                closeRightClickMatrix();
+            }
+        }
+
+        function copySelectedNumbers() {
+            const statusDiv = document.getElementById('matrixStatus');
+            if (contextSelectedNumbers.size === 0) {
+                statusDiv.innerHTML = '<span style="color:red;">尚未選取任何號碼！</span>';
+                return;
+            }
+
+            const sortedNums = Array.from(contextSelectedNumbers).sort((a, b) => a - b);
+            const formattedString = sortedNums.map(n => String(n).padStart(2, '0')).join(', ');
+
+            navigator.clipboard.writeText(formattedString).then(() => {
+                statusDiv.innerHTML = `<span style="color:green;">已成功複製：[ ${formattedString} ]</span>`;
+            }).catch(err => {
+                statusDiv.innerHTML = `<span style="color:red;">複製失敗，請手動複製。</span>`;
+            });
+        }
 
         async function importCSV() {
             const fileInput = document.getElementById('csvFileInput');
@@ -382,7 +571,7 @@
             const resultDiv = document.getElementById('handResult');
             const { data } = await supabaseClient.from('lotto_draw_history').select('*');
             if (!data || data.length === 0) {
-                resultDiv.innerHTML = '<span style="color:red;">請先至上方滙入開獎記錄 CSV 資料！</span>';
+                resultDiv.innerHTML = '<span style="color:red;">請先至下方滙入開獎記錄 CSV 資料！</span>';
                 return;
             }
 
@@ -430,11 +619,41 @@
             }
 
             let counts = Array(40).fill(0);
+            let totalOddCount = 0;
+            let totalEvenCount = 0;
+            
+            let sumUnder75 = 0;     
+            let sumRange1 = 0;      
+            let sumRange2 = 0;      
+            let sumOver125 = 0;     
+
             data.forEach(row => {
-                [row.num1, row.num2, row.num3, row.num4, row.num5].forEach(num => {
-                    if (num >= 1 && num <= 39) counts[num]++;
+                const nums = [row.num1, row.num2, row.num3, row.num4, row.num5];
+                let rowSum = 0;
+
+                nums.forEach(num => {
+                    if (num >= 1 && num <= 39) {
+                        counts[num]++;
+                        rowSum += num;
+                        if (num % 2 !== 0) totalOddCount++;
+                        else totalEvenCount++;
+                    }
                 });
+
+                if (rowSum < 75) sumUnder75++;
+                else if (rowSum >= 75 && rowSum < 100) sumRange1++;
+                else if (rowSum >= 100 && rowSum <= 125) sumRange2++;
+                else sumOver125++;
             });
+
+            const totalNumbersDrawn = totalDraws * 5;
+            const oddProb = Math.round((totalOddCount / totalNumbersDrawn) * 100);
+            const evenProb = Math.round((totalEvenCount / totalNumbersDrawn) * 100);
+
+            const under75Prob = Math.round((sumUnder75 / totalDraws) * 100);
+            const range1Prob = Math.round((sumRange1 / totalDraws) * 100);
+            const range2Prob = Math.round((sumRange2 / totalDraws) * 100);
+            const over125Prob = Math.round((sumOver125 / totalDraws) * 100);
 
             let stats = [];
             for (let i = 1; i <= 39; i++) {
@@ -447,7 +666,18 @@
 
             stats.sort((a, b) => b.count - a.count);
 
-            let html = `<table><tr><th>號碼</th><th>出現次數</th><th>出現機率 (總期數: ${totalDraws})</th></tr>`;
+            let html = `<h4>📊 整體特性統計 (總期數: ${totalDraws})</h4>`;
+            html += `<div style="background: #fdfefe; border: 1px solid #dcdde1; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; line-height: 1.6;">`;
+            html += `🔹 <strong>單雙數總計：</strong> 單數 ${totalOddCount} 次 (${oddProb}%) ｜ 雙數 ${totalEvenCount} 次 (${evenProb}%)<br>`;
+            html += `🔹 <strong>獎號平均總合區間機率：</strong><br>`;
+            html += `&nbsp;&nbsp;&nbsp;&nbsp;• 低於 15 (總和低於 75)：<strong>${sumUnder75}</strong> 次 (${under75Prob}%)<br>`;
+            html += `&nbsp;&nbsp;&nbsp;&nbsp;• 15 ~ 19.9 (總和 75 ~ 99)：<strong>${sumRange1}</strong> 次 (${range1Prob}%)<br>`;
+            html += `&nbsp;&nbsp;&nbsp;&nbsp;• 20 ~ 25 (總和 100 ~ 125)：<strong>${sumRange2}</strong> 次 (${range2Prob}%)<br>`;
+            html += `&nbsp;&nbsp;&nbsp;&nbsp;• 高於 25 (總和高於 125)：<strong>${sumOver125}</strong> 次 (${over125Prob}%)`;
+            html += `</div>`;
+
+            html += `<h4>📊 各號碼出現頻率分析</h4>`;
+            html += `<table><tr><th>號碼</th><th>出現次數</th><th>出現機率 (總期數: ${totalDraws})</th></tr>`;
             stats.forEach(s => {
                 html += `<tr>
                     <td><strong>${String(s.number).padStart(2, '0')}</strong></td>
@@ -459,21 +689,256 @@
             resultDiv.innerHTML = html;
         }
 
-        // --- 平均值反推功能 ---
-        async function reverseAverage() {
-            const input = prompt("請輸入目標平均值 (例如: 20 或 20.4)：");
-            if (input === null || input.trim() === '') return;
+        async function analyzeConsecutive() {
+            document.getElementById('chartResult').style.display = 'none'; 
+            const resultDiv = document.getElementById('freqResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '正在進行連號分析計算中...';
 
-            const targetAvg = parseFloat(input);
-            if (isNaN(targetAvg)) {
-                alert("請輸入有效的數字！");
+            const { data, error } = await supabaseClient.from('lotto_draw_history').select('*').order('period_number', { ascending: false });
+            if (error || !data) {
+                resultDiv.innerHTML = `<span style="color:red;">讀取資料失敗: ${error?.message}</span>`;
                 return;
             }
 
-            // 539 是五個號碼，平均值 * 5 必定是整數總和
-            const targetSum = Math.round(targetAvg * 5);
+            const totalDraws = data.length;
+            if (totalDraws === 0) {
+                resultDiv.innerHTML = '資料庫尚無歷史記錄，請先滙入資料。';
+                return;
+            }
 
-            document.getElementById('chartResult').style.display = 'none'; // 隱藏圖表
+            let statsCount = { 2: 0, 3: 0, 4: 0, 5: 0 };
+            let matchedRecords = [];
+
+            data.forEach(row => {
+                const nums = [row.num1, row.num2, row.num3, row.num4, row.num5].sort((a, b) => a - b);
+                
+                let maxLen = 1;
+                let currentLen = 1;
+
+                for (let i = 0; i < nums.length - 1; i++) {
+                    if (nums[i + 1] === nums[i] + 1) {
+                        currentLen++;
+                    } else {
+                        if (currentLen > maxLen) maxLen = currentLen;
+                        currentLen = 1;
+                    }
+                }
+                if (currentLen > maxLen) maxLen = currentLen;
+
+                if (maxLen >= 2) {
+                    statsCount[maxLen] = (statsCount[maxLen] || 0) + 1;
+                    matchedRecords.push({
+                        draw_date: row.draw_date,
+                        period_number: row.period_number,
+                        nums: nums.map(n => String(n).padStart(2, '0')).join(', '),
+                        maxLen: maxLen
+                    });
+                }
+            });
+
+            let html = `<h4>🔗 歷史獎號連號統計分析 (總期數: ${totalDraws})</h4>`;
+            html += `<div style="background: #fdfefe; border: 1px solid #dcdde1; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; line-height: 1.6;">`;
+            
+            for (let len = 2; len <= 5; len++) {
+                const count = statsCount[len] || 0;
+                const prob = Math.round((count / totalDraws) * 100);
+                html += `🔹 <strong>${len} 個連號：</strong> <strong>${count}</strong> 期 (${prob}%)<br>`;
+            }
+            html += `</div>`;
+
+            html += `<h4>📋 包含連號的歷史開獎明細 (${matchedRecords.length} 期)</h4>`;
+            html += `<table><tr><th>日期</th><th>期別</th><th>開獎號碼 (排序)</th><th>最高連號數</th></tr>`;
+            
+            matchedRecords.forEach(r => {
+                html += `<tr>
+                    <td>${r.draw_date}</td>
+                    <td>${r.period_number}</td>
+                    <td><strong>[ ${r.nums} ]</strong></td>
+                    <td><span style="color: #e74c3c; font-weight: bold;">${r.maxLen} 連號</span></td>
+                </tr>`;
+            });
+            html += `</table>`;
+
+            resultDiv.innerHTML = html;
+        }
+
+        async function analyzeLastDigit() {
+            document.getElementById('chartResult').style.display = 'none'; 
+            const resultDiv = document.getElementById('freqResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '正在進行尾號分析計算中...';
+
+            const { data, error } = await supabaseClient.from('lotto_draw_history').select('*').order('period_number', { ascending: false });
+            if (error || !data) {
+                resultDiv.innerHTML = `<span style="color:red;">讀取資料失敗: ${error?.message}</span>`;
+                return;
+            }
+
+            const totalDraws = data.length;
+            if (totalDraws === 0) {
+                resultDiv.innerHTML = '資料庫尚無歷史記錄，請先滙入資料。';
+                return;
+            }
+
+            let digitCounts = Array(10).fill(0);
+            let matchedRecords = [];
+
+            data.forEach(row => {
+                const nums = [row.num1, row.num2, row.num3, row.num4, row.num5].sort((a, b) => a - b);
+                let digitMap = {}; 
+
+                nums.forEach(n => {
+                    let d = n % 10;
+                    digitCounts[d]++;
+                    if (!digitMap[d]) digitMap[d] = [];
+                    digitMap[d].push(n);
+                });
+
+                let hasSameDigit = false;
+                let details = [];
+                for (let d = 0; d <= 9; d++) {
+                    if (digitMap[d] && digitMap[d].length >= 2) {
+                        hasSameDigit = true;
+                        details.push(`尾號 ${d}: [ ${digitMap[d].map(n => String(n).padStart(2, '0')).join(', ')} ]`);
+                    }
+                }
+
+                if (hasSameDigit) {
+                    matchedRecords.push({
+                        draw_date: row.draw_date,
+                        period_number: row.period_number,
+                        nums: nums.map(n => String(n).padStart(2, '0')).join(', '),
+                        details: details.join(' ｜ ')
+                    });
+                }
+            });
+
+            let html = `<h4>🔢 歷史獎號尾號分析統計 (總期數: ${totalDraws})</h4>`;
+            html += `<div style="background: #fdfefe; border: 1px solid #dcdde1; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; line-height: 1.6;">`;
+            html += `🔹 <strong>各尾號（0~9）累計出現總次數：</strong><br>`;
+            for (let d = 0; d <= 9; d++) {
+                let prob = Math.round((digitCounts[d] / (totalDraws * 5)) * 100);
+                html += `&nbsp;&nbsp;&nbsp;&nbsp;• 尾號 ${d}：<strong>${digitCounts[d]}</strong> 次 (佔整體 ${prob}%)<br>`;
+            }
+            html += `<br>🔹 <strong>同期開出「相同尾號」統計：</strong> 共有 <strong>${matchedRecords.length}</strong> 期出現同尾號現象（約佔總期數 ${Math.round((matchedRecords.length / totalDraws) * 100)}%）。`;
+            html += `</div>`;
+
+            html += `<h4>📋 出現同尾號現象的歷史開獎明細</h4>`;
+            html += `<table><tr><th>日期</th><th>期別</th><th>開獎號碼 (排序)</th><th>同尾號詳情</th></tr>`;
+            
+            matchedRecords.forEach(r => {
+                html += `<tr>
+                    <td>${r.draw_date}</td>
+                    <td>${r.period_number}</td>
+                    <td><strong>[ ${r.nums} ]</strong></td>
+                    <td style="text-align: left; color: #2980b9;">${r.details}</td>
+                </tr>`;
+            });
+            html += `</table>`;
+
+            resultDiv.innerHTML = html;
+        }
+
+        async function greedySelection() {
+            document.getElementById('chartResult').style.display = 'none'; 
+            const resultDiv = document.getElementById('freqResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '正在執行貪婪演算法推論最佳組合中...';
+
+            const { data, error } = await supabaseClient.from('lotto_draw_history').select('*');
+            if (error || !data) {
+                resultDiv.innerHTML = `<span style="color:red;">讀取資料失敗: ${error?.message}</span>`;
+                return;
+            }
+
+            const totalDraws = data.length;
+            if (totalDraws === 0) {
+                resultDiv.innerHTML = '資料庫尚無歷史記錄，請先滙入資料。';
+                return;
+            }
+
+            let individualCounts = Array(40).fill(0);
+            data.forEach(row => {
+                [row.num1, row.num2, row.num3, row.num4, row.num5].forEach(n => {
+                    if (n >= 1 && n <= 39) individualCounts[n]++;
+                });
+            });
+
+            let selected = [];
+            let candidatePool = [];
+            for (let i = 1; i <= 39; i++) {
+                candidatePool.push({ number: i, score: individualCounts[i] });
+            }
+
+            while (selected.length < 5 && candidatePool.length > 0) {
+                candidatePool.sort((a, b) => b.score - a.score);
+                let bestCandidate = candidatePool.shift();
+                selected.push(bestCandidate.number);
+
+                candidatePool.forEach(cand => {
+                    let cooccurrence = 0;
+                    data.forEach(row => {
+                        const nums = [row.num1, row.num2, row.num3, row.num4, row.num5];
+                        if (nums.includes(bestCandidate.number) && nums.includes(cand.number)) {
+                            cooccurrence++;
+                        }
+                    });
+                    cand.score += (cooccurrence * 0.5);
+                });
+            }
+
+            selected.sort((a, b) => a - b);
+
+            clearSearchNumbers();
+            selected.forEach(num => {
+                selectedSearchNumbers.add(num);
+                const btn = document.querySelectorAll('#searchNumberPad .num-btn')[num - 1];
+                if (btn) {
+                    btn.classList.add('selected');
+                    btn.style.backgroundColor = numColors[num];
+                    btn.style.color = '#333';
+                }
+            });
+
+            let html = `<h4>🤖 貪婪選號法推論結果</h4>`;
+            html += `<div style="background: #fdfefe; border: 1px solid #dcdde1; padding: 15px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; line-height: 1.6;">`;
+            html += `✨ <strong>貪婪演算法成功推論出最佳 5 碼組合：</strong><br>`;
+            html += `<h3 style="color: #d35400; margin: 10px 0;">[ ${selected.map(n => String(n).padStart(2, '0')).join(', ')} ]</h3>`;
+            html += `💡 <strong>演算法說明：</strong> 本次選號結合了歷史單一熱門度與多維共現價值（Co-occurrence），透過每一步局部最佳解的貪婪疊代，挑選出最具歷史涵蓋力的互補號碼組合，並已自動幫您填入上方的搜尋矩陣中！`;
+            html += `</div>`;
+
+            resultDiv.innerHTML = html;
+        }
+
+        async function executeReverseAverage() {
+            const minInput = document.getElementById('reverseMinAvg').value;
+            const maxInput = document.getElementById('reverseMaxAvg').value;
+
+            if (minInput.trim() === '' || maxInput.trim() === '') {
+                alert('請完整輸入最小平均值與最大平均值！');
+                return;
+            }
+
+            const minAvg = parseFloat(minInput);
+            const maxAvg = parseFloat(maxInput);
+
+            if (isNaN(minAvg) || isNaN(maxAvg)) {
+                alert('請輸入有效的數字！');
+                return;
+            }
+
+            if (minAvg > maxAvg) {
+                alert('最小平均值不可大於最大平均值！');
+                return;
+            }
+
+            closeReverseModal();
+
+            const minSum = Math.round(minAvg * 5);
+            const maxSum = Math.round(maxAvg * 5);
+
+            document.getElementById('chartResult').style.display = 'none'; 
             const resultDiv = document.getElementById('freqResult');
             resultDiv.style.display = 'block';
             resultDiv.innerHTML = '正在搜尋並計算中...';
@@ -484,18 +949,16 @@
                 return;
             }
 
-            // 篩選出總和相符的期數
             const matchedDraws = data.filter(row => {
                 const sum = row.num1 + row.num2 + row.num3 + row.num4 + row.num5;
-                return sum === targetSum;
+                return sum >= minSum && sum <= maxSum;
             });
 
             if (matchedDraws.length === 0) {
-                resultDiv.innerHTML = `<h4>🔍 搜尋結果</h4><p style="color:red;">找不到平均值為 ${targetAvg} (總和為 ${targetSum}) 的歷史記錄。</p>`;
+                resultDiv.innerHTML = `<h4>🔍 區間反推結果</h4><p style="color:red;">找不到平均值介於 ${minAvg} ~ ${maxAvg} (總和 ${minSum} ~ ${maxSum}) 的歷史記錄。</p>`;
                 return;
             }
 
-            // 計算獎號組合與單個數字的出現次數
             const comboCounts = {};
             const numCounts = Array(40).fill(0);
 
@@ -507,13 +970,11 @@
                 nums.forEach(n => numCounts[n]++);
             });
 
-            // 排序完整組合
             const sortedCombos = Object.keys(comboCounts).map(combo => ({
                 combo: combo,
                 count: comboCounts[combo]
             })).sort((a, b) => b.count - a.count);
 
-            // 排序單一數字
             let stats = [];
             for (let i = 1; i <= 39; i++) {
                 if (numCounts[i] > 0) {
@@ -522,18 +983,16 @@
             }
             stats.sort((a, b) => b.count - a.count);
 
-            // 組合 HTML 呈現結果
-            let html = `<h4>🔍 平均值 ${targetAvg} (總和 ${targetSum}) - 共找到 ${matchedDraws.length} 期</h4>`;
+            let html = `<h4>🔍 平均值區間 [ ${minAvg} ~ ${maxAvg} ] (總和 ${minSum} ~ ${maxSum}) - 共找到 ${matchedDraws.length} 期</h4>`;
             
-            html += `<h5 style="margin-bottom: 5px; color: #d35400;">🔥 該平均值下最常出現的「完整組合」</h5>`;
+            html += `<h5 style="margin-bottom: 5px; color: #d35400;">🔥 該區間下最常出現的「完整組合」</h5>`;
             html += `<table><tr><th>獎號組合</th><th>出現次數</th></tr>`;
-            // 最多顯示前 10 名的組合
             sortedCombos.slice(0, 10).forEach(c => {
                 html += `<tr><td><strong>${c.combo}</strong></td><td>${c.count} 次</td></tr>`;
             });
             html += `</table>`;
 
-            html += `<h5 style="margin-bottom: 5px; margin-top: 20px; color: #2980b9;">🔥 該平均值下最熱門的「單個數字」(Top 10)</h5>`;
+            html += `<h5 style="margin-bottom: 5px; margin-top: 20px; color: #2980b9;">🔥 該區間下最熱門的「單個數字」(Top 10)</h5>`;
             html += `<table><tr><th>號碼</th><th>出現次數</th><th>出現機率 (該條件總期數: ${matchedDraws.length})</th></tr>`;
             stats.slice(0, 10).forEach(s => {
                 const prob = Math.round((s.count / matchedDraws.length) * 100);
@@ -548,7 +1007,6 @@
             resultDiv.innerHTML = html;
         }
 
-        // --- 均線分析與 K線圖功能 ---
         async function showKLineChart() {
             document.getElementById('freqResult').style.display = 'none'; 
             const chartBox = document.getElementById('chartResult');
@@ -578,36 +1036,48 @@
             renderChart(); 
         }
 
-        function updateChartPeriod() {
-            renderChart();
-        }
+        // --- 布林通道計算邏輯 ---
+        function calculateBollingerBands(dataArray, period = 20, multiplier = 1.2) {
+            let middleBand = [];
+            let upperBand = [];
+            let lowerBand = [];
 
-        function calculateMA(dataArray, period) {
-            let result = [];
             for (let i = 0; i < dataArray.length; i++) {
                 if (i < period - 1) {
-                    result.push(null); 
+                    middleBand.push(null);
+                    upperBand.push(null);
+                    lowerBand.push(null);
                 } else {
                     let sum = 0;
                     for (let j = 0; j < period; j++) {
                         sum += dataArray[i - j];
                     }
-                    result.push(sum / period);
+                    let ma = sum / period;
+                    middleBand.push(ma);
+
+                    let varianceSum = 0;
+                    for (let j = 0; j < period; j++) {
+                        varianceSum += Math.pow(dataArray[i - j] - ma, 2);
+                    }
+                    let stdDev = Math.sqrt(varianceSum / period);
+
+                    upperBand.push(ma + (multiplier * stdDev));
+                    lowerBand.push(ma - (multiplier * stdDev));
                 }
             }
-            return result;
+            return { middleBand, upperBand, lowerBand };
         }
 
         function renderChart() {
+            if (globalChartData.length === 0) return;
+
             const periodSelect = document.getElementById('chartPeriodSelect').value;
+            const multiplierSelect = parseFloat(document.getElementById('stdDevMultiplierSelect').value);
             
             const allLabels = globalChartData.map(row => row.period_number);
             const allAverages = globalChartData.map(row => (row.num1 + row.num2 + row.num3 + row.num4 + row.num5) / 5);
 
-            const ma30 = calculateMA(allAverages, 30);
-            const ma60 = calculateMA(allAverages, 60);
-            const ma90 = calculateMA(allAverages, 90);
-            const ma120 = calculateMA(allAverages, 120);
+            const bb = calculateBollingerBands(allAverages, 20, multiplierSelect);
 
             let limit = allAverages.length;
             if (periodSelect !== 'all') {
@@ -616,16 +1086,15 @@
 
             const displayLabels = allLabels.slice(-limit);
             const displayAverages = allAverages.slice(-limit);
-            const displayMA30 = ma30.slice(-limit);
-            const displayMA60 = ma60.slice(-limit);
-            const displayMA90 = ma90.slice(-limit);
-            const displayMA120 = ma120.slice(-limit);
+            const displayMiddle = bb.middleBand.slice(-limit);
+            const displayUpper = bb.upperBand.slice(-limit);
+            const displayLower = bb.lowerBand.slice(-limit);
 
             const pointColors = displayAverages.map(val => val > globalOverallAvg ? '#3498db' : '#e74c3c');
 
             const chartHeader = document.getElementById('chartHeader');
             chartHeader.innerHTML = `
-                <strong>各期開獎號碼均線圖</strong><br>
+                <strong>各期開獎號碼布林通道圖 (MA20 ± ${multiplierSelect}倍標準差)</strong><br>
                 <span style="font-size: 14px; color: #666;">
                     歷史總平均值基準線: <strong>${globalOverallAvg.toFixed(2)}</strong> 
                     (<span style="color: #3498db;">● 高於基準線</span> / <span style="color: #e74c3c;">● 低於基準線</span>)
@@ -644,8 +1113,18 @@
                     labels: displayLabels,
                     datasets: [
                         {
-                            label: 'MA 30',
-                            data: displayMA30,
+                            label: `上軌 (+${multiplierSelect}σ)`,
+                            data: displayUpper,
+                            borderColor: '#e74c3c', 
+                            borderWidth: 1.5,
+                            borderDash: [3, 3],
+                            pointRadius: 0, 
+                            fill: false,
+                            tension: 0.2
+                        },
+                        {
+                            label: '中軌 (MA 20)',
+                            data: displayMiddle,
                             borderColor: '#f1c40f', 
                             borderWidth: 2,
                             pointRadius: 0, 
@@ -653,28 +1132,11 @@
                             tension: 0.2
                         },
                         {
-                            label: 'MA 60',
-                            data: displayMA60,
-                            borderColor: '#e67e22', 
-                            borderWidth: 2,
-                            pointRadius: 0, 
-                            fill: false,
-                            tension: 0.2
-                        },
-                        {
-                            label: 'MA 90',
-                            data: displayMA90,
-                            borderColor: '#9b59b6', 
-                            borderWidth: 2,
-                            pointRadius: 0, 
-                            fill: false,
-                            tension: 0.2
-                        },
-                        {
-                            label: 'MA 120',
-                            data: displayMA120,
-                            borderColor: '#34495e', 
-                            borderWidth: 2,
+                            label: `下軌 (-${multiplierSelect}σ)`,
+                            data: displayLower,
+                            borderColor: '#2ecc71', 
+                            borderWidth: 1.5,
+                            borderDash: [3, 3],
                             pointRadius: 0, 
                             fill: false,
                             tension: 0.2
@@ -694,8 +1156,8 @@
                         {
                             label: '歷史總平均值',
                             data: Array(displayAverages.length).fill(globalOverallAvg),
-                            borderColor: '#2ecc71', 
-                            borderWidth: 2,
+                            borderColor: '#34495e', 
+                            borderWidth: 1.5,
                             borderDash: [5, 5], 
                             pointRadius: 0, 
                             fill: false
@@ -726,7 +1188,6 @@
                 }
             });
         }
-        // --- 均線圖功能結束 ---
 
         async function searchHistory() {
             const searchNums = Array.from(selectedSearchNumbers);
@@ -926,7 +1387,120 @@
             }
         }
 
+        // --- 購買記錄管理與對獎功能 ---
+        async function loadPurchaseList() {
+            const tbody = document.getElementById('purchaseTableBody');
+            tbody.innerHTML = '<tr><td colspan="5">載入中...</td></tr>';
+
+            const { data, error } = await supabaseClient.from('lotto_purchases').select('*').order('period_number', { ascending: false });
+            if (error || !data) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color:red;">載入失敗: ${error?.message}</td></tr>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">目前沒有購買記錄</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(r => `
+                <tr id="purchase-tr-${r.id}">
+                    <td>${r.period_number}</td>
+                    <td>${r.game_type}</td>
+                    <td>${r.numbers.map(n => String(n).padStart(2, '0')).join(', ')}</td>
+                    <td>$${r.cost}</td>
+                    <td>
+                        <button onclick="checkRecordPrize('${r.id}', '${r.game_type}', '${r.period_number}', '${JSON.stringify(r.numbers)}')" style="background:#f39c12; padding:4px 8px; font-size:12px; margin-right:4px;">對獎</button>
+                        <button onclick="editPurchaseRecord('${r.id}', '${r.game_type}', '${r.period_number}', '${JSON.stringify(r.numbers)}')" style="background:#3498db; padding:4px 8px; font-size:12px; margin-right:4px;">編輯</button>
+                        <button onclick="deletePurchaseRecord('${r.id}')" style="background:#e74c3c; padding:4px 8px; font-size:12px;">刪除</button>
+                    </td>
+                </tr>
+                <tr id="prize-result-tr-${r.id}" style="display: none; background: #fdfefe;">
+                    <td colspan="5" id="prize-result-td-${r.id}" style="text-align: left; padding: 10px 15px;"></td>
+                </tr>
+            `).join('');
+        }
+
+        async function checkRecordPrize(id, gameType, periodNumber, numbersJson) {
+            const userNumbers = JSON.parse(numbersJson);
+            const resultTr = document.getElementById(`prize-result-tr-${id}`);
+            const resultTd = document.getElementById(`prize-result-td-${id}`);
+
+            if (resultTr.style.display === 'table-row') {
+                resultTr.style.display = 'none';
+                return;
+            }
+
+            resultTr.style.display = 'table-row';
+            resultTd.innerHTML = '正在比對歷史開獎記錄...';
+
+            const { data, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('*')
+                .eq('period_number', periodNumber)
+                .single();
+
+            if (error || !data) {
+                resultTd.innerHTML = `<span style="color:red;">找不到第 ${periodNumber} 期的開獎記錄，請確認期別是否正確或已匯入該期資料！</span>`;
+                return;
+            }
+
+            const drawNumbers = [data.num1, data.num2, data.num3, data.num4, data.num5];
+            const matched = userNumbers.filter(n => drawNumbers.includes(n));
+            const matchCount = matched.length;
+
+            let resultHtml = `<strong>🎯 第 ${periodNumber} 期對獎結果：</strong><br>`;
+            resultHtml += `開獎號碼：[ ${drawNumbers.map(n => String(n).padStart(2, '0')).join(', ')} ]<br>`;
+            resultHtml += `您的投注：[ ${userNumbers.map(n => String(n).padStart(2, '0')).join(', ')} ]<br>`;
+            resultHtml += `對中號碼：<span style="color: #e74c3c; font-weight: bold;">${matchCount > 0 ? matched.map(n => String(n).padStart(2, '0')).join(', ') : '無'}</span> (共中 ${matchCount} 個)<br>`;
+
+            if (gameType === '539') {
+                if (matchCount === 5) resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中頭獎 (5個全中)！</span>`;
+                else if (matchCount === 4) resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中二獎 (中4個)！</span>`;
+                else if (matchCount === 3) resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中三獎 (中3個)！</span>`;
+                else if (matchCount === 2) resultHtml += `<span style="color: #e67e22;">✨ 中普獎 (中2個)</span>`;
+                else resultHtml += `<span style="color: #888;">很可惜，未中獎。</span>`;
+            } else {
+                let targetCount = parseInt(gameType); 
+                if (matchCount >= targetCount) {
+                    resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中獎！(${gameType} 全中)</span>`;
+                } else {
+                    resultHtml += `<span style="color: #888;">很可惜，未達成 ${gameType} 中獎條件。</span>`;
+                }
+            }
+
+            resultTd.innerHTML = resultHtml;
+        }
+
+        function editPurchaseRecord(id, gameType, periodNumber, numbersJson) {
+            const numbers = JSON.parse(numbersJson);
+            document.getElementById('purchaseEditId').value = id;
+            document.getElementById('purchaseModalTitle').innerText = '✏️ 編輯購買記錄';
+            document.getElementById('gameType').value = gameType;
+            document.getElementById('betPeriod').value = periodNumber;
+            updateNumberInputs(numbers);
+            
+            closePurchaseListModal();
+            openPurchaseModal(); 
+        }
+
+        async function deletePurchaseRecord(id) {
+            if (!confirm('確定要刪除這筆購買記錄嗎？')) return;
+            
+            const { error } = await supabaseClient.from('lotto_purchases').delete().eq('id', id);
+            
+            if (error) {
+                alert('刪除失敗: ' + error.message);
+            } else {
+                const row = document.getElementById('purchase-tr-' + id);
+                if (row) row.remove();
+                const resultRow = document.getElementById('prize-result-tr-' + id);
+                if (resultRow) resultRow.remove();
+            }
+        }
+
         async function savePurchase() {
+            const editId = document.getElementById('purchaseEditId').value;
             const gameType = document.getElementById('gameType').value;
             const periodNumber = document.getElementById('betPeriod').value;
             const statusDiv = document.getElementById('purchaseStatus');
@@ -946,15 +1520,22 @@
             }
 
             statusDiv.innerHTML = '正在儲存...';
-            const { error } = await supabaseClient.from('lotto_purchases').insert([{
-                game_type: gameType, period_number: periodNumber, numbers: numbers, cost: cost
-            }]);
+            const payload = { game_type: gameType, period_number: periodNumber, numbers: numbers, cost: cost };
+            
+            let res;
+            if (editId) {
+                res = await supabaseClient.from('lotto_purchases').update(payload).eq('id', editId);
+            } else {
+                res = await supabaseClient.from('lotto_purchases').insert([payload]);
+            }
 
-            if (error) {
-                statusDiv.innerHTML = `<span style="color:red;">儲存失敗: ${error.message}</span>`;
+            if (res.error) {
+                statusDiv.innerHTML = `<span style="color:red;">儲存失敗: ${res.error.message}</span>`;
             } else {
                 statusDiv.innerHTML = `<span style="color:green; font-weight:bold;">儲存成功！花費 $${cost} 元。</span>`;
-                setTimeout(() => closePurchaseModal(), 1500);
+                setTimeout(() => {
+                    closePurchaseModal();
+                }, 1500);
             }
         }
     </script>
