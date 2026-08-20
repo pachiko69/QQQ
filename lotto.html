@@ -21,6 +21,11 @@
         
         .btn-add-purchase { background: #2ecc71; font-weight: bold; padding: 12px; margin-bottom: 0; }
         .btn-manage-purchase { background: #2980b9; font-weight: bold; padding: 12px; margin-bottom: 0; }
+        .btn-delete-batch { background: #e74c3c; font-weight: bold; padding: 12px; margin-bottom: 0; }
+        .btn-delete-batch:hover { background: #c0392b; }
+        .btn-check-prize { background: #9b59b6; font-weight: bold; padding: 12px; margin-bottom: 0; }
+        .btn-check-prize:hover { background: #8e44ad; }
+
         .btn-golden-hand { background: #f1c40f; color: #d35400; font-weight: bold; padding: 10px; margin: 5px; }
         .btn-cold-hand { background: #3498db; color: white; font-weight: bold; padding: 10px; margin: 5px; }
         .btn-middle-hand { background: #9b59b6; color: white; font-weight: bold; padding: 10px; margin: 5px; }
@@ -56,13 +61,16 @@
         .modal-close:hover { color: #333; }
         .btn-save { background: #e74c3c; margin-top: 10px; }
         .btn-save:hover { background: #c0392b; }
-        .inline-inputs { display: flex; gap: 10px; }
-        .inline-inputs input { width: auto; flex: 1; }
+        .inline-inputs { display: flex; gap: 10px; flex-wrap: wrap; }
+        .inline-inputs input { width: auto; flex: 1; min-width: 60px; }
         
         .crud-form { background: #fdfdfd; padding: 15px; border: 1px solid #e1e8ed; border-radius: 6px; margin-bottom: 15px; }
         
         .chart-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
-        .chart-controls select { width: auto; margin-bottom: 0; padding: 6px 12px; font-size: 14px; }
+        .chart-controls select, .chart-controls input { width: auto; margin-bottom: 0; padding: 6px 12px; font-size: 14px; }
+        
+        .table-actions { display: flex; gap: 4px; justify-content: center; }
+        .table-actions button { padding: 3px 6px !important; font-size: 11px !important; margin: 0 !important; width: auto !important; display: inline-block !important; border: none !important; color: white !important; border-radius: 4px !important; cursor: pointer !important; }
     </style>
 </head>
 <body>
@@ -99,21 +107,16 @@
                                 <option value="60">最近 60 期</option>
                                 <option value="90" selected>最近 90 期</option>
                                 <option value="120">最近 120 期</option>
+                                <option value="150">最近 150 期</option>
+                                <option value="180">最近 180 期</option>
+                                <option value="210">最近 210 期</option>
+                                <option value="240">最近 240 期</option>
                                 <option value="all">全部歷史</option>
                             </select>
                         </div>
                         <div>
                             <label style="display:inline; margin-right:5px;">標準差倍數 (σ)：</label>
-                            <select id="stdDevMultiplierSelect" onchange="renderChart()">
-                                <option value="0.4">0.4 倍</option>
-                                <option value="0.6">0.6 倍</option>
-                                <option value="0.8">0.8 倍</option>
-                                <option value="1.0">1.0 倍</option>
-                                <option value="1.2" selected>1.2 倍</option>
-                                <option value="1.4">1.4 倍</option>
-                                <option value="1.5">1.5 倍</option>
-                                <option value="1.6">1.6 倍</option>
-                            </select>
+                            <input type="number" id="stdDevMultiplierInput" value="1.0" min="0.1" max="5.0" step="0.1" oninput="renderChart()" style="width: 80px; display: inline-block;">
                         </div>
                     </div>
                     <div id="chartHeader" style="text-align: center; margin-bottom: 10px; font-size: 16px;"></div>
@@ -132,15 +135,24 @@
             </div>
             <div class="result-box" id="searchResult"></div>
         </div>
-
+<!-- 2. 購買清單管理 -->
+        <div class="card" style="background-color: #fde8e8;">
+            <h2>🛒 虛擬購買驗證管理</h2>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-add-purchase" style="flex: 1; min-width: 140px;" onclick="openPurchaseModal()">🛒 拼手氣</button>
+                <button class="btn-manage-purchase" style="flex: 1; min-width: 140px;" onclick="openPurchaseListModal()">📋 購買查詢</button>
+                <button class="btn-delete-batch" style="flex: 1; min-width: 140px;" onclick="openDeletePurchaseModal()">🗑️ 批次刪除</button>
+                <button class="btn-check-prize" style="flex: 1; min-width: 140px;" onclick="openCheckPrizeModal()">🎯 中大獎囉~</button>
+            </div>
+        </div>
         <!-- 4. 獎號維護管理 -->
-        <div class="card">
+        <div class="card" style="background-color: #e8fde8;">
             <h2>📝 獎號維護管理</h2>
             <div class="crud-form">
                 <h3 id="crudFormTitle" style="margin-top:0; font-size:16px; color:#2c3e50;">新增一筆開獎記錄</h3>
                 <input type="hidden" id="crudEditId">
                 
-                <div class="inline-inputs">
+                <div class="inline-inputs" style="flex-wrap: nowrap;">
                     <div>
                         <label>開獎日期：</label>
                         <input type="date" id="crudDate">
@@ -152,18 +164,19 @@
                 </div>
 
                 <label>開獎號碼 (5個, 1~39)：</label>
-                <div class="inline-inputs">
-                    <input type="number" id="crudN1" min="1" max="39" placeholder="獎號1">
-                    <input type="number" id="crudN2" min="1" max="39" placeholder="獎號2">
-                    <input type="number" id="crudN3" min="1" max="39" placeholder="獎號3">
-                    <input type="number" id="crudN4" min="1" max="39" placeholder="獎號4">
-                    <input type="number" id="crudN5" min="1" max="39" placeholder="獎號5">
+                <div class="inline-inputs" style="flex-wrap: nowrap;">
+                    <input type="number" id="crudN1" min="1" max="39" placeholder="獎1">
+                    <input type="number" id="crudN2" min="1" max="39" placeholder="獎2">
+                    <input type="number" id="crudN3" min="1" max="39" placeholder="獎3">
+                    <input type="number" id="crudN4" min="1" max="39" placeholder="獎4">
+                    <input type="number" id="crudN5" min="1" max="39" placeholder="獎5">
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button onclick="saveCrudRecord()" style="background: #2ecc71; flex: 2; margin-bottom: 0;">儲存記錄</button>
-                    <button onclick="resetCrudForm()" style="background: #95a5a6; flex: 1; margin-bottom: 0;">重置 / 取消</button>
+                    <button onclick="resetCrudForm()" style="background: #95a5a6; flex: 1; margin-bottom: 0;">重置/取消</button>
                     <button type="button" onclick="window.open('https://www.taiwanlottery.com/lotto/lotto_lastest_result', '_blank')" style="background: #f39c12; flex: 1; margin-bottom: 0;">台彩網站</button>
+                    <button class="btn-add-purchase" style="flex: 1; min-width: 140px;" onclick="openImportModal()">滙入資料</button>
                 </div>
                 <div id="crudStatus" style="margin-top: 10px; font-size: 14px;"></div>
             </div>
@@ -191,17 +204,35 @@
             </div>
         </div>
 
-        <!-- 2. 購買清單管理 -->
-        <div class="card" >
-            <h2>🛒 虛擬購買驗證管理</h2>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn-add-purchase" style="flex: 1;" onclick="openPurchaseModal()">🛒 新增購買清單</button>
-                <button class="btn-manage-purchase" style="flex: 1;" onclick="openPurchaseListModal()">📋 購買記錄</button>
-                <button class="btn-add-purchase" style="flex: 1;"" onclick="openImportModal()">📥 滙入資料</button>
-            </div>
-        </div>
-
         
+
+    <!-- 彈出視窗：依期別對獎 -->
+    <div class="modal-overlay" id="checkPrizeModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="modal-close" onclick="closeCheckPrizeModal()">&times;</span>
+            <h2>🎯 依期別對獎</h2>
+            <p style="font-size: 14px; color: #666;">請輸入要對獎的期別，系統將會另開新頁結算該期所有購買紀錄的盈虧。</p>
+            <label>對獎期別：</label>
+            <input type="text" id="checkPrizePeriod" placeholder="例如: 115000001">
+            <button class="btn-check-prize" onclick="executeBatchCheckPrize()" style="width: 100%; margin-top: 10px; margin-bottom: 0;">開始對獎</button>
+            <div id="checkPrizeStatus" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- 彈出視窗：批次刪除購買記錄 -->
+    <div class="modal-overlay" id="deletePurchaseModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="modal-close" onclick="closeDeletePurchaseModal()">&times;</span>
+            <h2>🗑️ 批次刪除購買記錄</h2>
+            <p style="font-size: 14px; color: #666;">請輸入要刪除的期別區間，系統將會刪除此範圍內的所有虛擬購買紀錄。(包含起訖期別)</p>
+            <label>起始期別：</label>
+            <input type="text" id="deleteStartPeriod" placeholder="例如: 115000001">
+            <label>結束期別：</label>
+            <input type="text" id="deleteEndPeriod" placeholder="例如: 115000100">
+            <button class="btn-save" onclick="executeDeletePurchases()" style="width: 100%; margin-top: 10px; margin-bottom: 0;">確認刪除</button>
+            <div id="deletePurchaseStatus" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+        </div>
+    </div>
 
     <!-- 彈出視窗：滙入資料 -->
     <div class="modal-overlay" id="importModal">
@@ -237,13 +268,28 @@
             <label>選擇遊戲類型：</label>
             <select id="gameType" onchange="updateNumberInputs()">
                 <option value="539">今彩539 (選5號, $50)</option>
-                <option value="2合">39樂合2合 (選2號, $25)</option>
-                <option value="3合">39樂合3合 (選3號, $25)</option>
-                <option value="4合">39樂合4合 (選4號, $25)</option>
+                <option value="2合">39樂合2合 (單注選2號, $25)</option>
+                <option value="3合">39樂合3合 (單注選3號, $25)</option>
+                <option value="4合">39樂合4合 (單注選4號, $25)</option>
+                <option value="2合專車">39樂合二合專車 (填1個號碼包牌38注, $950)</option>
+                <option value="2合連碰">39樂合二合連碰 (選3~6個號碼, 依組合計費)</option>
+                <option value="3合連碰">39樂合三合連碰 (選3~6個號碼, 依組合計費)</option>
+                <option value="2三合連碰">39樂合二三合連碰 (選3~6個號碼, 依組合計費)</option>
             </select>
+            
+            <div id="comboCountContainer" style="display:none; margin-bottom: 10px;">
+                <label>連碰選擇選號數量：</label>
+                <select id="comboCount" onchange="updateNumberInputs()" style="margin-bottom: 0;">
+                    <option value="3">選 3 個號碼</option>
+                    <option value="4">選 4 個號碼</option>
+                    <option value="5">選 5 個號碼</option>
+                    <option value="6">選 6 個號碼</option>
+                </select>
+            </div>
+
             <label>投注期別：</label>
             <input type="text" id="betPeriod" placeholder="例如: 115000100">
-            <label>請輸入號碼 (01~39)：</label>
+            <label>請輸入號碼 (01~39 不重複)：</label>
             <div class="inline-inputs" id="numberInputsContainer"></div>
             
             <button class="btn-save" onclick="savePurchase()" style="width: 100%; margin-top: 10px; margin-bottom: 0;">儲存購買記錄</button>
@@ -308,6 +354,26 @@
         let globalChartData = []; 
         let globalOverallAvg = 0; 
 
+        function combinationsCalc(n, k) {
+            if (k > n || k < 0) return 0;
+            if (k === 0 || k === n) return 1;
+            let c = 1;
+            for (let i = 1; i <= k; i++) c = c * (n - i + 1) / i;
+            return c;
+        }
+
+        async function getNextPeriodNumber() {
+            const { data, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('period_number')
+                .order('period_number', { ascending: false })
+                .limit(1);
+
+            if (error || !data || data.length === 0) return '';
+            const maxPeriodNum = parseInt(data[0].period_number, 10);
+            return isNaN(maxPeriodNum) ? '' : (maxPeriodNum + 1).toString();
+        }
+
         function getLocalTimeString() {
             return new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
         }
@@ -331,11 +397,259 @@
             document.getElementById('reverseModal').style.display = 'none';
         }
 
-        function openPurchaseModal() {
+        async function openCheckPrizeModal() {
+            document.getElementById('checkPrizeModal').style.display = 'flex';
+            document.getElementById('checkPrizeStatus').innerHTML = '';
+            
+            const { data, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('period_number')
+                .order('period_number', { ascending: false })
+                .limit(1);
+
+            if (!error && data && data.length > 0) {
+                document.getElementById('checkPrizePeriod').value = data[0].period_number;
+            } else {
+                document.getElementById('checkPrizePeriod').value = '';
+            }
+        }
+
+        function closeCheckPrizeModal() {
+            document.getElementById('checkPrizeModal').style.display = 'none';
+        }
+
+        async function executeBatchCheckPrize() {
+            const period = document.getElementById('checkPrizePeriod').value.trim();
+            const statusDiv = document.getElementById('checkPrizeStatus');
+
+            if (!period) {
+                statusDiv.innerHTML = '<span style="color:red;">請輸入要對獎的期別！</span>';
+                return;
+            }
+
+            statusDiv.innerHTML = '正在讀取資料，請稍候...';
+
+            const { data: drawData, error: drawError } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('*')
+                .eq('period_number', period)
+                .single();
+
+            if (drawError || !drawData) {
+                statusDiv.innerHTML = `<span style="color:red;">找不到第 ${period} 期的開獎記錄，請確認是否已匯入該期資料！</span>`;
+                return;
+            }
+
+            const { data: purchases, error: purchaseError } = await supabaseClient
+                .from('lotto_purchases')
+                .select('*')
+                .eq('period_number', period);
+
+            if (purchaseError || !purchases || purchases.length === 0) {
+                statusDiv.innerHTML = `<span style="color:red;">第 ${period} 期沒有任何虛擬購買記錄。</span>`;
+                return;
+            }
+
+            const drawNumbers = [drawData.num1, drawData.num2, drawData.num3, drawData.num4, drawData.num5];
+            
+            let tableRows = '';
+            let totalCost = 0;
+            let totalWin = 0;
+
+            purchases.forEach((p, index) => {
+                const userNumbers = p.numbers;
+                const gameType = p.game_type;
+                const matched = userNumbers.filter(n => drawNumbers.includes(n));
+                const matchCount = matched.length;
+                
+                totalCost += p.cost;
+
+                let rowPrize = 0;
+                let winDetails = [];
+
+                if (gameType === '539') {
+                    if (matchCount === 5) { rowPrize = 8000000; winDetails.push('頭獎'); }
+                    else if (matchCount === 4) { rowPrize = 20000; winDetails.push('二獎'); }
+                    else if (matchCount === 3) { rowPrize = 300; winDetails.push('三獎'); }
+                    else if (matchCount === 2) { rowPrize = 50; winDetails.push('四獎'); }
+                } else if (gameType === '2合') {
+                    if (matchCount === 2) { rowPrize = 1125; winDetails.push('2合 (1 注)'); }
+                } else if (gameType === '3合') {
+                    if (matchCount === 3) { rowPrize = 11250; winDetails.push('3合 (1 注)'); }
+                } else if (gameType === '4合') {
+                    if (matchCount === 4) { rowPrize = 212500; winDetails.push('4合 (1 注)'); }
+                } else if (gameType === '2合專車') {
+                    if (matchCount === 1) { 
+                        rowPrize = 4 * 1125; 
+                        winDetails.push('2合 (4 注)'); 
+                    }
+                } else if (gameType === '2合連碰') {
+                    if (matchCount >= 2) {
+                        let bets = combinationsCalc(matchCount, 2);
+                        rowPrize = bets * 1125;
+                        winDetails.push(`2合 (${bets} 注)`);
+                    }
+                } else if (gameType === '3合連碰') {
+                    if (matchCount >= 3) {
+                        let bets = combinationsCalc(matchCount, 3);
+                        rowPrize = bets * 11250;
+                        winDetails.push(`3合 (${bets} 注)`);
+                    }
+                } else if (gameType === '2三合連碰') {
+                    if (matchCount >= 2) {
+                        let bets2 = combinationsCalc(matchCount, 2);
+                        rowPrize += bets2 * 1125;
+                        winDetails.push(`2合 (${bets2} 注)`);
+                    }
+                    if (matchCount >= 3) {
+                        let bets3 = combinationsCalc(matchCount, 3);
+                        rowPrize += bets3 * 11250;
+                        winDetails.push(`3合 (${bets3} 注)`);
+                    }
+                }
+
+                totalWin += rowPrize;
+
+                const resultText = rowPrize > 0 
+                    ? `<span style="color: green; font-weight: bold;">中獎！ (${winDetails.join(', ')})<br>$${rowPrize.toLocaleString()}</span>` 
+                    : `<span style="color: #888;">未中獎</span>`;
+
+                tableRows += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${gameType}</td>
+                        <td>
+                            ${userNumbers.map(n => {
+                                if (drawNumbers.includes(n)) {
+                                    return `<span class="match-box" style="background-color: #f1c40f; color: #333;">${String(n).padStart(2, '0')}</span>`;
+                                }
+                                return String(n).padStart(2, '0');
+                            }).join(', ')}
+                        </td>
+                        <td>$${p.cost.toLocaleString()}</td>
+                        <td>${resultText}</td>
+                    </tr>
+                `;
+            });
+
+            const netProfit = totalWin - totalCost;
+            const netProfitColor = netProfit > 0 ? 'green' : (netProfit < 0 ? 'red' : 'black');
+
+            const newWindowHtml = `
+            <!DOCTYPE html>
+            <html lang="zh-TW">
+            <head>
+                <meta charset="UTF-8">
+                <title>第 ${period} 期 虛擬對獎結果</title>
+                <style>
+                    body { font-family: 'Microsoft JhengHei', sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+                    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+                    h2 { margin-top: 0; color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+                    .info-box { background: #e8f4f8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 16px; line-height: 1.6; }
+                    .draw-nums { font-size: 20px; font-weight: bold; color: #d35400; letter-spacing: 2px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                    th { background-color: #f8f9fa; }
+                    .match-box { font-weight: bold; border-radius: 3px; padding: 2px 6px; display: inline-block; border: 1px solid rgba(0,0,0,0.15); }
+                    .summary { margin-top: 20px; padding: 15px; background: #fdfefe; border: 1px solid #ccc; border-radius: 6px; font-size: 18px; line-height: 1.8; text-align: right; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>🎯 第 ${period} 期 虛擬對獎結果報告</h2>
+                    
+                    <div class="info-box">
+                        <strong>開獎日期：</strong> ${drawData.draw_date} <br>
+                        <strong>本期開獎號碼：</strong> <span class="draw-nums">[ ${drawNumbers.map(n => String(n).padStart(2, '0')).join(', ')} ]</span>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">項次</th>
+                                <th style="width: 20%;">遊戲類型</th>
+                                <th style="width: 35%;">投注號碼 (黃底為命中)</th>
+                                <th style="width: 15%;">投注成本</th>
+                                <th style="width: 20%;">對獎結果</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+
+                    <div class="summary">
+                        <strong>總投注筆數：</strong> ${purchases.length} 筆<br>
+                        <strong>總投注成本：</strong> $${totalCost.toLocaleString()} 元<br>
+                        <strong>總中獎金額：</strong> <span style="color: green; font-weight: bold;">$${totalWin.toLocaleString()} 元</span><br>
+                        <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
+                        <strong>淨利 (盈虧)：</strong> <span style="color: ${netProfitColor}; font-weight: bold; font-size: 22px;">$${netProfit.toLocaleString()} 元</span>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.write(newWindowHtml);
+                newWindow.document.close();
+                statusDiv.innerHTML = '<span style="color:green;">已在新視窗開啟對獎結果！</span>';
+                setTimeout(closeCheckPrizeModal, 1500);
+            } else {
+                statusDiv.innerHTML = '<span style="color:red;">無法開啟新視窗，請檢查瀏覽器是否阻擋了彈出視窗。</span>';
+            }
+        }
+        
+        function openDeletePurchaseModal() {
+            document.getElementById('deletePurchaseModal').style.display = 'flex';
+            document.getElementById('deleteStartPeriod').value = '';
+            document.getElementById('deleteEndPeriod').value = '';
+            document.getElementById('deletePurchaseStatus').innerHTML = '';
+        }
+
+        function closeDeletePurchaseModal() {
+            document.getElementById('deletePurchaseModal').style.display = 'none';
+        }
+
+        async function executeDeletePurchases() {
+            const startPeriod = document.getElementById('deleteStartPeriod').value.trim();
+            const endPeriod = document.getElementById('deleteEndPeriod').value.trim();
+            const statusDiv = document.getElementById('deletePurchaseStatus');
+
+            if (!startPeriod || !endPeriod) {
+                statusDiv.innerHTML = '<span style="color:red;">請完整輸入起始期別與結束期別！</span>';
+                return;
+            }
+
+            if (confirm(`確定要刪除期別從 ${startPeriod} 到 ${endPeriod} 之間的所有購買記錄嗎？此操作無法復原！`)) {
+                statusDiv.innerHTML = '正在執行刪除作業...';
+                
+                const { error } = await supabaseClient
+                    .from('lotto_purchases')
+                    .delete()
+                    .gte('period_number', startPeriod)
+                    .lte('period_number', endPeriod);
+
+                if (error) {
+                    statusDiv.innerHTML = `<span style="color:red;">刪除失敗: ${error.message}</span>`;
+                } else {
+                    statusDiv.innerHTML = `<span style="color:green; font-weight:bold;">✅ 批次刪除成功！</span>`;
+                    setTimeout(() => {
+                        closeDeletePurchaseModal();
+                        if (document.getElementById('purchaseListModal').style.display === 'flex') {
+                            loadPurchaseList();
+                        }
+                    }, 1500);
+                }
+            }
+        }
+
+        async function openPurchaseModal() {
             if (!document.getElementById('purchaseEditId').value) {
                 document.getElementById('purchaseEditId').value = '';
                 document.getElementById('purchaseModalTitle').innerText = '🛒 新增購買記錄';
-                document.getElementById('betPeriod').value = '';
+                document.getElementById('betPeriod').value = await getNextPeriodNumber();
                 updateNumberInputs();
             }
             document.getElementById('purchaseModal').style.display = 'flex';
@@ -358,8 +672,30 @@
         function updateNumberInputs(existingNumbers = []) {
             const gameType = document.getElementById('gameType').value;
             const container = document.getElementById('numberInputsContainer');
+            const comboContainer = document.getElementById('comboCountContainer');
+            const comboCountSel = document.getElementById('comboCount');
             container.innerHTML = '';
-            let count = gameType === '2合' ? 2 : gameType === '3合' ? 3 : gameType === '4合' ? 4 : 5;
+            
+            let count = 5; 
+            
+            if (gameType.includes('連碰')) {
+                comboContainer.style.display = 'block';
+                count = parseInt(comboCountSel.value);
+            } else {
+                comboContainer.style.display = 'none';
+                if (gameType === '2合') count = 2;
+                else if (gameType === '3合') count = 3;
+                else if (gameType === '4合') count = 4;
+                else if (gameType === '2合專車') count = 1;
+            }
+
+            if (existingNumbers.length > 0) {
+                count = existingNumbers.length;
+                if (gameType.includes('連碰')) {
+                    comboCountSel.value = count;
+                }
+            }
+
             for (let i = 1; i <= count; i++) {
                 const input = document.createElement('input');
                 input.type = 'number';
@@ -372,7 +708,6 @@
                 container.appendChild(input);
             }
         }
-        updateNumberInputs();
 
         function initSearchNumberPad() {
             const pad = document.getElementById('searchNumberPad');
@@ -1036,8 +1371,7 @@
             renderChart(); 
         }
 
-        // --- 布林通道計算邏輯 ---
-        function calculateBollingerBands(dataArray, period = 20, multiplier = 1.2) {
+        function calculateBollingerBands(dataArray, period = 20, multiplier = 1.0) {
             let middleBand = [];
             let upperBand = [];
             let lowerBand = [];
@@ -1072,7 +1406,8 @@
             if (globalChartData.length === 0) return;
 
             const periodSelect = document.getElementById('chartPeriodSelect').value;
-            const multiplierSelect = parseFloat(document.getElementById('stdDevMultiplierSelect').value);
+            const multiplierInputVal = document.getElementById('stdDevMultiplierInput').value;
+            const multiplierSelect = parseFloat(multiplierInputVal) || 1.0;
             
             const allLabels = globalChartData.map(row => row.period_number);
             const allAverages = globalChartData.map(row => (row.num1 + row.num2 + row.num3 + row.num4 + row.num5) / 5);
@@ -1094,7 +1429,7 @@
 
             const chartHeader = document.getElementById('chartHeader');
             chartHeader.innerHTML = `
-                <strong>各期開獎號碼布林通道圖 (MA20 ± ${multiplierSelect}倍標準差)</strong><br>
+                <strong>各期開獎號碼布林通道圖 (MA20 ± ${multiplierSelect.toFixed(1)}倍標準差)</strong><br>
                 <span style="font-size: 14px; color: #666;">
                     歷史總平均值基準線: <strong>${globalOverallAvg.toFixed(2)}</strong> 
                     (<span style="color: #3498db;">● 高於基準線</span> / <span style="color: #e74c3c;">● 低於基準線</span>)
@@ -1113,7 +1448,7 @@
                     labels: displayLabels,
                     datasets: [
                         {
-                            label: `上軌 (+${multiplierSelect}σ)`,
+                            label: `上軌 (+${multiplierSelect.toFixed(1)}σ)`,
                             data: displayUpper,
                             borderColor: '#e74c3c', 
                             borderWidth: 1.5,
@@ -1132,7 +1467,7 @@
                             tension: 0.2
                         },
                         {
-                            label: `下軌 (-${multiplierSelect}σ)`,
+                            label: `下軌 (-${multiplierSelect.toFixed(1)}σ)`,
                             data: displayLower,
                             borderColor: '#2ecc71', 
                             borderWidth: 1.5,
@@ -1312,8 +1647,10 @@
                     <td>${r.num4}</td>
                     <td>${r.num5}</td>
                     <td>
-                        <button onclick="editCrudRecord('${r.id}', '${r.draw_date}', '${r.period_number}', ${r.num1}, ${r.num2}, ${r.num3}, ${r.num4}, ${r.num5})" style="background:#3498db; padding:4px 8px; font-size:12px; margin-right:4px;">編輯</button>
-                        <button onclick="deleteCrudRecord('${r.id}')" style="background:#e74c3c; padding:4px 8px; font-size:12px;">刪除</button>
+                        <div class="table-actions">
+                            <button onclick="editCrudRecord('${r.id}', '${r.draw_date}', '${r.period_number}', ${r.num1}, ${r.num2}, ${r.num3}, ${r.num4}, ${r.num5})" style="background:#3498db;">編輯</button>
+                            <button onclick="deleteCrudRecord('${r.id}')" style="background:#e74c3c;">刪除</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -1332,10 +1669,15 @@
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
-        function resetCrudForm() {
+        async function resetCrudForm() {
             document.getElementById('crudEditId').value = '';
-            document.getElementById('crudDate').value = '';
-            document.getElementById('crudPeriod').value = '';
+            
+            const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date());
+            document.getElementById('crudDate').value = today;
+            
+            const nextPeriod = await getNextPeriodNumber();
+            document.getElementById('crudPeriod').value = nextPeriod;
+            
             ['crudN1','crudN2','crudN3','crudN4','crudN5'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('crudFormTitle').innerText = '新增一筆開獎記錄';
             document.getElementById('crudStatus').innerHTML = '';
@@ -1387,7 +1729,6 @@
             }
         }
 
-        // --- 購買記錄管理與對獎功能 ---
         async function loadPurchaseList() {
             const tbody = document.getElementById('purchaseTableBody');
             tbody.innerHTML = '<tr><td colspan="5">載入中...</td></tr>';
@@ -1408,11 +1749,13 @@
                     <td>${r.period_number}</td>
                     <td>${r.game_type}</td>
                     <td>${r.numbers.map(n => String(n).padStart(2, '0')).join(', ')}</td>
-                    <td>$${r.cost}</td>
+                    <td>$${r.cost.toLocaleString()}</td>
                     <td>
-                        <button onclick="checkRecordPrize('${r.id}', '${r.game_type}', '${r.period_number}', '${JSON.stringify(r.numbers)}')" style="background:#f39c12; padding:4px 8px; font-size:12px; margin-right:4px;">對獎</button>
-                        <button onclick="editPurchaseRecord('${r.id}', '${r.game_type}', '${r.period_number}', '${JSON.stringify(r.numbers)}')" style="background:#3498db; padding:4px 8px; font-size:12px; margin-right:4px;">編輯</button>
-                        <button onclick="deletePurchaseRecord('${r.id}')" style="background:#e74c3c; padding:4px 8px; font-size:12px;">刪除</button>
+                        <div class="table-actions">
+                            <button onclick="checkRecordPrize('${r.id}', '${r.game_type}', '${r.period_number}', '${JSON.stringify(r.numbers)}')" style="background:#f39c12;">對獎</button>
+                            <button onclick="editPurchaseRecord('${r.id}', '${r.game_type}', '${r.period_number}', '${JSON.stringify(r.numbers)}')" style="background:#3498db;">編輯</button>
+                            <button onclick="deletePurchaseRecord('${r.id}')" style="background:#e74c3c;">刪除</button>
+                        </div>
                     </td>
                 </tr>
                 <tr id="prize-result-tr-${r.id}" style="display: none; background: #fdfefe;">
@@ -1451,22 +1794,57 @@
 
             let resultHtml = `<strong>🎯 第 ${periodNumber} 期對獎結果：</strong><br>`;
             resultHtml += `開獎號碼：[ ${drawNumbers.map(n => String(n).padStart(2, '0')).join(', ')} ]<br>`;
-            resultHtml += `您的投注：[ ${userNumbers.map(n => String(n).padStart(2, '0')).join(', ')} ]<br>`;
+            resultHtml += `您的投注：[ ${userNumbers.map(n => String(n).padStart(2, '0')).join(', ')} ] (${gameType})<br>`;
             resultHtml += `對中號碼：<span style="color: #e74c3c; font-weight: bold;">${matchCount > 0 ? matched.map(n => String(n).padStart(2, '0')).join(', ') : '無'}</span> (共中 ${matchCount} 個)<br>`;
 
+            let totalPrize = 0;
+            let winDetails = [];
+
             if (gameType === '539') {
-                if (matchCount === 5) resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中頭獎 (5個全中)！</span>`;
-                else if (matchCount === 4) resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中二獎 (中4個)！</span>`;
-                else if (matchCount === 3) resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中三獎 (中3個)！</span>`;
-                else if (matchCount === 2) resultHtml += `<span style="color: #e67e22;">✨ 中普獎 (中2個)</span>`;
-                else resultHtml += `<span style="color: #888;">很可惜，未中獎。</span>`;
-            } else {
-                let targetCount = parseInt(gameType); 
-                if (matchCount >= targetCount) {
-                    resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中獎！(${gameType} 全中)</span>`;
-                } else {
-                    resultHtml += `<span style="color: #888;">很可惜，未達成 ${gameType} 中獎條件。</span>`;
+                if (matchCount === 5) { totalPrize = 8000000; winDetails.push('頭獎'); }
+                else if (matchCount === 4) { totalPrize = 20000; winDetails.push('二獎'); }
+                else if (matchCount === 3) { totalPrize = 300; winDetails.push('三獎'); }
+                else if (matchCount === 2) { totalPrize = 50; winDetails.push('四獎 (普獎)'); }
+            } else if (gameType === '2合') {
+                if (matchCount === 2) { totalPrize = 1125; winDetails.push('2合 (1 注)'); }
+            } else if (gameType === '3合') {
+                if (matchCount === 3) { totalPrize = 11250; winDetails.push('3合 (1 注)'); }
+            } else if (gameType === '4合') {
+                if (matchCount === 4) { totalPrize = 212500; winDetails.push('4合 (1 注)'); }
+            } else if (gameType === '2合專車') {
+                if (matchCount === 1) { 
+                    totalPrize = 4 * 1125; 
+                    winDetails.push('2合 (4 注)'); 
                 }
+            } else if (gameType === '2合連碰') {
+                if (matchCount >= 2) {
+                    let bets = combinationsCalc(matchCount, 2);
+                    totalPrize = bets * 1125;
+                    winDetails.push(`2合 (${bets} 注)`);
+                }
+            } else if (gameType === '3合連碰') {
+                if (matchCount >= 3) {
+                    let bets = combinationsCalc(matchCount, 3);
+                    totalPrize = bets * 11250;
+                    winDetails.push(`3合 (${bets} 注)`);
+                }
+            } else if (gameType === '2三合連碰') {
+                if (matchCount >= 2) {
+                    let bets2 = combinationsCalc(matchCount, 2);
+                    totalPrize += bets2 * 1125;
+                    winDetails.push(`2合 (${bets2} 注)`);
+                }
+                if (matchCount >= 3) {
+                    let bets3 = combinationsCalc(matchCount, 3);
+                    totalPrize += bets3 * 11250;
+                    winDetails.push(`3合 (${bets3} 注)`);
+                }
+            }
+
+            if (totalPrize > 0) {
+                resultHtml += `<span style="color: green; font-weight: bold;">🎉 恭喜中獎！(${winDetails.join(', ')})<br>💰 總獲得獎金：$${totalPrize.toLocaleString()} 元</span>`;
+            } else {
+                resultHtml += `<span style="color: #888;">很可惜，未中獎。</span>`;
             }
 
             resultTd.innerHTML = resultHtml;
@@ -1507,11 +1885,34 @@
             const inputs = document.querySelectorAll('.bet-num');
             const numbers = Array.from(inputs).map(inp => parseInt(inp.value)).filter(n => !isNaN(n));
             
-            let requiredCount = gameType === '2合' ? 2 : gameType === '3合' ? 3 : gameType === '4合' ? 4 : 5;
-            let cost = gameType === '539' ? 50 : 25;
+            let expectedCount = 5;
+            let cost = 50;
 
-            if (numbers.length !== requiredCount || numbers.some(n => n < 1 || n > 39)) {
-                statusDiv.innerHTML = `<span style="color:red;">請正確輸入 ${requiredCount} 個 1~39 號碼。</span>`;
+            if (gameType === '2合專車') {
+                expectedCount = 1;
+                cost = 950; 
+            } else if (gameType.includes('連碰')) {
+                expectedCount = parseInt(document.getElementById('comboCount').value);
+                if (gameType === '2合連碰') {
+                    cost = combinationsCalc(expectedCount, 2) * 25;
+                } else if (gameType === '3合連碰') {
+                    cost = combinationsCalc(expectedCount, 3) * 25;
+                } else if (gameType === '2三合連碰') {
+                    cost = (combinationsCalc(expectedCount, 2) + combinationsCalc(expectedCount, 3)) * 25;
+                }
+            } else {
+                if (gameType === '2合') { expectedCount = 2; cost = 25; }
+                else if (gameType === '3合') { expectedCount = 3; cost = 25; }
+                else if (gameType === '4合') { expectedCount = 4; cost = 25; }
+                else { expectedCount = 5; cost = 50; } 
+            }
+
+            if (numbers.length !== expectedCount || numbers.some(n => n < 1 || n > 39)) {
+                statusDiv.innerHTML = `<span style="color:red;">請正確輸入 ${expectedCount} 個 1~39 的號碼。</span>`;
+                return;
+            }
+            if (new Set(numbers).size !== numbers.length) {
+                statusDiv.innerHTML = `<span style="color:red;">號碼不可重複！請重新檢查。</span>`;
                 return;
             }
             if (!periodNumber) {
@@ -1532,12 +1933,20 @@
             if (res.error) {
                 statusDiv.innerHTML = `<span style="color:red;">儲存失敗: ${res.error.message}</span>`;
             } else {
-                statusDiv.innerHTML = `<span style="color:green; font-weight:bold;">儲存成功！花費 $${cost} 元。</span>`;
+                statusDiv.innerHTML = `<span style="color:green; font-weight:bold;">儲存成功！花費 $${cost.toLocaleString()} 元。</span>`;
                 setTimeout(() => {
                     closePurchaseModal();
                 }, 1500);
+                if(document.getElementById('purchaseListModal').style.display === 'flex') {
+                    loadPurchaseList();
+                }
             }
         }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            resetCrudForm();
+            loadCrudList();
+        });
     </script>
 </body>
 </html>
