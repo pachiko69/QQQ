@@ -40,6 +40,12 @@
         .btn-greedy { background: #d35400; color: white; font-weight: bold; }
         .btn-greedy:hover { background: #ba4a00; }
 
+        /* 運算進度動畫樣式 */
+        .progress-container { display: none; margin-top: 15px; background: #ecf0f1; border-radius: 8px; padding: 15px; border: 1px solid #bdc3c7; }
+        .progress-bar-bg { width: 100%; background: #dfe6e9; border-radius: 6px; height: 22px; overflow: hidden; margin-top: 8px; position: relative; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.2s ease; }
+        .progress-text { text-align: center; font-weight: bold; font-size: 14px; color: #2c3e50; margin-top: 5px; }
+
         .number-pad { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; margin-bottom: 15px; }
         .num-btn { background-color: #f0f0f0; border: 1px solid #ccc; padding: 10px 0; font-size: 16px; border-radius: 4px; color: #333; cursor: pointer; }
         .num-btn.selected { font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2) inset; }
@@ -52,7 +58,7 @@
         .result-box { max-height: 400px; overflow-y: auto; }
         .chart-box { margin-top: 15px; padding: 10px; border: 1px solid #eee; border-radius: 8px; background: #fafafa; display: none; }
         
-        .flex-buttons { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .flex-buttons { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
         .flex-buttons button { margin-bottom: 0; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
@@ -89,6 +95,7 @@
 
             <div style="margin-bottom: 30px;">
                 <h3>進階數據與圖表分析</h3>
+                <!-- 第一排按鈕 -->
                 <div class="flex-buttons">
                     <button onclick="analyzeFrequencies()" style="flex: 1;">號碼機率分析</button>
                     <button onclick="showKLineChart()" class="btn-chart" style="flex: 1;">📈 布林通道分析</button>
@@ -97,6 +104,26 @@
                     <button onclick="analyzeLastDigit()" class="btn-digit" style="flex: 1;">🔢 尾號分析</button>
                     <button onclick="greedySelection()" class="btn-greedy" style="flex: 1;">🤖 貪婪選號法</button>
                 </div>
+                <!-- 第二排按鈕 (排序專區) -->
+                <div class="flex-buttons">
+                    <button onclick="executeBigSorting()" style="flex: 1; background: #e84393; color: white; font-weight: bold;">🎯 中5號排序</button>
+                    <button onclick="executeFourSorting()" style="flex: 1; background: #6c5ce7; color: white; font-weight: bold;">🎯 中4號排序</button>
+                    <button onclick="executeThreeSorting()" style="flex: 1; background: #00b894; color: white; font-weight: bold;">🎯 中3號排序</button>
+                    <button onclick="executeTwoSorting()" style="flex: 1; background: #0984e3; color: white; font-weight: bold;">🎯 中2號排序</button>
+                </div>
+
+                <!-- 運算動畫進度條與完成按鈕 -->
+                <div id="bigSortingProgress" class="progress-container">
+                    <div style="font-weight: bold; color: #d63031; margin-bottom: 5px;" id="progressTitle">⚡ 運算進行中，請稍候...</div>
+                    <div id="progressStageText" class="progress-text">準備載入歷史資料...</div>
+                    <div class="progress-bar-bg">
+                        <div id="progressBarFill" class="progress-bar-fill"></div>
+                    </div>
+                    <div id="openReportContainer" style="display: none; margin-top: 15px; text-align: center;">
+                        <button id="openReportBtn" style="background: #27ae60; font-size: 16px; padding: 12px 20px; width: auto; font-weight: bold; display: inline-block;">🎉 運算完成！點擊此處開啟獨立分析報表視窗</button>
+                    </div>
+                </div>
+
                 <div class="result-box" id="freqResult"></div>
                 <div class="chart-box" id="chartResult">
                     <div class="chart-controls" id="chartControls" style="display: none;">
@@ -135,7 +162,8 @@
             </div>
             <div class="result-box" id="searchResult"></div>
         </div>
-<!-- 2. 購買清單管理 -->
+
+        <!-- 2. 購買清單管理 -->
         <div class="card" style="background-color: #fde8e8;">
             <h2>🛒 虛擬購買驗證管理</h2>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -145,6 +173,7 @@
                 <button class="btn-check-prize" style="flex: 1; min-width: 140px;" onclick="openCheckPrizeModal()">🎯 中大獎囉~</button>
             </div>
         </div>
+
         <!-- 4. 獎號維護管理 -->
         <div class="card" style="background-color: #e8fde8;">
             <h2>📝 獎號維護管理</h2>
@@ -203,8 +232,7 @@
                 </table>
             </div>
         </div>
-
-        
+    </div>
 
     <!-- 彈出視窗：依期別對獎 -->
     <div class="modal-overlay" id="checkPrizeModal">
@@ -1246,6 +1274,766 @@
             resultDiv.innerHTML = html;
         }
 
+        // 通用組合產生函式
+        function generateAllCombinations(n, k) {
+            let combs = [];
+            function backtrack(start, current) {
+                if (current.length === k) {
+                    combs.push([...current]);
+                    return;
+                }
+                for (let i = start; i <= n; i++) {
+                    current.push(i);
+                    backtrack(i + 1, current);
+                    current.pop();
+                }
+            }
+            backtrack(1, []);
+            return combs;
+        }
+
+        // ==========================================
+        // ⚡ 大排序核心邏輯 (1~39 選 5 逐組逐歷史比對)
+        // ==========================================
+        async function executeBigSorting() {
+            document.getElementById('chartResult').style.display = 'none';
+            const freqResult = document.getElementById('freqResult');
+            freqResult.style.display = 'none';
+
+            const progressContainer = document.getElementById('bigSortingProgress');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressStageText = document.getElementById('progressStageText');
+            const progressTitle = document.getElementById('progressTitle');
+            const openReportContainer = document.getElementById('openReportContainer');
+            const openReportBtn = document.getElementById('openReportBtn');
+
+            progressContainer.style.display = 'block';
+            openReportContainer.style.display = 'none'; 
+            progressBarFill.style.width = '0%';
+            progressTitle.innerHTML = '⚡ 正在執行 1~39 選 5 全組合（共 575,757 種）與歷史獎號逐筆比對，請稍候...';
+            progressStageText.innerText = '正在從資料庫讀取所有歷史開獎記錄...';
+
+            const { data: drawHistory, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('*')
+                .order('period_number', { ascending: true });
+
+            if (error || !drawHistory || drawHistory.length === 0) {
+                progressContainer.style.display = 'none';
+                alert('讀取歷史開獎記錄失敗或資料庫為空，請先匯入開獎記錄！');
+                return;
+            }
+
+            progressStageText.innerText = '正在產生 1~39 選 5 的所有組合 (共 575,757 種)...';
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const allCombs = generateAllCombinations(39, 5);
+            const totalCombs = allCombs.length;
+            
+            const historyDraws = drawHistory.map(row => ({
+                period: row.period_number,
+                date: row.draw_date,
+                nums: [row.num1, row.num2, row.num3, row.num4, row.num5]
+            }));
+
+            let globalHitCounts = { 2: 0, 3: 0, 4: 0, 5: 0 };
+            let validMatchedCombos = [];
+
+            let batchSize = 2000;
+            let currentIndex = 0;
+
+            progressStageText.innerText = `開始與 ${historyDraws.length} 期歷史獎號進行逐筆比對...`;
+
+            function processBatch() {
+                let endIndex = Math.min(currentIndex + batchSize, totalCombs);
+
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const combo = allCombs[i];
+                    
+                    let hitsDetailList = [];
+                    let comboHitStats = { 2: 0, 3: 0, 4: 0, 5: 0 };
+                    let hasValidHit = false;
+
+                    historyDraws.forEach(drawObj => {
+                        let hits = combo.filter(n => drawObj.nums.includes(n)).length;
+                        
+                        if (hits >= 2) {
+                            hasValidHit = true;
+                            comboHitStats[hits]++;
+                            globalHitCounts[hits]++;
+                            
+                            hitsDetailList.push({
+                                period: drawObj.period,
+                                date: drawObj.date,
+                                drawNums: drawObj.nums,
+                                hitCount: hits
+                            });
+                        }
+                    });
+
+                    if (hasValidHit) {
+                        validMatchedCombos.push({
+                            combo: combo,
+                            hitStats: comboHitStats,
+                            hitsDetails: hitsDetailList
+                        });
+                    }
+                }
+
+                currentIndex = endIndex;
+                let percent = Math.round((currentIndex / totalCombs) * 100);
+                progressBarFill.style.width = percent + '%';
+                progressStageText.innerText = `運算中... 已完成 ${currentIndex.toLocaleString()} / ${totalCombs.toLocaleString()} 組 (${percent}%)`;
+
+                if (currentIndex < totalCombs) {
+                    setTimeout(processBatch, 5);
+                } else {
+                    progressTitle.innerHTML = '✅ 大排序 (5碼) 全組合逐筆比對運算已全部完成！';
+                    progressStageText.innerText = '請點擊下方按鈕以開啟獨立分析報表：';
+                    openReportContainer.style.display = 'block';
+
+                    openReportBtn.onclick = function() {
+                        openBigSortingResultWindow(totalCombs, historyDraws.length, globalHitCounts, validMatchedCombos);
+                    };
+                }
+            }
+
+            processBatch();
+        }
+
+        function openBigSortingResultWindow(totalCombs, totalDraws, globalHitCounts, validMatchedCombos) {
+            validMatchedCombos.sort((a, b) => b.hitStats[5] - a.hitStats[5] || b.hitStats[4] - a.hitStats[4] || b.hitStats[3] - a.hitStats[3] || b.hitStats[2] - a.hitStats[2]);
+
+            let topRowsHtml = '';
+            validMatchedCombos.slice(0, 200).forEach((item, index) => {
+                topRowsHtml += `<tr>
+                    <td>${index + 1}</td>
+                    <td><strong>[ ${item.combo.map(n => String(n).padStart(2, '0')).join(', ')} ]</strong></td>
+                    <td style="color: #e74c3c; font-weight: bold;">${item.hitStats[5]} 次</td>
+                    <td style="color: #2980b9; font-weight: bold;">${item.hitStats[4]} 次</td>
+                    <td>${item.hitStats[3]} 次</td>
+                    <td>${item.hitStats[2]} 次</td>
+                </tr>`;
+            });
+
+            const newWindowHtml = `
+            <!DOCTYPE html>
+            <html lang="zh-TW">
+            <head>
+                <meta charset="UTF-8">
+                <title>1~39選5全組合大排序分析報告</title>
+                <style>
+                    body { font-family: 'Microsoft JhengHei', sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+                    .container { max-width: 950px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                    h2, h3 { color: #2c3e50; }
+                    h2 { margin-top: 0; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 12px; }
+                    .summary-box { background: #e8f4f8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 15px; line-height: 1.8; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                    th { background-color: #f8f9fa; font-size: 14px; }
+                    .table-container { max-height: 500px; overflow-y: auto; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>⚡ 1~39選5全組合大排序與歷史逐筆比對分析報告</h2>
+                    
+                    <div class="summary-box">
+                        <strong>📊 總體統計摘要：</strong><br>
+                        • <strong>總分析組合數：</strong> ${totalCombs.toLocaleString()} 種 (1~39 選 5)<br>
+                        • <strong>比對歷史總期數：</strong> ${totalDraws.toLocaleString()} 期<br>
+                        • <strong>符合條件（中 2 個以上）的組合總數：</strong> ${validMatchedCombos.length.toLocaleString()} 組<br>
+                        • <strong>全體組合累積命中次數分佈：</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>5 個</strong>號碼總次數：<strong>${globalHitCounts[5].toLocaleString()}</strong> 次<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>4 個</strong>號碼總次數：<strong>${globalHitCounts[4].toLocaleString()}</strong> 次<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>3 個</strong>號碼總次數：<strong>${globalHitCounts[3].toLocaleString()}</strong> 次<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>2 個</strong>號碼總次數：<strong>${globalHitCounts[2].toLocaleString()}</strong> 次
+                    </div>
+
+                    <h3>🏆 歷史命中表現最佳的前 200 組候選總表</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">排名</th>
+                                    <th style="width: 40%;">5碼組合</th>
+                                    <th style="width: 12%;">中 5 個次數</th>
+                                    <th style="width: 12%;">中 4 個次數</th>
+                                    <th style="width: 13%;">中 3 個次數</th>
+                                    <th style="width: 13%;">中 2 個次數</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${topRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.write(newWindowHtml);
+                newWindow.document.close();
+            } else {
+                alert('無法自動開啟新視窗，請檢查瀏覽器是否封鎖了彈出視窗。');
+            }
+        }
+
+        // ==========================================
+        // 🎯 中4號排序核心邏輯 (1~39選4 逐組逐歷史比對)
+        // ==========================================
+        async function executeFourSorting() {
+            document.getElementById('chartResult').style.display = 'none';
+            const freqResult = document.getElementById('freqResult');
+            freqResult.style.display = 'none';
+
+            const progressContainer = document.getElementById('bigSortingProgress');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressStageText = document.getElementById('progressStageText');
+            const progressTitle = document.getElementById('progressTitle');
+            const openReportContainer = document.getElementById('openReportContainer');
+            const openReportBtn = document.getElementById('openReportBtn');
+
+            progressContainer.style.display = 'block';
+            openReportContainer.style.display = 'none'; 
+            progressBarFill.style.width = '0%';
+            progressTitle.innerHTML = '🎯 正在執行 1~39 選 4 全組合（共 82,251 種）與歷史獎號逐筆比對，請稍候...';
+            progressStageText.innerText = '正在從資料庫讀取所有歷史開獎記錄...';
+
+            const { data: drawHistory, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('*')
+                .order('period_number', { ascending: true });
+
+            if (error || !drawHistory || drawHistory.length === 0) {
+                progressContainer.style.display = 'none';
+                alert('讀取歷史開獎記錄失敗或資料庫為空，請先匯入開獎記錄！');
+                return;
+            }
+
+            progressStageText.innerText = '正在產生 1~39 選 4 的所有組合 (共 82,251 種)...';
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const allCombs = generateAllCombinations(39, 4);
+            const totalCombs = allCombs.length;
+            
+            const historyDraws = drawHistory.map(row => ({
+                period: row.period_number,
+                date: row.draw_date,
+                nums: [row.num1, row.num2, row.num3, row.num4, row.num5]
+            }));
+
+            let globalHitCounts4 = { 2: 0, 3: 0, 4: 0 };
+            let validMatchedCombos4 = [];
+
+            let batchSize = 1000;
+            let currentIndex = 0;
+
+            progressStageText.innerText = `開始與 ${historyDraws.length} 期歷史獎號進行逐筆比對（僅記錄中2、3或4個）...`;
+
+            function processBatch4() {
+                let endIndex = Math.min(currentIndex + batchSize, totalCombs);
+
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const combo = allCombs[i];
+                    
+                    let hitsDetailList = [];
+                    let comboHitStats = { 2: 0, 3: 0, 4: 0 };
+                    let hasValidHit = false;
+
+                    historyDraws.forEach(drawObj => {
+                        let hits = combo.filter(n => drawObj.nums.includes(n)).length;
+                        
+                        if (hits >= 2) {
+                            hasValidHit = true;
+                            comboHitStats[hits]++;
+                            globalHitCounts4[hits]++;
+                            
+                            hitsDetailList.push({
+                                period: drawObj.period,
+                                date: drawObj.date,
+                                drawNums: drawObj.nums,
+                                hitCount: hits
+                            });
+                        }
+                    });
+
+                    if (hasValidHit) {
+                        validMatchedCombos4.push({
+                            combo: combo,
+                            hitStats: comboHitStats,
+                            hitsDetails: hitsDetailList
+                        });
+                    }
+                }
+
+                currentIndex = endIndex;
+                let percent = Math.round((currentIndex / totalCombs) * 100);
+                progressBarFill.style.width = percent + '%';
+                progressStageText.innerText = `運算中... 已完成 ${currentIndex.toLocaleString()} / ${totalCombs.toLocaleString()} 組 (${percent}%)`;
+
+                if (currentIndex < totalCombs) {
+                    setTimeout(processBatch4, 5);
+                } else {
+                    progressTitle.innerHTML = '✅ 中4號排序全組合逐筆比對運算已全部完成！';
+                    progressStageText.innerText = '請點擊下方按鈕以開啟獨立分析報表：';
+                    openReportContainer.style.display = 'block';
+
+                    openReportBtn.onclick = function() {
+                        openFourSortingResultWindow(totalCombs, historyDraws.length, globalHitCounts4, validMatchedCombos4);
+                    };
+                }
+            }
+
+            processBatch4();
+        }
+
+        function openFourSortingResultWindow(totalCombs, totalDraws, globalHitCounts4, validMatchedCombos4) {
+            validMatchedCombos4.sort((a, b) => b.hitStats[4] - a.hitStats[4] || b.hitStats[3] - a.hitStats[3] || b.hitStats[2] - a.hitStats[2]);
+
+            let topRowsHtml = '';
+            validMatchedCombos4.slice(0, 200).forEach((item, index) => {
+                topRowsHtml += `<tr>
+                    <td>${index + 1}</td>
+                    <td><strong>[ ${item.combo.map(n => String(n).padStart(2, '0')).join(', ')} ]</strong></td>
+                    <td style="color: #6c5ce7; font-weight: bold;">${item.hitStats[4]} 次</td>
+                    <td style="color: #d35400; font-weight: bold;">${item.hitStats[3]} 次</td>
+                    <td style="color: #2980b9; font-weight: bold;">${item.hitStats[2]} 次</td>
+                </tr>`;
+            });
+
+            const newWindowHtml = `
+            <!DOCTYPE html>
+            <html lang="zh-TW">
+            <head>
+                <meta charset="UTF-8">
+                <title>1~39選4全組合中4號排序分析報告</title>
+                <style>
+                    body { font-family: 'Microsoft JhengHei', sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+                    .container { max-width: 950px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                    h2, h3 { color: #2c3e50; }
+                    h2 { margin-top: 0; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 12px; }
+                    .summary-box { background: #f4ecf7; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 15px; line-height: 1.8; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                    th { background-color: #f8f9fa; font-size: 14px; }
+                    .table-container { max-height: 500px; overflow-y: auto; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>🎯 1~39選4全組合「中4號排序」與歷史逐筆比對分析報告</h2>
+                    
+                    <div class="summary-box">
+                        <strong>📊 總體統計摘要：</strong><br>
+                        • <strong>總分析組合數：</strong> ${totalCombs.toLocaleString()} 種 (1~39 選 4)<br>
+                        • <strong>比對歷史總期數：</strong> ${totalDraws.toLocaleString()} 期<br>
+                        • <strong>符合條件（中 2、3 或 4 個）的組合總數：</strong> ${validMatchedCombos4.length.toLocaleString()} 組<br>
+                        • <strong>全體組合累積命中次數分佈：</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>4 個號碼</strong>總次數：<strong>${globalHitCounts4[4].toLocaleString()}</strong> 次<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>3 個號碼</strong>總次數：<strong>${globalHitCounts4[3].toLocaleString()}</strong> 次<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>2 個號碼</strong>總次數：<strong>${globalHitCounts4[2].toLocaleString()}</strong> 次
+                    </div>
+
+                    <h3>🏆 歷史命中表現最佳的前 200 組候選總表</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 12%;">排名</th>
+                                    <th style="width: 40%;">4碼組合</th>
+                                    <th style="width: 16%;">中 4 個次數</th>
+                                    <th style="width: 16%;">中 3 個次數</th>
+                                    <th style="width: 16%;">中 2 個次數</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${topRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.write(newWindowHtml);
+                newWindow.document.close();
+            } else {
+                alert('無法自動開啟新視窗，請檢查瀏覽器是否封鎖了彈出視窗。');
+            }
+        }
+
+        // ==========================================
+        // 🎯 中3號排序核心邏輯 (1~39選3 逐組逐歷史比對)
+        // ==========================================
+        async function executeThreeSorting() {
+            document.getElementById('chartResult').style.display = 'none';
+            const freqResult = document.getElementById('freqResult');
+            freqResult.style.display = 'none';
+
+            const progressContainer = document.getElementById('bigSortingProgress');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressStageText = document.getElementById('progressStageText');
+            const progressTitle = document.getElementById('progressTitle');
+            const openReportContainer = document.getElementById('openReportContainer');
+            const openReportBtn = document.getElementById('openReportBtn');
+
+            progressContainer.style.display = 'block';
+            openReportContainer.style.display = 'none'; 
+            progressBarFill.style.width = '0%';
+            progressTitle.innerHTML = '🎯 正在執行 1~39 選 3 全組合（共 9,139 種）與歷史獎號逐筆比對，請稍候...';
+            progressStageText.innerText = '正在從資料庫讀取所有歷史開獎記錄...';
+
+            const { data: drawHistory, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('*')
+                .order('period_number', { ascending: true });
+
+            if (error || !drawHistory || drawHistory.length === 0) {
+                progressContainer.style.display = 'none';
+                alert('讀取歷史開獎記錄失敗或資料庫為空，請先匯入開獎記錄！');
+                return;
+            }
+
+            progressStageText.innerText = '正在產生 1~39 選 3 的所有組合 (共 9,139 種)...';
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const allCombs = generateAllCombinations(39, 3);
+            const totalCombs = allCombs.length;
+            
+            const historyDraws = drawHistory.map(row => ({
+                period: row.period_number,
+                date: row.draw_date,
+                nums: [row.num1, row.num2, row.num3, row.num4, row.num5]
+            }));
+
+            let globalHitCounts3 = { 2: 0, 3: 0 };
+            let validMatchedCombos3 = [];
+
+            let batchSize = 1000;
+            let currentIndex = 0;
+
+            progressStageText.innerText = `開始與 ${historyDraws.length} 期歷史獎號進行逐筆比對（僅記錄中2或3個）...`;
+
+            function processBatch3() {
+                let endIndex = Math.min(currentIndex + batchSize, totalCombs);
+
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const combo = allCombs[i];
+                    
+                    let hitsDetailList = [];
+                    let comboHitStats = { 2: 0, 3: 0 };
+                    let hasValidHit = false;
+
+                    historyDraws.forEach(drawObj => {
+                        let hits = combo.filter(n => drawObj.nums.includes(n)).length;
+                        
+                        if (hits >= 2) {
+                            hasValidHit = true;
+                            comboHitStats[hits]++;
+                            globalHitCounts3[hits]++;
+                            
+                            hitsDetailList.push({
+                                period: drawObj.period,
+                                date: drawObj.date,
+                                drawNums: drawObj.nums,
+                                hitCount: hits
+                            });
+                        }
+                    });
+
+                    if (hasValidHit) {
+                        validMatchedCombos3.push({
+                            combo: combo,
+                            hitStats: comboHitStats,
+                            hitsDetails: hitsDetailList
+                        });
+                    }
+                }
+
+                currentIndex = endIndex;
+                let percent = Math.round((currentIndex / totalCombs) * 100);
+                progressBarFill.style.width = percent + '%';
+                progressStageText.innerText = `運算中... 已完成 ${currentIndex.toLocaleString()} / ${totalCombs.toLocaleString()} 組 (${percent}%)`;
+
+                if (currentIndex < totalCombs) {
+                    setTimeout(processBatch3, 5);
+                } else {
+                    progressTitle.innerHTML = '✅ 中3號排序全組合逐筆比對運算已全部完成！';
+                    progressStageText.innerText = '請點擊下方按鈕以開啟獨立分析報表：';
+                    openReportContainer.style.display = 'block';
+
+                    openReportBtn.onclick = function() {
+                        openThreeSortingResultWindow(totalCombs, historyDraws.length, globalHitCounts3, validMatchedCombos3);
+                    };
+                }
+            }
+
+            processBatch3();
+        }
+
+        function openThreeSortingResultWindow(totalCombs, totalDraws, globalHitCounts3, validMatchedCombos3) {
+            validMatchedCombos3.sort((a, b) => b.hitStats[3] - a.hitStats[3] || b.hitStats[2] - a.hitStats[2]);
+
+            let topRowsHtml = '';
+            validMatchedCombos3.slice(0, 200).forEach((item, index) => {
+                topRowsHtml += `<tr>
+                    <td>${index + 1}</td>
+                    <td><strong>[ ${item.combo.map(n => String(n).padStart(2, '0')).join(', ')} ]</strong></td>
+                    <td style="color: #d35400; font-weight: bold;">${item.hitStats[3]} 次</td>
+                    <td style="color: #2980b9; font-weight: bold;">${item.hitStats[2]} 次</td>
+                </tr>`;
+            });
+
+            const newWindowHtml = `
+            <!DOCTYPE html>
+            <html lang="zh-TW">
+            <head>
+                <meta charset="UTF-8">
+                <title>1~39選3全組合中3號排序分析報告</title>
+                <style>
+                    body { font-family: 'Microsoft JhengHei', sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+                    .container { max-width: 950px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                    h2, h3 { color: #2c3e50; }
+                    h2 { margin-top: 0; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 12px; }
+                    .summary-box { background: #e8f8f5; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 15px; line-height: 1.8; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                    th { background-color: #f8f9fa; font-size: 14px; }
+                    .table-container { max-height: 500px; overflow-y: auto; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>🎯 1~39選3全組合「中3號排序」與歷史逐筆比對分析報告</h2>
+                    
+                    <div class="summary-box">
+                        <strong>📊 總體統計摘要：</strong><br>
+                        • <strong>總分析組合數：</strong> ${totalCombs.toLocaleString()} 種 (1~39 選 3)<br>
+                        • <strong>比對歷史總期數：</strong> ${totalDraws.toLocaleString()} 期<br>
+                        • <strong>符合條件（中 2 或 3 個）的組合總數：</strong> ${validMatchedCombos3.length.toLocaleString()} 組<br>
+                        • <strong>全體組合累積命中次數分佈：</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>3 個號碼</strong>總次數：<strong>${globalHitCounts3[3].toLocaleString()}</strong> 次<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>2 個號碼</strong>總次數：<strong>${globalHitCounts3[2].toLocaleString()}</strong> 次
+                    </div>
+
+                    <h3>🏆 歷史命中表現最佳的前 200 組候選總表</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">排名</th>
+                                    <th style="width: 45%;">3碼組合</th>
+                                    <th style="width: 20%;">中 3 個次數</th>
+                                    <th style="width: 20%;">中 2 個次數</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${topRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.write(newWindowHtml);
+                newWindow.document.close();
+            } else {
+                alert('無法自動開啟新視窗，請檢查瀏覽器是否封鎖了彈出視窗。');
+            }
+        }
+
+        // ==========================================
+        // ✌️ 中2號排序核心邏輯 (1~39選2 逐組逐歷史比對)
+        // ==========================================
+        async function executeTwoSorting() {
+            document.getElementById('chartResult').style.display = 'none';
+            const freqResult = document.getElementById('freqResult');
+            freqResult.style.display = 'none';
+
+            const progressContainer = document.getElementById('bigSortingProgress');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressStageText = document.getElementById('progressStageText');
+            const progressTitle = document.getElementById('progressTitle');
+            const openReportContainer = document.getElementById('openReportContainer');
+            const openReportBtn = document.getElementById('openReportBtn');
+
+            progressContainer.style.display = 'block';
+            openReportContainer.style.display = 'none'; 
+            progressBarFill.style.width = '0%';
+            progressTitle.innerHTML = '✌️ 正在執行 1~39 選 2 全組合（共 741 種）與歷史獎號逐筆比對，請稍候...';
+            progressStageText.innerText = '正在從資料庫讀取所有歷史開獎記錄...';
+
+            const { data: drawHistory, error } = await supabaseClient
+                .from('lotto_draw_history')
+                .select('*')
+                .order('period_number', { ascending: true });
+
+            if (error || !drawHistory || drawHistory.length === 0) {
+                progressContainer.style.display = 'none';
+                alert('讀取歷史開獎記錄失敗或資料庫為空，請先匯入開獎記錄！');
+                return;
+            }
+
+            progressStageText.innerText = '正在產生 1~39 選 2 的所有組合 (共 741 種)...';
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const allCombs = generateAllCombinations(39, 2);
+            const totalCombs = allCombs.length;
+            
+            const historyDraws = drawHistory.map(row => ({
+                period: row.period_number,
+                date: row.draw_date,
+                nums: [row.num1, row.num2, row.num3, row.num4, row.num5]
+            }));
+
+            let globalHitCount2 = 0;
+            let validMatchedCombos2 = [];
+
+            let batchSize = 100;
+            let currentIndex = 0;
+
+            progressStageText.innerText = `開始與 ${historyDraws.length} 期歷史獎號進行逐筆比對（僅記錄中2個）...`;
+
+            function processBatch2() {
+                let endIndex = Math.min(currentIndex + batchSize, totalCombs);
+
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const combo = allCombs[i];
+                    
+                    let hitsDetailList = [];
+                    let comboHitCount = 0;
+                    let hasValidHit = false;
+
+                    historyDraws.forEach(drawObj => {
+                        let hits = combo.filter(n => drawObj.nums.includes(n)).length;
+                        
+                        if (hits === 2) {
+                            hasValidHit = true;
+                            comboHitCount++;
+                            globalHitCount2++;
+                            
+                            hitsDetailList.push({
+                                period: drawObj.period,
+                                date: drawObj.date,
+                                drawNums: drawObj.nums,
+                                hitCount: hits
+                            });
+                        }
+                    });
+
+                    if (hasValidHit) {
+                        validMatchedCombos2.push({
+                            combo: combo,
+                            hitCount: comboHitCount,
+                            hitsDetails: hitsDetailList
+                        });
+                    }
+                }
+
+                currentIndex = endIndex;
+                let percent = Math.round((currentIndex / totalCombs) * 100);
+                progressBarFill.style.width = percent + '%';
+                progressStageText.innerText = `運算中... 已完成 ${currentIndex.toLocaleString()} / ${totalCombs.toLocaleString()} 組 (${percent}%)`;
+
+                if (currentIndex < totalCombs) {
+                    setTimeout(processBatch2, 5);
+                } else {
+                    progressTitle.innerHTML = '✅ 中2號排序全組合逐筆比對運算已全部完成！';
+                    progressStageText.innerText = '請點擊下方按鈕以開啟獨立分析報表：';
+                    openReportContainer.style.display = 'block';
+
+                    openReportBtn.onclick = function() {
+                        openTwoSortingResultWindow(totalCombs, historyDraws.length, globalHitCount2, validMatchedCombos2);
+                    };
+                }
+            }
+
+            processBatch2();
+        }
+
+        function openTwoSortingResultWindow(totalCombs, totalDraws, globalHitCount2, validMatchedCombos2) {
+            validMatchedCombos2.sort((a, b) => b.hitCount - a.hitCount);
+
+            let topRowsHtml = '';
+            validMatchedCombos2.slice(0, 200).forEach((item, index) => {
+                topRowsHtml += `<tr>
+                    <td>${index + 1}</td>
+                    <td><strong>[ ${item.combo.map(n => String(n).padStart(2, '0')).join(', ')} ]</strong></td>
+                    <td style="color: #0984e3; font-weight: bold;">${item.hitCount} 次</td>
+                </tr>`;
+            });
+
+            const newWindowHtml = `
+            <!DOCTYPE html>
+            <html lang="zh-TW">
+            <head>
+                <meta charset="UTF-8">
+                <title>1~39選2全組合中2號排序分析報告</title>
+                <style>
+                    body { font-family: 'Microsoft JhengHei', sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+                    .container { max-width: 950px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                    h2, h3 { color: #2c3e50; }
+                    h2 { margin-top: 0; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 12px; }
+                    .summary-box { background: #e8f4f8; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 15px; line-height: 1.8; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                    th { background-color: #f8f9fa; font-size: 14px; }
+                    .table-container { max-height: 500px; overflow-y: auto; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>✌️ 1~39選2全組合「中2號排序」與歷史逐筆比對分析報告</h2>
+                    
+                    <div class="summary-box">
+                        <strong>📊 總體統計摘要：</strong><br>
+                        • <strong>總分析組合數：</strong> ${totalCombs.toLocaleString()} 種 (1~39 選 2)<br>
+                        • <strong>比對歷史總期數：</strong> ${totalDraws.toLocaleString()} 期<br>
+                        • <strong>符合條件（中 2 個）的組合總數：</strong> ${validMatchedCombos2.length.toLocaleString()} 組<br>
+                        • <strong>全體組合累積命中次數分佈：</strong><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;- 累計中 <strong>2 個號碼</strong>總次數：<strong>${globalHitCount2.toLocaleString()}</strong> 次
+                    </div>
+
+                    <h3>🏆 歷史命中表現最佳的前 200 組候選總表</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">排名</th>
+                                    <th style="width: 50%;">2碼組合</th>
+                                    <th style="width: 30%;">中 2 個次數</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${topRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const newWindow = window.open('', '_blank');
+            if (newWindow) {
+                newWindow.document.write(newWindowHtml);
+                newWindow.document.close();
+            } else {
+                alert('無法自動開啟新視窗，請檢查瀏覽器是否封鎖了彈出視窗。');
+            }
+        }
+
         async function executeReverseAverage() {
             const minInput = document.getElementById('reverseMinAvg').value;
             const maxInput = document.getElementById('reverseMaxAvg').value;
@@ -1543,6 +2331,7 @@
             }
 
             let matchCount = 0;
+            let hitStats = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
             let tableRows = '';
 
             for (let i = 0; i < data.length; i++) {
@@ -1551,7 +2340,12 @@
                 const matchedNumbers = drawNums.filter(num => searchNums.includes(num));
                 const matchCountInDraw = matchedNumbers.length;
                 
-                if (matchCountInDraw > 0) matchCount++;
+                if (matchCountInDraw > 0) {
+                    matchCount++;
+                    hitStats[matchCountInDraw] = (hitStats[matchCountInDraw] || 0) + 1;
+                } else {
+                    hitStats[0] = (hitStats[0] || 0) + 1;
+                }
 
                 tableRows += `<tr>
                     <td>${row.draw_date}</td>
@@ -1572,21 +2366,31 @@
             <html lang="zh-TW">
             <head>
                 <meta charset="UTF-8">
-                <title>樂透全歷史搜尋結果</title>
+                <title>樂透全歷史搜尋與獎項統計結果</title>
                 <style>
                     body { font-family: 'Microsoft JhengHei', sans-serif; background: #fff; margin: 0; padding: 15px; color: #333; font-size: 13px; }
                     h2 { margin: 0 0 10px 0; font-size: 16px; text-align: center; }
-                    .info { text-align: center; margin-bottom: 12px; font-weight: bold; color: #d32f2f; font-size: 14px; }
+                    .stats-box { background: #e8f4f8; padding: 12px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
                     table { width: 100%; border-collapse: collapse; }
                     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; }
                     th { background-color: #f0f0f0; position: sticky; top: 0; z-index: 1; font-size: 14px; }
                     .match-box { font-weight: bold; border-radius: 3px; padding: 3px 6px; display: inline-block; border: 1px solid rgba(0,0,0,0.15); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-                    .table-container { height: calc(100vh - 70px); overflow-y: auto; }
+                    .table-container { height: calc(100vh - 160px); overflow-y: auto; }
                 </style>
             </head>
             <body>
-                <h2>📊 搜尋號碼：[ ${searchNums.sort((a,b)=>a-b).join(', ')} ] 歷史開獎全紀錄</h2>
-                <div class="info">共找到 ${matchCount} 期包含您搜尋的號碼。</div>
+                <h2>📊 搜尋號碼：[ ${searchNums.sort((a,b)=>a-b).join(', ')} ] 歷史開獎記錄與獎項統計</h2>
+                
+                <div class="stats-box">
+                    <strong>📈 命中獎項統計摘要：</strong><br>
+                    • <strong>總符合期數：</strong> ${matchCount} 期 (總檢索歷史 ${data.length} 期)<br>
+                    • <strong>中 5 個獎項：</strong> <span style="color:#d35400; font-weight:bold;">${hitStats[5]}</span> 次<br>
+                    • <strong>中 4 個獎項：</strong> <span style="color:#e67e22; font-weight:bold;">${hitStats[4]}</span> 次<br>
+                    • <strong>中 3 個獎項：</strong> <span style="color:#2980b9; font-weight:bold;">${hitStats[3]}</span> 次<br>
+                    • <strong>中 2 個獎項：</strong> <span style="color:#27ae60; font-weight:bold;">${hitStats[2]}</span> 次<br>
+                    • <strong>中 1 個：</strong> ${hitStats[1]} 次 ｜ <strong>未中 (0個)：</strong> ${hitStats[0]} 次
+                </div>
+
                 <div class="table-container" id="scrollArea">
                     <table>
                         <tr>
@@ -1616,7 +2420,7 @@
             if (newWindow) {
                 newWindow.document.write(newWindowHtml);
                 newWindow.document.close();
-                resultDiv.innerHTML = '<span style="color:green;">已在新視窗開啟搜尋結果！</span>';
+                resultDiv.innerHTML = '<span style="color:green;">已在新視窗開啟搜尋結果與統計摘要！</span>';
             } else {
                 resultDiv.innerHTML = '<span style="color:red;">無法開啟新視窗，請檢查瀏覽器是否阻擋了彈出視窗。</span>';
             }
