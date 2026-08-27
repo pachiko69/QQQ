@@ -272,6 +272,10 @@
         <div class="modal-content" style="max-width: 450px;">
             <span class="modal-close" onclick="closeVerifyStatsModal()">&times;</span>
             <h2 style="margin-top: 0; color: #2c3e50;">📊 驗證統計設定</h2>
+            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <label style="font-weight: bold; color: #333; margin-bottom: 0;">自訂回測期數：</label>
+                <input type="number" id="verifyStatsPeriods" value="200" min="10" max="5000" style="width: 100px; margin-bottom: 0; padding: 6px;">
+            </div>
             <p style="font-size: 14px; color: #666; margin-bottom: 15px;">請核選要動態回測驗證的「多榜高頻」名次（可複選 1~8）：</p>
             <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
                 <label style="display: flex; align-items: center; font-weight: normal;"><input type="checkbox" class="verify-cb" value="1"> 第 1 名</label>
@@ -283,7 +287,7 @@
                 <label style="display: flex; align-items: center; font-weight: normal;"><input type="checkbox" class="verify-cb" value="7"> 第 7 名</label>
                 <label style="display: flex; align-items: center; font-weight: normal;"><input type="checkbox" class="verify-cb" value="8"> 第 8 名</label>
             </div>
-            <button onclick="executeVerifyStats()" style="background: #34495e; color: white; width: 100%; font-weight: bold; margin-bottom: 0;">開始 200 期動態驗證統計</button>
+            <button onclick="executeVerifyStats()" style="background: #34495e; color: white; width: 100%; font-weight: bold; margin-bottom: 0;">開始動態驗證統計</button>
         </div>
     </div>
 
@@ -292,13 +296,17 @@
         <div class="modal-content" style="max-width: 480px;">
             <span class="modal-close" onclick="closeSelectionVerifyModal()">&times;</span>
             <h2 style="margin-top: 0; color: #2c3e50;">🔢 選號驗證設定 (名次勝率分析)</h2>
+            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <label style="font-weight: bold; color: #333; margin-bottom: 0;">自訂回測期數：</label>
+                <input type="number" id="selectionVerifyPeriods" value="200" min="10" max="5000" style="width: 100px; margin-bottom: 0; padding: 6px;">
+            </div>
             <p style="font-size: 14px; color: #666; margin-bottom: 15px;">系統將自動抓取多榜高頻前 9 名，請選擇要尋找哪一種「名次位置」組合的中獎率最高：</p>
             <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
                 <label style="display: flex; align-items: center; font-weight: normal;"><input type="checkbox" class="selection-verify-cb" value="2"> 2組名次組合 (找最強二合)</label>
                 <label style="display: flex; align-items: center; font-weight: normal;"><input type="checkbox" class="selection-verify-cb" value="3"> 3組名次組合 (找最強三合)</label>
                 <label style="display: flex; align-items: center; font-weight: normal;"><input type="checkbox" class="selection-verify-cb" value="4"> 4組名次組合 (找最強四合)</label>
             </div>
-            <button onclick="executeSelectionVerifyStats()" style="background: #1abc9c; color: white; width: 100%; font-weight: bold; margin-bottom: 0;">開始 200 期名次組合中獎率分析</button>
+            <button onclick="executeSelectionVerifyStats()" style="background: #1abc9c; color: white; width: 100%; font-weight: bold; margin-bottom: 0;">開始名次組合中獎率分析</button>
         </div>
     </div>
 
@@ -778,6 +786,9 @@
                 return;
             }
             const selectedCombos = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            
+            const customPeriods = parseInt(document.getElementById('selectionVerifyPeriods').value) || 200;
+
             closeSelectionVerifyModal();
 
             document.getElementById('chartResult').style.display = 'none';
@@ -794,7 +805,8 @@
             progressContainer.style.display = 'block';
             openReportContainer.style.display = 'none';
             progressBarFill.style.width = '0%';
-            progressTitle.innerHTML = '⚡ 正在執行 名次組合中獎率分析 運算，請稍候...';
+            
+            progressTitle.innerHTML = `⚡ 正在執行 ${customPeriods} 期名次組合中獎率分析 運算，請稍候...`;
             progressStageText.innerText = '正在讀取完整歷史資料...';
 
             const { data: ascData, error: ascErr } = await supabaseClient
@@ -808,7 +820,7 @@
                 return;
             }
 
-            let testCount = Math.min(200, ascData.length - 7);
+            let testCount = Math.min(customPeriods, ascData.length - 7);
             if (testCount <= 0) {
                 progressContainer.style.display = 'none';
                 alert('歷史記錄不足，無法進行回測計算。');
@@ -1071,6 +1083,9 @@
                 return;
             }
             const selectedRanks = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            
+            const customPeriods = parseInt(document.getElementById('verifyStatsPeriods').value) || 200;
+
             closeVerifyStatsModal();
 
             document.getElementById('chartResult').style.display = 'none';
@@ -1087,7 +1102,8 @@
             progressContainer.style.display = 'block';
             openReportContainer.style.display = 'none';
             progressBarFill.style.width = '0%';
-            progressTitle.innerHTML = '⚡ 正在執行 200期動態驗證統計 運算，請稍候...';
+            
+            progressTitle.innerHTML = `⚡ 正在執行 ${customPeriods} 期動態驗證統計 運算，請稍候...`;
             progressStageText.innerText = '正在讀取完整歷史資料...';
 
             const { data: ascData, error: ascErr } = await supabaseClient
@@ -1101,7 +1117,7 @@
                 return;
             }
 
-            let testCount = Math.min(200, ascData.length - 7);
+            let testCount = Math.min(customPeriods, ascData.length - 7);
             if (testCount <= 0) {
                 progressContainer.style.display = 'none';
                 alert('歷史記錄不足，無法進行回測計算。');
@@ -3824,6 +3840,10 @@
                         <div class="stats-card">
                             <div>總開出次數</div>
                             <div class="stats-val" style="color:#2980b9;">${hits.length} 次</div>
+                        </div>
+                        <div class="stats-card">
+                            <div>目前遺漏期數</div>
+                            <div class="stats-val" style="color:#d35400;">${currentGap} 期</div>
                         </div>
                         <div class="stats-card">
                             <div>目前遺漏期數</div>
