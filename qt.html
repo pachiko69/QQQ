@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧報價單系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+        }
+        dialog::backdrop { background-color: rgba(0, 0, 0, 0.5); }
+        th { cursor: pointer; user-select: none; }
+        th:hover { background-color: #d1d5db; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <!-- 導覽列 -->
+    <nav class="bg-blue-800 text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-wrap gap-4 justify-between items-center">
+            <h1 class="text-xl font-bold">報價單系統</h1>
+            <div class="flex gap-2 text-sm sm:text-base">
+                <button onclick="switchTab('quote')" class="hover:bg-blue-600 px-3 py-2 rounded">1. 報價單</button>
+                <button onclick="switchTab('stats')" class="hover:bg-blue-600 px-3 py-2 rounded">2. 統計</button>
+                <button onclick="switchTab('manage')" class="hover:bg-blue-600 px-3 py-2 rounded">3. 各項管理</button>
+                <button onclick="switchTab('shortcut')" class="hover:bg-blue-600 px-3 py-2 rounded">4. 快捷按鍵表</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 mt-4 bg-white shadow rounded-lg min-h-[80vh]">
+        
+        <!-- ==================== 面板 1: 報價單 ==================== -->
+        <div id="tab-quote" class="tab-content active">
+            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2">新增/編輯報價單</h2>
+                <div class="flex gap-2">
+                    <button onclick="openImportOldQuoteModal()" class="bg-gray-500 text-white px-4 py-2 rounded shadow">滙入舊報價單</button>
+                    <button onclick="switchTab('manage')" class="bg-green-600 text-white px-4 py-2 rounded shadow">管理(客戶/廠商/商品)</button>
+                </div>
+            </div>
+            
+            <form id="quoteForm" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">報價單號</label>
+                        <input type="text" id="quoteId" class="w-full border rounded p-2 bg-yellow-50" title="可手動修改單號">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">日期</label>
+                        <input type="date" id="quoteDate" class="w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">客戶</label>
+                        <select id="quoteCustomer" class="w-full border rounded p-2 bg-white">
+                            <option value="">-- 請選擇客戶 --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">狀態</label>
+                        <select id="quoteStatus" class="w-full border rounded p-2">
+                            <option value="報價中">報價中</option>
+                            <option value="已成交">已成交</option>
+                            <option value="模版">模版</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="border p-4 rounded bg-gray-50">
+                    <h3 class="font-bold mb-2">加入商品 / 組合 (數量預設為 1)</h3>
+                    <div class="flex gap-2 items-end">
+                        <div class="flex-grow">
+                            <label class="block text-xs font-bold mb-1">商品或組合代號/名稱搜尋</label>
+                            <input list="productsList" id="itemSearch" class="w-full border rounded p-2 bg-white" placeholder="請輸入代號或名稱">
+                            <datalist id="productsList"></datalist>
+                        </div>
+                        <button type="button" onclick="addQuoteItem()" class="bg-blue-600 text-white px-6 py-2 rounded h-[42px] whitespace-nowrap">加入明細</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border text-sm text-center">
+                        <thead class="bg-gray-200">
+                            <tr>
+                                <th class="border p-2">類別</th>
+                                <th class="border p-2">代號</th>
+                                <th class="border p-2">名稱</th>
+                                <th class="border p-2 w-28">數量 (可修改)</th>
+                                <th class="border p-2 w-32">單價 (可修改)</th>
+                                <th class="border p-2">小計</th>
+                                <th class="border p-2">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quoteItemsTable"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-end items-center gap-4 bg-gray-50 p-4 border rounded">
+                    <label class="flex items-center gap-1 font-bold">
+                        <input type="checkbox" id="taxIncluded" onchange="calculateTotal()"> 含稅 (5%)
+                    </label>
+                    <div class="text-right">
+                        <p>總成本: <span id="lblTotalCost" class="font-mono">0</span></p>
+                        <p>預估利潤: <span id="lblTotalProfit" class="font-mono text-green-600">0</span></p>
+                        <p class="text-xl font-bold">報價總額(新台幣): <span id="lblTotalAmount" class="text-blue-700">0</span></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold mb-1">備註</label>
+                    <textarea id="quoteNotes" class="w-full border rounded p-2" rows="2"></textarea>
+                </div>
+                
+                <div class="text-center flex flex-wrap justify-center gap-4">
+                    <button type="button" onclick="saveQuotation()" class="bg-blue-700 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-blue-800 text-base">儲存報價單 (覆蓋)</button>
+                    <button type="button" onclick="saveAsNewQuotation()" class="bg-emerald-600 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-emerald-700 text-base">另存報價單 (新增)</button>
+                    <button type="button" onclick="copyQuoteItemsToClipboard()" class="bg-teal-600 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-teal-700 text-base">複製明細</button>
+                    <button type="button" onclick="resetQuotationForm()" class="bg-gray-500 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-gray-600 text-base">清空重填</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ==================== 面板 2: 統計 ==================== -->
+        <div id="tab-stats" class="tab-content">
+            <div class="flex justify-between items-center mb-4 border-b-2 border-blue-500 pb-2">
+                <h2 class="text-2xl font-bold">統計與查詢</h2>
+                <button onclick="fetchStats()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">重新整理資料</button>
+            </div>
+            
+            <h3 class="text-lg font-bold mb-2 mt-4 text-blue-700">商品資料統計 (點擊表頭可排序)</h3>
+            <div class="overflow-y-auto max-h-64 border rounded mb-6">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-200 sticky top-0">
+                        <tr>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'product_code')">代號 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'name')">名稱 ↕</th>
+                            <th class="p-2 border-b">單位</th>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'price')">售價 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'cost')">成本 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'updated_at')">更新日期 ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsProductTable"></tbody>
+                </table>
+            </div>
+
+            <h3 class="text-lg font-bold mb-2 text-blue-700">報價單統計 (點擊表頭可排序)</h3>
+            <div class="overflow-y-auto max-h-64 border rounded">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-200 sticky top-0">
+                        <tr>
+                            <th class="p-2 border-b" onclick="sortStats('quotes', 'quote_id')">報價單號 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('quotes', 'quote_date')">報價日期 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('quotes', 'customer_name')">客戶 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('quotes', 'items_summary')">商品名稱 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('quotes', 'total_amount')">總金額 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('quotes', 'status')">狀態 ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsQuoteTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== 面板 3: 各項管理 ==================== -->
+        <div id="tab-manage" class="tab-content">
+            <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-4">各項管理 & 資料滙入/出</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <button onclick="openCustomerManager()" class="bg-indigo-100 border border-indigo-300 p-4 rounded shadow hover:bg-indigo-200">客戶管理 (CRUD)</button>
+                <button onclick="openSupplierManager()" class="bg-indigo-100 border border-indigo-300 p-4 rounded shadow hover:bg-indigo-200">廠商管理 (CRUD)</button>
+                <button onclick="openProductManager()" class="bg-teal-100 border border-teal-300 p-4 rounded shadow hover:bg-teal-200">商品管理 (單品)</button>
+                <button onclick="openBundleManager()" class="bg-teal-100 border border-teal-300 p-4 rounded shadow hover:bg-teal-200">組合商品管理</button>
+            </div>
+            
+            <hr class="my-4">
+            <h3 class="font-bold text-lg mb-2">CSV 資料匯出 (Export)</h3>
+            <div class="flex gap-2 flex-wrap mb-4">
+                <button onclick="exportCSV('qt_products', '商品清單')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出商品</button>
+                <button onclick="exportCSV('qt_customers', '客戶清單')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出客戶</button>
+                <button onclick="exportCSV('qt_suppliers', '廠商清單')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出廠商</button>
+                <button onclick="exportCSV('qt_quotations', '報價單主檔')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出報價單</button>
+            </div>
+
+            <h3 class="font-bold text-lg mb-2 text-red-700">CSV 資料匯入 (Import)</h3>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="triggerImport('qt_products')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入商品</button>
+                <button onclick="triggerImport('qt_customers')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入客戶</button>
+                <button onclick="triggerImport('qt_suppliers')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入廠商</button>
+            </div>
+        </div>
+
+        <!-- ==================== 面板 4: 快捷按鍵表 ==================== -->
+        <div id="tab-shortcut" class="tab-content">
+            <div class="flex justify-between items-center mb-4 border-b-2 border-blue-500 pb-2">
+                <h2 class="text-2xl font-bold">快捷按鍵表</h2>
+                <span class="text-sm text-gray-500">提示：點擊按鈕開啟網頁；點擊右鍵編輯。</span>
+            </div>
+            <div class="shortcut-grid p-4 bg-gray-200 rounded-lg" id="shortcutGridContainer"></div>
+        </div>
+    </div>
+
+    <!-- ==================== 彈窗 Modal 區域 ==================== -->
+
+    <!-- 滙入舊報價單 Modal -->
+    <dialog id="importQuoteModal" class="p-6 rounded shadow-lg w-full max-w-4xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">滙入舊報價單</h3>
+            <button onclick="document.getElementById('importQuoteModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="searchOldQuoteInput" placeholder="輸入客戶名稱、單號、狀態或商品名稱進行模糊搜尋" class="w-full border rounded p-2">
+            <button onclick="searchOldQuotes()" class="bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">搜尋</button>
+        </div>
+        <div class="overflow-y-auto max-h-64 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr><th class="p-2">單號</th><th class="p-2">日期</th><th class="p-2">客戶</th><th class="p-2">狀態</th><th class="p-2">操作</th></tr>
+                </thead>
+                <tbody id="oldQuotesTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
+
+    <!-- 客戶管理 Modal -->
+    <dialog id="customerModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">客戶管理</h3>
+            <button onclick="document.getElementById('customerModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        <div class="bg-indigo-50 p-4 rounded mb-4 border border-indigo-200">
+            <h4 class="font-bold mb-2 text-sm" id="customerFormTitle">新增客戶</h4>
+            <input type="hidden" id="customerId">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                <div><label class="text-xs font-bold text-gray-600">客戶名稱*</label><input type="text" id="custName" class="w-full border p-2 rounded bg-white" placeholder="*客戶名稱"></div>
+                <div><label class="text-xs font-bold text-gray-600">聯絡人</label><input type="text" id="custContact" class="w-full border p-2 rounded bg-white" placeholder="聯絡人"></div>
+                <div><label class="text-xs font-bold text-gray-600">電話</label><input type="text" id="custPhone" class="w-full border p-2 rounded bg-white" placeholder="電話"></div>
+                <div><label class="text-xs font-bold text-gray-600">地址</label><input type="text" id="custAddress" class="w-full border p-2 rounded bg-white" placeholder="地址"></div>
+                <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="custUrl" class="w-full border p-2 rounded bg-white" placeholder="網址"></div>
+                <div><label class="text-xs font-bold text-gray-600">排序</label><input type="number" id="custSort" class="w-full border p-2 rounded bg-white" value="0"></div>
+                <div class="col-span-1 md:col-span-3"><label class="text-xs font-bold text-gray-600">備註</label><input type="text" id="custNotes" class="w-full border p-2 rounded bg-white" placeholder="備註"></div>
+            </div>
+            <div class="flex gap-2 mt-2">
+                <button onclick="saveCustomer()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm">儲存</button>
+                <button onclick="resetCustomerForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除表單</button>
+            </div>
+        </div>
+        <div class="overflow-y-auto max-h-64 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr><th class="p-2 border-b w-16">排序</th><th class="p-2 border-b">名稱</th><th class="p-2 border-b">聯絡人</th><th class="p-2 border-b">電話</th><th class="p-2 border-b">操作</th></tr>
+                </thead>
+                <tbody id="customerTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
+
+    <!-- 廠商管理 Modal -->
+    <dialog id="supplierModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">廠商管理</h3>
+            <button onclick="document.getElementById('supplierModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        <div class="bg-indigo-50 p-4 rounded mb-4 border border-indigo-200">
+            <h4 class="font-bold mb-2 text-sm" id="supplierFormTitle">新增廠商</h4>
+            <input type="hidden" id="supplierId">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                <div><label class="text-xs font-bold text-gray-600">廠商名稱*</label><input type="text" id="supName" class="w-full border p-2 rounded bg-white" placeholder="*廠商名稱"></div>
+                <div><label class="text-xs font-bold text-gray-600">聯絡人</label><input type="text" id="supContact" class="w-full border p-2 rounded bg-white" placeholder="聯絡人"></div>
+                <div><label class="text-xs font-bold text-gray-600">電話</label><input type="text" id="supPhone" class="w-full border p-2 rounded bg-white" placeholder="電話"></div>
+                <div><label class="text-xs font-bold text-gray-600">地址</label><input type="text" id="supAddress" class="w-full border p-2 rounded bg-white" placeholder="地址"></div>
+                <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="supUrl" class="w-full border p-2 rounded bg-white" placeholder="網址"></div>
+                <div><label class="text-xs font-bold text-gray-600">排序</label><input type="number" id="supSort" class="w-full border p-2 rounded bg-white" value="0"></div>
+            </div>
+            <div class="flex gap-2 mt-2">
+                <button onclick="saveSupplier()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm">儲存</button>
+                <button onclick="resetSupplierForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除表單</button>
+            </div>
+        </div>
+        <div class="overflow-y-auto max-h-64 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr><th class="p-2 border-b w-16">排序</th><th class="p-2 border-b">名稱</th><th class="p-2 border-b">聯絡人</th><th class="p-2 border-b">電話</th><th class="p-2 border-b">操作</th></tr>
+                </thead>
+                <tbody id="supplierTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
+
+    <!-- 商品管理 (單品) Modal -->
+    <dialog id="productModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">商品管理 (單品)</h3>
+            <button onclick="document.getElementById('productModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        <div class="bg-teal-50 p-4 rounded mb-4 border border-teal-200">
+            <h4 class="font-bold mb-2 text-sm" id="productFormTitle">新增商品</h4>
+            <input type="hidden" id="prodIsEdit" value="false">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+                <div><label class="text-xs font-bold text-gray-600">商品代號*</label><input type="text" id="prodCode" class="w-full border p-2 rounded bg-white"></div>
+                <div><label class="text-xs font-bold text-gray-600">商品名稱*</label><input type="text" id="prodName" class="w-full border p-2 rounded bg-white"></div>
+                <div><label class="text-xs font-bold text-gray-600">單位</label><input type="text" id="prodUnit" class="w-full border p-2 rounded bg-white" placeholder="例: 個/台"></div>
+                <div><label class="text-xs font-bold text-gray-600">售價 (整數)*</label><input type="number" id="prodPrice" class="w-full border p-2 rounded bg-white" value="0"></div>
+                <div><label class="text-xs font-bold text-gray-600">成本 (整數)*</label><input type="number" id="prodCost" class="w-full border p-2 rounded bg-white" value="0"></div>
+                <div><label class="text-xs font-bold text-gray-600">供應商 1</label><select id="prodSup1" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
+                <div><label class="text-xs font-bold text-gray-600">供應商 2</label><select id="prodSup2" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
+                <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="prodUrl" class="w-full border p-2 rounded bg-white"></div>
+                <div class="col-span-2 md:col-span-4"><label class="text-xs font-bold text-gray-600">備註</label><input type="text" id="prodNotes" class="w-full border p-2 rounded bg-white"></div>
+            </div>
+            <div class="flex gap-2 mt-2">
+                <button onclick="saveProduct()" class="bg-teal-600 text-white px-4 py-2 rounded text-sm">儲存</button>
+                <button onclick="resetProductForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除 (切換為新增)</button>
+            </div>
+        </div>
+        <div class="overflow-y-auto max-h-64 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr><th class="p-2 border-b">代號</th><th class="p-2 border-b">名稱</th><th class="p-2 border-b">售價</th><th class="p-2 border-b">成本</th><th class="p-2 border-b">操作</th></tr>
+                </thead>
+                <tbody id="productTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
+
+    <!-- 組合商品管理 Modal -->
+    <dialog id="bundleModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">組合商品管理 (2~5樣單品)</h3>
+            <button onclick="document.getElementById('bundleModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        <div class="bg-teal-50 p-4 rounded mb-4 border border-teal-200">
+            <h4 class="font-bold mb-2 text-sm" id="bundleFormTitle">新增組合商品</h4>
+            <input type="hidden" id="bundleIsEdit" value="false">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div><label class="text-xs font-bold">組合代號*</label><input type="text" id="bunCode" class="w-full border p-2 rounded bg-white"></div>
+                <div><label class="text-xs font-bold">組合名稱*</label><input type="text" id="bunName" class="w-full border p-2 rounded bg-white"></div>
+                <div><label class="text-xs font-bold">備註</label><input type="text" id="bunNotes" class="w-full border p-2 rounded bg-white"></div>
+            </div>
+            <h5 class="text-xs font-bold mb-2 border-b pb-1">挑選組合內容 (最少 2 項，最多 5 項)</h5>
+            <div id="bundleItemsSetup" class="space-y-2"></div>
+            <div class="flex gap-2 mt-4">
+                <button onclick="saveBundle()" class="bg-teal-600 text-white px-4 py-2 rounded text-sm">儲存組合</button>
+                <button onclick="resetBundleForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除 (切換為新增)</button>
+            </div>
+        </div>
+        <div class="overflow-y-auto max-h-64 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr><th class="p-2 border-b">組合代號</th><th class="p-2 border-b">名稱</th><th class="p-2 border-b">包含單品數</th><th class="p-2 border-b">操作</th></tr>
+                </thead>
+                <tbody id="bundleTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
+
+    <!-- 快捷鍵編輯 Modal -->
+    <dialog id="shortcutModal" class="p-6 rounded shadow-lg w-full max-w-sm">
+        <h3 class="text-xl font-bold mb-4">編輯快捷按鍵</h3>
+        <input type="hidden" id="shortcutIndex">
+        <div class="mb-2"><label class="block text-sm font-bold mb-1">名稱</label><input type="text" id="shortcutName" class="w-full border rounded p-2"></div>
+        <div class="mb-4"><label class="block text-sm font-bold mb-1">網址 (需包含 http/https)</label><input type="url" id="shortcutUrl" class="w-full border rounded p-2"></div>
+        <div class="flex justify-end gap-2">
+            <button onclick="document.getElementById('shortcutModal').close()" class="bg-gray-300 px-4 py-2 rounded">取消</button>
+            <button onclick="saveShortcut()" class="bg-blue-600 text-white px-4 py-2 rounded">儲存</button>
+        </div>
+    </dialog>
+
+    <script>
+        // ==========================================
+        // 核心設定與全域變數
+        // ==========================================
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let quoteItems = [];
+        let shortcutsData = [];
+        let customersData = [];
+        let suppliersData = [];
+        let productsData = []; 
+        let bundlesData = [];  
+        
+        let statsData = { products: [], quotes: [] };
+        let sortState = { products: { field: 'product_code', asc: true }, quotes: { field: 'quote_date', asc: false } };
+
+        function getTaipeiDate() {
+            return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+        }
+
+        async function init() {
+            await reloadSearchData();
+            await resetQuotationForm();
+            await loadShortcuts();
+            await fetchStats(); 
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            if(tabId === 'stats') fetchStats();
+        }
+
+        async function reloadSearchData() {
+            const resC = await supabaseClient.from('qt_customers').select('*').order('sort_order', { ascending: true });
+            if(resC.data) {
+                customersData = resC.data;
+                const selectC = document.getElementById('quoteCustomer');
+                if(selectC) {
+                    let cOptions = '<option value="">-- 請選擇客戶 --</option>';
+                    customersData.forEach(c => {
+                        cOptions += `<option value="${c.name}">${c.name}</option>`;
+                    });
+                    selectC.innerHTML = cOptions;
+                }
+            }
+            
+            const resS = await supabaseClient.from('qt_suppliers').select('*').order('sort_order', { ascending: true });
+            if(resS.data) suppliersData = resS.data;
+
+            const resP = await supabaseClient.from('qt_products').select('*');
+            if(resP.data) productsData = resP.data;
+
+            const resB = await supabaseClient.from('qt_bundles').select('*, items:qt_bundle_items(*)');
+            if(resB.data) bundlesData = resB.data;
+            
+            const listP = document.getElementById('productsList');
+            if(listP) {
+                let options = '';
+                productsData.forEach(p => options += `<option value="${p.product_code} ${p.name}">[單品] ${p.product_code} - ${p.name}</option>`);
+                bundlesData.forEach(b => options += `<option value="${b.bundle_code} ${b.name}">[組合] ${b.bundle_code} - ${b.name}</option>`);
+                listP.innerHTML = options;
+            }
+        }
+
+        // ==========================================
+        // 1. 報價單邏輯
+        // ==========================================
+        async function resetQuotationForm() {
+            document.getElementById('quoteDate').value = getTaipeiDate().toISOString().split('T')[0];
+            document.getElementById('quoteCustomer').value = '';
+            document.getElementById('quoteStatus').value = '報價中';
+            document.getElementById('taxIncluded').checked = false;
+            document.getElementById('quoteNotes').value = '';
+            quoteItems = [];
+            renderQuoteItems();
+            await generateQuoteId();
+        }
+
+        async function generateQuoteId() {
+            const tDate = getTaipeiDate();
+            const prefix = tDate.getFullYear().toString() + String(tDate.getMonth() + 1).padStart(2, '0') + String(tDate.getDate()).padStart(2, '0');
+            const { data } = await supabaseClient.from('qt_quotations').select('quote_id').like('quote_id', `${prefix}%`).order('quote_id', { ascending: false }).limit(1);
+            let newId = prefix + "00";
+            if (data && data.length > 0) {
+                const lastNum = parseInt(data[0].quote_id.slice(-2));
+                if (lastNum < 99) newId = prefix + String(lastNum + 1).padStart(2, '0');
+            }
+            document.getElementById('quoteId').value = newId;
+        }
+
+        function addQuoteItem() {
+            const rawSearch = document.getElementById('itemSearch').value.trim();
+            if(!rawSearch) return alert('請輸入商品');
+            const searchKey = rawSearch.split(' ')[0]; 
+
+            const prod = productsData.find(p => p.product_code === searchKey || p.name === rawSearch);
+            if (prod) {
+                pushToQuote({ type: '單品', is_bundle: false, code: prod.product_code, name: prod.name, unit: prod.unit || '部', qty: 1, price: prod.price, cost: prod.cost });
+                document.getElementById('itemSearch').value = '';
+                return;
+            }
+
+            const bundle = bundlesData.find(b => b.bundle_code === searchKey || b.name === rawSearch);
+            if (bundle) {
+                let tPrice = 0, tCost = 0;
+                bundle.items.forEach(bi => {
+                    const p = productsData.find(pd => pd.product_code === bi.product_code);
+                    if(p) { tPrice += (p.price * bi.quantity); tCost += (p.cost * bi.quantity); }
+                });
+                pushToQuote({ type: '組合', is_bundle: true, code: bundle.bundle_code, name: bundle.name, unit: '組', qty: 1, price: tPrice, cost: tCost });
+                document.getElementById('itemSearch').value = '';
+                return;
+            }
+            alert('找不到該代號或名稱的商品，請確認是否已建檔。');
+        }
+
+        function pushToQuote(d) {
+            const subtotal = Math.round(d.price * d.qty);
+            const profit = Math.round((d.price - d.cost) * d.qty);
+            quoteItems.push({ type: d.type, is_bundle: d.is_bundle, code: d.code, name: d.name, unit: d.unit, qty: d.qty, price: d.price, cost: d.cost, subtotal: subtotal, profit: profit });
+            renderQuoteItems();
+        }
+
+        function renderQuoteItems() {
+            const tbody = document.getElementById('quoteItemsTable'); 
+            tbody.innerHTML = '';
+            quoteItems.forEach((item, index) => {
+                tbody.innerHTML += `
+                <tr>
+                    <td class="border p-2 text-xs">${item.type}</td>
+                    <td class="border p-2">${item.code}</td>
+                    <td class="border p-2">${item.name}</td>
+                    <td class="border p-2"><input type="number" min="1" value="${item.qty}" onchange="updateItemQty(${index}, this.value)" class="w-20 border text-center p-1 rounded font-bold"></td>
+                    <td class="border p-2"><input type="number" min="0" value="${item.price}" onchange="updateItemPrice(${index}, this.value)" class="w-28 border text-center p-1 rounded"></td>
+                    <td class="border p-2 text-blue-700 font-bold" id="subtotal_${index}">${item.subtotal.toLocaleString()}</td>
+                    <td class="border p-2"><button type="button" onclick="quoteItems.splice(${index}, 1); renderQuoteItems();" class="text-red-500 hover:font-bold">刪除</button></td>
+                </tr>`;
+            }); 
+            calculateTotal();
+        }
+
+        function updateItemQty(index, val) {
+            const qty = parseInt(val) || 1;
+            quoteItems[index].qty = qty < 1 ? 1 : qty;
+            quoteItems[index].subtotal = Math.round(quoteItems[index].price * quoteItems[index].qty);
+            quoteItems[index].profit = Math.round((quoteItems[index].price - quoteItems[index].cost) * quoteItems[index].qty);
+            document.getElementById(`subtotal_${index}`).innerText = quoteItems[index].subtotal.toLocaleString();
+            calculateTotal();
+        }
+
+        function updateItemPrice(index, val) {
+            const price = parseInt(val) || 0;
+            quoteItems[index].price = price;
+            quoteItems[index].subtotal = Math.round(price * quoteItems[index].qty);
+            quoteItems[index].profit = Math.round((price - quoteItems[index].cost) * quoteItems[index].qty);
+            document.getElementById(`subtotal_${index}`).innerText = quoteItems[index].subtotal.toLocaleString();
+            calculateTotal();
+        }
+
+        function copyQuoteItemsToClipboard() {
+            if (quoteItems.length === 0) {
+                return alert('目前沒有任何商品明細可供複製！');
+            }
+
+            let lines = [];
+            quoteItems.forEach((item, index) => {
+                const no = index + 1;
+                const unitStr = item.unit || '';
+                const priceStr = '$' + item.price.toLocaleString();
+                lines.push(`NO.${no} ${item.name} ${item.qty}${unitStr} ${priceStr}`);
+            });
+
+            const textToCopy = lines.join('\n');
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert('商品明細已成功複製到剪貼簿！');
+            }).catch(err => {
+                alert('複製失敗，請檢查瀏覽器權限：' + err);
+            });
+        }
+
+        function calculateTotal() {
+            let tAmt = 0, tCost = 0, tProfit = 0;
+            quoteItems.forEach(i => { tAmt += i.subtotal; tCost += (i.cost * i.qty); tProfit += i.profit; });
+            if(document.getElementById('taxIncluded').checked) tAmt = Math.round(tAmt * 1.05);
+            document.getElementById('lblTotalAmount').innerText = tAmt.toLocaleString(); 
+            document.getElementById('lblTotalCost').innerText = tCost.toLocaleString(); 
+            document.getElementById('lblTotalProfit').innerText = tProfit.toLocaleString();
+        }
+
+        async function saveQuotation() {
+            if(quoteItems.length === 0) return alert('沒有明細！');
+            const qId = document.getElementById('quoteId').value.trim();
+            if(!qId) return alert('報價單號不可為空');
+            
+            const cName = document.getElementById('quoteCustomer').value;
+            if(!cName) return alert('請選擇客戶');
+            const cFound = customersData.find(c => c.name === cName);
+            const cId = cFound ? cFound.id : null;
+
+            const qData = {
+                quote_id: qId, quote_date: document.getElementById('quoteDate').value, customer_id: cId,
+                status: document.getElementById('quoteStatus').value, is_tax_included: document.getElementById('taxIncluded').checked,
+                total_amount: parseInt(document.getElementById('lblTotalAmount').innerText.replace(/,/g,'')),
+                total_cost: parseInt(document.getElementById('lblTotalCost').innerText.replace(/,/g,'')),
+                total_profit: parseInt(document.getElementById('lblTotalProfit').innerText.replace(/,/g,'')),
+                notes: document.getElementById('quoteNotes').value, updated_at: getTaipeiDate().toISOString()
+            };
+
+            const { error: err1 } = await supabaseClient.from('qt_quotations').upsert([qData]);
+            if (err1) return alert('儲存主檔失敗: ' + err1.message);
+
+            await supabaseClient.from('qt_quotation_items').delete().eq('quote_id', qId);
+            const itemsToInsert = quoteItems.map(i => ({
+                quote_id: qId, item_code: i.code, item_name: i.name, is_bundle: i.is_bundle,
+                quantity: i.qty, unit_price: i.price, subtotal: i.subtotal, cost: i.cost, profit: i.profit
+            }));
+            const { error: err2 } = await supabaseClient.from('qt_quotation_items').insert(itemsToInsert);
+            if (err2) return alert('儲存明細失敗: ' + err2.message);
+
+            alert('報價單儲存成功！');
+            await resetQuotationForm();
+        }
+
+        async function saveAsNewQuotation() {
+            if(quoteItems.length === 0) return alert('沒有明細！');
+
+            const cName = document.getElementById('quoteCustomer').value;
+            if(!cName) return alert('請選擇客戶');
+
+            const tDate = getTaipeiDate();
+            const prefix = tDate.getFullYear().toString() + String(tDate.getMonth() + 1).padStart(2, '0') + String(tDate.getDate()).padStart(2, '0');
+            const { data } = await supabaseClient.from('qt_quotations').select('quote_id').like('quote_id', `${prefix}%`).order('quote_id', { ascending: false }).limit(1);
+            let newId = prefix + "00";
+            if (data && data.length > 0) {
+                const lastNum = parseInt(data[0].quote_id.slice(-2));
+                if (lastNum < 99) newId = prefix + String(lastNum + 1).padStart(2, '0');
+                else return alert('今日報價單號已達上限(99)，無法另存！');
+            }
+
+            const cFound = customersData.find(c => c.name === cName);
+            const cId = cFound ? cFound.id : null;
+
+            const qData = {
+                quote_id: newId, 
+                quote_date: document.getElementById('quoteDate').value, 
+                customer_id: cId,
+                status: document.getElementById('quoteStatus').value, 
+                is_tax_included: document.getElementById('taxIncluded').checked,
+                total_amount: parseInt(document.getElementById('lblTotalAmount').innerText.replace(/,/g,'')),
+                total_cost: parseInt(document.getElementById('lblTotalCost').innerText.replace(/,/g,'')),
+                total_profit: parseInt(document.getElementById('lblTotalProfit').innerText.replace(/,/g,'')),
+                notes: document.getElementById('quoteNotes').value, 
+                updated_at: getTaipeiDate().toISOString()
+            };
+
+            const { error: err1 } = await supabaseClient.from('qt_quotations').insert([qData]);
+            if (err1) return alert('另存新檔主檔失敗: ' + err1.message);
+
+            const itemsToInsert = quoteItems.map(i => ({
+                quote_id: newId, 
+                item_code: i.code, 
+                item_name: i.name, 
+                is_bundle: i.is_bundle,
+                quantity: i.qty, 
+                unit_price: i.price, 
+                subtotal: i.subtotal, 
+                cost: i.cost, 
+                profit: i.profit
+            }));
+
+            const { error: err2 } = await supabaseClient.from('qt_quotation_items').insert(itemsToInsert);
+            if (err2) return alert('另存新檔明細失敗: ' + err2.message);
+
+            alert(`另存新報價單成功！新單號為：${newId}`);
+            await resetQuotationForm();
+        }
+
+        // ==========================================
+        // 滙入舊報價單
+        // ==========================================
+        function openImportOldQuoteModal() {
+            document.getElementById('importQuoteModal').showModal();
+            document.getElementById('oldQuotesTableBody').innerHTML = '';
+            document.getElementById('searchOldQuoteInput').value = '';
+            searchOldQuotes(); 
+        }
+
+        async function searchOldQuotes() {
+            const keyword = document.getElementById('searchOldQuoteInput').value.trim();
+            const tbody = document.getElementById('oldQuotesTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">搜尋中...</td></tr>';
+
+            let matchingCustomerIds = [];
+            let matchingQuoteIdsFromItems = [];
+
+            if (keyword) {
+                const { data: matchedCusts } = await supabaseClient
+                    .from('qt_customers')
+                    .select('id')
+                    .ilike('name', `%${keyword}%`);
+                if (matchedCusts && matchedCusts.length > 0) {
+                    matchingCustomerIds = matchedCusts.map(c => c.id);
+                }
+
+                const { data: matchedItems } = await supabaseClient
+                    .from('qt_quotation_items')
+                    .select('quote_id')
+                    .ilike('item_name', `%${keyword}%`);
+                if (matchedItems && matchedItems.length > 0) {
+                    matchingQuoteIdsFromItems = [...new Set(matchedItems.map(i => i.quote_id))];
+                }
+            }
+
+            let query = supabaseClient
+                .from('qt_quotations')
+                .select('*, customer:qt_customers(name)')
+                .order('quote_date', { ascending: false })
+                .limit(40);
+
+            if (keyword) {
+                let orConditions = [`quote_id.ilike.%${keyword}%`, `status.ilike.%${keyword}%`];
+                if (matchingCustomerIds.length > 0) {
+                    orConditions.push(`customer_id.in.(${matchingCustomerIds.join(',')})`);
+                }
+                if (matchingQuoteIdsFromItems.length > 0) {
+                    orConditions.push(`quote_id.in.(${matchingQuoteIdsFromItems.map(id => `"${id}"`).join(',')})`);
+                }
+                query = query.or(orConditions.join(','));
+            }
+
+            const { data, error } = await query;
+            if(error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">搜尋失敗: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">找不到符合的舊報價單</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(q => {
+                const cName = q.customer ? q.customer.name : '散客/未指定';
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-100">
+                    <td class="p-2 border-b font-bold">${q.quote_id}</td>
+                    <td class="p-2 border-b">${q.quote_date}</td>
+                    <td class="p-2 border-b text-blue-700 font-bold">${cName}</td>
+                    <td class="p-2 border-b">${q.status}</td>
+                    <td class="p-2 border-b"><button onclick="loadOldQuote('${q.quote_id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600">載入</button></td>
+                </tr>`;
+            });
+        }
+
+        async function loadOldQuote(quoteId) {
+            const { data: qData } = await supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)').eq('quote_id', quoteId).single();
+            const { data: iData } = await supabaseClient.from('qt_quotation_items').select('*').eq('quote_id', quoteId);
+            if(qData) {
+                document.getElementById('quoteId').value = qData.quote_id;
+                document.getElementById('quoteDate').value = qData.quote_date;
+                document.getElementById('quoteCustomer').value = qData.customer ? qData.customer.name : '';
+                document.getElementById('quoteStatus').value = qData.status;
+                document.getElementById('taxIncluded').checked = qData.is_tax_included;
+                document.getElementById('quoteNotes').value = qData.notes || '';
+            }
+            if(iData) {
+                quoteItems = iData.map(i => {
+                    const p = productsData.find(prod => prod.product_code === i.item_code);
+                    return {
+                        type: i.is_bundle ? '組合' : '單品', 
+                        is_bundle: i.is_bundle, 
+                        code: i.item_code, 
+                        name: i.item_name,
+                        unit: p ? (p.unit || '部') : '部',
+                        qty: i.quantity, 
+                        price: i.unit_price, 
+                        cost: i.cost, 
+                        subtotal: i.subtotal, 
+                        profit: i.profit
+                    };
+                });
+                renderQuoteItems();
+            }
+            document.getElementById('importQuoteModal').close();
+        }
+
+        // ==========================================
+        // 2. 統計與查詢 (排序功能 - 含報價單商品名稱)
+        // ==========================================
+        async function fetchStats() {
+            const pRes = await supabaseClient.from('qt_products').select('*');
+            if(pRes.data) statsData.products = pRes.data;
+            
+            // 同時撈取報價單主檔與明細以整合商品名稱
+            const qRes = await supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)');
+            const iRes = await supabaseClient.from('qt_quotation_items').select('quote_id, item_name');
+            
+            let itemsMap = {};
+            if(iRes.data) {
+                iRes.data.forEach(item => {
+                    if(!itemsMap[item.quote_id]) itemsMap[item.quote_id] = [];
+                    itemsMap[item.quote_id].push(item.item_name);
+                });
+            }
+
+            if(qRes.data) {
+                statsData.quotes = qRes.data.map(q => {
+                    const names = itemsMap[q.quote_id] || [];
+                    return {
+                        ...q,
+                        items_summary: names.join(', ') // 整合商品名稱供顯示與排序
+                    };
+                });
+            }
+
+            renderStats('products');
+            renderStats('quotes');
+        }
+
+        function sortStats(type, field) {
+            if(sortState[type].field === field) sortState[type].asc = !sortState[type].asc;
+            else { sortState[type].field = field; sortState[type].asc = true; }
+            renderStats(type);
+        }
+
+        function renderStats(type) {
+            const { field, asc } = sortState[type];
+            let data = [...statsData[type]];
+            
+            data.sort((a, b) => {
+                let valA = a[field], valB = b[field];
+                if(type === 'quotes' && field === 'customer_name') {
+                    valA = a.customer ? a.customer.name : ''; valB = b.customer ? b.customer.name : '';
+                }
+                if(valA === null) valA = ''; if(valB === null) valB = '';
+                if (typeof valA === 'string') return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                return asc ? (valA - valB) : (valB - valA);
+            });
+
+            if(type === 'products') {
+                const tbody = document.getElementById('statsProductTable'); tbody.innerHTML = '';
+                data.forEach(p => {
+                    const dateStr = p.updated_at ? p.updated_at.split('T')[0] : '';
+                    tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="p-2 border-b">${p.product_code}</td><td class="p-2 border-b">${p.name}</td><td class="p-2 border-b">${p.unit||''}</td><td class="p-2 border-b">${p.price.toLocaleString()}</td><td class="p-2 border-b">${p.cost.toLocaleString()}</td><td class="p-2 border-b">${dateStr}</td></tr>`;
+                });
+            } else if(type === 'quotes') {
+                const tbody = document.getElementById('statsQuoteTable'); tbody.innerHTML = '';
+                data.forEach(q => {
+                    const cName = q.customer ? q.customer.name : '';
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 border-b">${q.quote_id}</td>
+                        <td class="p-2 border-b">${q.quote_date}</td>
+                        <td class="p-2 border-b">${cName}</td>
+                        <td class="p-2 border-b text-gray-600 truncate max-w-xs" title="${q.items_summary}">${q.items_summary || ''}</td>
+                        <td class="p-2 border-b">${(q.total_amount||0).toLocaleString()}</td>
+                        <td class="p-2 border-b">${q.status}</td>
+                    </tr>`;
+                });
+            }
+        }
+
+        // ==========================================
+        // 3. CSV 資料匯出 / 匯入
+        // ==========================================
+        async function exportCSV(table, filename) {
+            const { data, error } = await supabaseClient.from(table).select('*');
+            if(error || !data || data.length === 0) return alert('無資料可匯出');
+            
+            const keys = Object.keys(data[0]);
+            let csvRows = [keys.join(',')];
+            data.forEach(row => {
+                const values = keys.map(k => {
+                    let val = row[k] === null || row[k] === undefined ? '' : String(row[k]);
+                    return `"${val.replace(/"/g, '""')}"`;
+                });
+                csvRows.push(values.join(','));
+            });
+
+            const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename + "_" + getTaipeiDate().toISOString().split('T')[0] + ".csv";
+            link.click();
+        }
+
+        function triggerImport(table) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = (e) => handleCSVImport(e.target.files[0], table);
+            input.click();
+        }
+
+        function parseCSVString(text) {
+            let result = [], row = [], inQuotes = false, val = '';
+            for (let i = 0; i < text.length; i++) {
+                let c = text[i];
+                if (c === '"' && text[i+1] === '"') { val += '"'; i++; }
+                else if (c === '"') { inQuotes = !inQuotes; }
+                else if (c === ',' && !inQuotes) { row.push(val); val = ''; }
+                else if (c === '\n' && !inQuotes) { row.push(val); result.push(row); row = []; val = ''; }
+                else if (c === '\r') { }
+                else { val += c; }
+            }
+            row.push(val); result.push(row);
+            return result.filter(r => r.join('').trim() !== '');
+        }
+
+        async function handleCSVImport(file, table) {
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                const rows = parseCSVString(text);
+                if(rows.length < 2) return alert('CSV格式錯誤或無資料');
+                
+                const headers = rows[0];
+                const payloads = [];
+                for(let i=1; i<rows.length; i++) {
+                    const values = rows[i];
+                    let obj = {};
+                    headers.forEach((h, idx) => {
+                        let val = values[idx] || null;
+                        if(val === "") val = null;
+                        if(h === 'id' && !val) return; 
+                        obj[h] = val;
+                    });
+                    payloads.push(obj);
+                }
+                
+                const { error } = await supabaseClient.from(table).upsert(payloads);
+                if(error) alert('匯入發生錯誤: ' + error.message);
+                else { 
+                    alert('資料匯入成功！'); 
+                    reloadSearchData(); 
+                    if(document.getElementById('tab-stats').classList.contains('active')) fetchStats(); 
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        // 通用外部網頁另開函式
+        // ==========================================
+        function openExternalUrl(url, itemName = '此項目') {
+            if (!url || url.trim() === '') {
+                return alert(`${itemName}尚未設定網址 (url)！`);
+            }
+            let targetUrl = url.trim();
+            if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                targetUrl = 'https://' + targetUrl;
+            }
+            window.open(targetUrl, '_blank');
+        }
+
+        // ==========================================
+        // 4. 各項管理 CRUD
+        // ==========================================
+        async function openCustomerManager() { document.getElementById('customerModal').showModal(); resetCustomerForm(); await fetchCustomers(); }
+        async function fetchCustomers() {
+            const { data } = await supabaseClient.from('qt_customers').select('*').order('sort_order', { ascending: true });
+            if (data) {
+                const tbody = document.getElementById('customerTableBody'); tbody.innerHTML = '';
+                data.forEach(c => {
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 border-b font-mono">${c.sort_order ?? 0}</td>
+                        <td class="p-2 border-b">${c.name}</td>
+                        <td class="p-2 border-b">${c.contact_person||''}</td>
+                        <td class="p-2 border-b">${c.phone||''}</td>
+                        <td class="p-2 border-b whitespace-nowrap">
+                            <button onclick='openExternalUrl("${c.url || ''}", "此客戶")' class="text-emerald-600 mr-2 font-bold hover:underline">網頁</button>
+                            <button onclick='editCustomer(${JSON.stringify(c)})' class="text-blue-600 mr-2">編輯</button>
+                            <button onclick="deleteCustomer('${c.id}')" class="text-red-600">刪除</button>
+                        </td>
+                    </tr>`;
+                });
+            }
+        }
+        async function saveCustomer() {
+            const id = document.getElementById('customerId').value, name = document.getElementById('custName').value;
+            if(!name) return alert('客戶名稱必填');
+            const pl = { 
+                name: name, 
+                contact_person: document.getElementById('custContact').value, 
+                phone: document.getElementById('custPhone').value, 
+                address: document.getElementById('custAddress').value,
+                url: document.getElementById('custUrl').value,
+                notes: document.getElementById('custNotes').value,
+                sort_order: parseInt(document.getElementById('custSort').value) || 0
+            };
+            if(id) await supabaseClient.from('qt_customers').update(pl).eq('id', id); 
+            else await supabaseClient.from('qt_customers').insert([pl]);
+            resetCustomerForm(); fetchCustomers(); reloadSearchData();
+        }
+        function editCustomer(c) { 
+            document.getElementById('customerFormTitle').innerText = "編輯客戶";
+            document.getElementById('customerId').value = c.id; 
+            document.getElementById('custName').value = c.name; 
+            document.getElementById('custContact').value = c.contact_person||''; 
+            document.getElementById('custPhone').value = c.phone||''; 
+            document.getElementById('custAddress').value = c.address||'';
+            document.getElementById('custUrl').value = c.url||'';
+            document.getElementById('custNotes').value = c.notes||''; 
+            document.getElementById('custSort').value = c.sort_order ?? 0;
+        }
+        function resetCustomerForm() { 
+            document.getElementById('customerFormTitle').innerText = "新增客戶";
+            ['customerId','custName','custContact','custPhone','custAddress','custUrl','custNotes'].forEach(id => document.getElementById(id).value = ''); 
+            document.getElementById('custSort').value = '0';
+        }
+        async function deleteCustomer(id) { if(confirm('確定刪除？')) { await supabaseClient.from('qt_customers').delete().eq('id', id); fetchCustomers(); reloadSearchData(); } }
+
+        async function openSupplierManager() { document.getElementById('supplierModal').showModal(); resetSupplierForm(); await fetchSuppliers(); }
+        async function fetchSuppliers() {
+            const { data } = await supabaseClient.from('qt_suppliers').select('*').order('sort_order', { ascending: true });
+            if (data) {
+                suppliersData = data;
+                const tbody = document.getElementById('supplierTableBody'); tbody.innerHTML = '';
+                data.forEach(s => {
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 border-b font-mono">${s.sort_order ?? 0}</td>
+                        <td class="p-2 border-b">${s.name}</td>
+                        <td class="p-2 border-b">${s.contact_person||''}</td>
+                        <td class="p-2 border-b">${s.phone||''}</td>
+                        <td class="p-2 border-b whitespace-nowrap">
+                            <button onclick='openExternalUrl("${s.url || ''}", "此廠商")' class="text-emerald-600 mr-2 font-bold hover:underline">網頁</button>
+                            <button onclick='editSupplier(${JSON.stringify(s)})' class="text-blue-600 mr-2">編輯</button>
+                            <button onclick="deleteSupplier('${s.id}')" class="text-red-600">刪除</button>
+                        </td>
+                    </tr>`;
+                });
+            }
+        }
+        async function saveSupplier() {
+            const id = document.getElementById('supplierId').value, name = document.getElementById('supName').value;
+            if(!name) return alert('廠商名稱必填');
+            const pl = { 
+                name: name, 
+                contact_person: document.getElementById('supContact').value, 
+                phone: document.getElementById('supPhone').value, 
+                address: document.getElementById('supAddress').value,
+                url: document.getElementById('supUrl').value,
+                sort_order: parseInt(document.getElementById('supSort').value)||0 
+            };
+            if(id) await supabaseClient.from('qt_suppliers').update(pl).eq('id', id); 
+            else await supabaseClient.from('qt_suppliers').insert([pl]);
+            resetSupplierForm(); fetchSuppliers(); reloadSearchData();
+        }
+        function editSupplier(s) { 
+            document.getElementById('supplierFormTitle').innerText = "編輯廠商";
+            document.getElementById('supplierId').value = s.id; 
+            document.getElementById('supName').value = s.name; 
+            document.getElementById('supContact').value = s.contact_person||''; 
+            document.getElementById('supPhone').value = s.phone||''; 
+            document.getElementById('supAddress').value = s.address||'';
+            document.getElementById('supUrl').value = s.url||'';
+            document.getElementById('supSort').value = s.sort_order ?? 0; 
+        }
+        function resetSupplierForm() { 
+            document.getElementById('supplierFormTitle').innerText = "新增廠商";
+            ['supplierId','supName','supContact','supPhone','supAddress','supUrl'].forEach(id => document.getElementById(id).value = ''); 
+            document.getElementById('supSort').value = '0'; 
+        }
+        async function deleteSupplier(id) { if(confirm('確定刪除？')) { await supabaseClient.from('qt_suppliers').delete().eq('id', id); fetchSuppliers(); reloadSearchData(); } }
+
+        async function openProductManager() {
+            document.getElementById('productModal').showModal();
+            let supOpts = '<option value="">無</option>'; suppliersData.forEach(s => supOpts += `<option value="${s.id}">${s.name}</option>`);
+            document.getElementById('prodSup1').innerHTML = supOpts; document.getElementById('prodSup2').innerHTML = supOpts;
+            resetProductForm(); await fetchProducts();
+        }
+        async function fetchProducts() {
+            const { data } = await supabaseClient.from('qt_products').select('*').order('product_code');
+            if (data) {
+                productsData = data;
+                const tbody = document.getElementById('productTableBody'); tbody.innerHTML = '';
+                data.forEach(p => {
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 border-b">${p.product_code}</td>
+                        <td class="p-2 border-b">${p.name}</td>
+                        <td class="p-2 border-b">${p.price.toLocaleString()}</td>
+                        <td class="p-2 border-b">${p.cost.toLocaleString()}</td>
+                        <td class="p-2 border-b whitespace-nowrap">
+                            <button onclick='openExternalUrl("${p.url || ''}", "此商品")' class="text-emerald-600 mr-2 font-bold hover:underline">網頁</button>
+                            <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-600 mr-2">編輯</button>
+                            <button onclick="deleteProduct('${p.product_code}')" class="text-red-600">刪除</button>
+                        </td>
+                    </tr>`;
+                });
+                reloadSearchData();
+            }
+        }
+
+        async function saveProduct() {
+            const code = document.getElementById('prodCode').value.trim(), name = document.getElementById('prodName').value.trim();
+            if(!code || !name) return alert('代號與名稱必填');
+            const pl = { product_code: code, name: name, unit: document.getElementById('prodUnit').value, price: parseInt(document.getElementById('prodPrice').value)||0, cost: parseInt(document.getElementById('prodCost').value)||0, supplier1_id: document.getElementById('prodSup1').value||null, supplier2_id: document.getElementById('prodSup2').value||null, url: document.getElementById('prodUrl').value, notes: document.getElementById('prodNotes').value, updated_at: getTaipeiDate().toISOString() };
+            const isEdit = document.getElementById('prodIsEdit').value === "true";
+            const res = isEdit ? await supabaseClient.from('qt_products').update(pl).eq('product_code', code) : await supabaseClient.from('qt_products').insert([pl]);
+            if (res.error) alert('儲存失敗: ' + res.error.message); else { resetProductForm(); fetchProducts(); }
+        }
+        function editProduct(p) {
+            document.getElementById('productFormTitle').innerText = "編輯商品"; document.getElementById('prodIsEdit').value = "true";
+            const cInput = document.getElementById('prodCode'); cInput.value = p.product_code; cInput.readOnly = true; cInput.classList.add('bg-gray-200');
+            document.getElementById('prodName').value = p.name; document.getElementById('prodUnit').value = p.unit||''; document.getElementById('prodPrice').value = p.price; document.getElementById('prodCost').value = p.cost; document.getElementById('prodSup1').value = p.supplier1_id||''; document.getElementById('prodSup2').value = p.supplier2_id||''; document.getElementById('prodUrl').value = p.url||''; document.getElementById('prodNotes').value = p.notes||'';
+        }
+        function resetProductForm() {
+            document.getElementById('productFormTitle').innerText = "新增商品"; document.getElementById('prodIsEdit').value = "false";
+            const cInput = document.getElementById('prodCode'); cInput.value = ''; cInput.readOnly = false; cInput.classList.remove('bg-gray-200');
+            ['prodName','prodUnit','prodUrl','prodNotes','prodSup1','prodSup2'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('prodPrice').value = 0; document.getElementById('prodCost').value = 0;
+        }
+        async function deleteProduct(code) { if(confirm('確定刪除單品？')) { await supabaseClient.from('qt_products').delete().eq('product_code', code); fetchProducts(); } }
+
+        async function openBundleManager() { document.getElementById('bundleModal').showModal(); resetBundleForm(); buildBundleItemSlots(); await fetchBundles(); }
+        function buildBundleItemSlots() {
+            const container = document.getElementById('bundleItemsSetup'); container.innerHTML = '';
+            let pOptions = '<option value="">--請選擇單品--</option>'; productsData.forEach(p => pOptions += `<option value="${p.product_code}">${p.product_code} - ${p.name}</option>`);
+            for(let i=1; i<=5; i++) container.innerHTML += `<div class="flex gap-2 items-center bg-white p-2 border rounded"><span class="font-bold text-gray-500 w-6">${i}.</span><select id="bunProd_${i}" class="flex-grow border p-1 rounded">${pOptions}</select><label class="text-sm">數量:</label><input type="number" id="bunQty_${i}" value="1" min="1" class="w-20 border p-1 rounded text-center"></div>`;
+        }
+        async function fetchBundles() {
+            const { data } = await supabaseClient.from('qt_bundles').select('*, items:qt_bundle_items(*)').order('bundle_code');
+            if (data) {
+                bundlesData = data;
+                const tbody = document.getElementById('bundleTableBody'); tbody.innerHTML = '';
+                data.forEach(b => tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="p-2 border-b">${b.bundle_code}</td><td class="p-2 border-b">${b.name}</td><td class="p-2 border-b text-center">${b.items.length}</td><td class="p-2 border-b"><button onclick='editBundle(${JSON.stringify(b)})' class="text-blue-600 mr-2">編輯</button><button onclick="deleteBundle('${b.bundle_code}')" class="text-red-600">刪除</button></td></tr>`);
+                reloadSearchData();
+            }
+        }
+        async function saveBundle() {
+            const code = document.getElementById('bunCode').value.trim(), name = document.getElementById('bunName').value.trim();
+            if(!code || !name) return alert('必填');
+            let vItems = [];
+            for(let i=1; i<=5; i++) { const pCode = document.getElementById(`bunProd_${i}`).value, qty = parseInt(document.getElementById(`bunQty_${i}`).value)||0; if(pCode && qty>0) vItems.push({ bundle_code: code, product_code: pCode, quantity: qty }); }
+            if(vItems.length < 2) return alert('至少需2項單品');
+            await supabaseClient.from('qt_bundles').upsert({ bundle_code: code, name: name, notes: document.getElementById('bunNotes').value, updated_at: getTaipeiDate().toISOString() });
+            await supabaseClient.from('qt_bundle_items').delete().eq('bundle_code', code);
+            await supabaseClient.from('qt_bundle_items').insert(vItems);
+            resetBundleForm(); fetchBundles();
+        }
+        function editBundle(b) {
+            document.getElementById('bundleFormTitle').innerText = "編輯組合"; document.getElementById('bundleIsEdit').value = "true";
+            const cInput = document.getElementById('bunCode'); cInput.value = b.bundle_code; cInput.readOnly = true; cInput.classList.add('bg-gray-200');
+            document.getElementById('bunName').value = b.name; document.getElementById('bunNotes').value = b.notes||'';
+            for(let i=1; i<=5; i++) { document.getElementById(`bunProd_${i}`).value = ''; document.getElementById(`bunQty_${i}`).value = '1'; }
+            b.items.forEach((item, idx) => { if(idx<5) { document.getElementById(`bunProd_${idx+1}`).value = item.product_code; document.getElementById(`bunQty_${idx+1}`).value = item.quantity; } });
+        }
+        function resetBundleForm() {
+            document.getElementById('bundleFormTitle').innerText = "新增組合"; document.getElementById('bundleIsEdit').value = "false";
+            const cInput = document.getElementById('bunCode'); cInput.value = ''; cInput.readOnly = false; cInput.classList.remove('bg-gray-200');
+            document.getElementById('bunName').value = ''; document.getElementById('bunNotes').value = '';
+            for(let i=1; i<=5; i++) { let e=document.getElementById(`bunProd_${i}`); if(e) e.value=''; let q=document.getElementById(`bunQty_${i}`); if(q) q.value='1'; }
+        }
+        async function deleteBundle(code) { if(confirm('確定刪除組合？')) { await supabaseClient.from('qt_bundles').delete().eq('bundle_code', code); fetchBundles(); } }
+
+        // ==========================================
+        // 5. 快捷按鍵
+        // ==========================================
+        async function loadShortcuts() {
+            const { data } = await supabaseClient.from('qt_shortcuts').select('*').order('grid_index');
+            if (data) { shortcutsData = data; renderShortcuts(); }
+        }
+        function renderShortcuts() {
+            const container = document.getElementById('shortcutGridContainer'); container.innerHTML = '';
+            for(let i = 0; i < 25; i++) {
+                const b = shortcutsData.find(s => s.grid_index === i) || { grid_index: i, name: '未設定', url: '' };
+                const btn = document.createElement('button'); btn.className = "bg-white border hover:border-blue-500 rounded p-4 h-24 shadow text-gray-700 font-bold break-all"; btn.innerText = b.name;
+                btn.onclick = () => { if(b.url) window.open(b.url, '_blank'); };
+                btn.oncontextmenu = (e) => { e.preventDefault(); document.getElementById('shortcutIndex').value = i; document.getElementById('shortcutName').value = b.name!=='未設定'?b.name:''; document.getElementById('shortcutUrl').value = b.url||''; document.getElementById('shortcutModal').showModal(); };
+                container.appendChild(btn);
+            }
+        }
+        async function saveShortcut() {
+            const pl = { grid_index: parseInt(document.getElementById('shortcutIndex').value), name: document.getElementById('shortcutName').value||'未設定', url: document.getElementById('shortcutUrl').value };
+            await supabaseClient.from('qt_shortcuts').upsert(pl, { onConflict: 'grid_index' });
+            document.getElementById('shortcutModal').close(); loadShortcuts();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
