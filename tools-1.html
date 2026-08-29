@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程常用單位換算工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-left: 5px solid #3498db;
+            padding-left: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #34495e;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #e8f4fd;
+            border-radius: 6px;
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .table th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">工程常用單位換算工具</h1>
+
+    <div class="container">
+        <!-- 重量換算 -->
+        <div class="card">
+            <h2>重量換算</h2>
+            <div class="form-group">
+                <label>輸入數值</label>
+                <input type="number" id="weightValue" placeholder="請輸入數值" step="any">
+            </div>
+            <div class="form-group">
+                <label>來源單位</label>
+                <select id="weightUnit">
+                    <option value="g">公克(g)</option>
+                    <option value="kg">公斤(kg)</option>
+                    <option value="ton">公噸(ton)</option>
+                    <option value="lb">磅(lb)</option>
+                    <option value="oz">盎司(oz)</option>
+                </select>
+            </div>
+            <button onclick="convertWeight()">計算換算</button>
+            <div id="weightResult" class="result"></div>
+        </div>
+
+        <!-- 體積換算 -->
+        <div class="card">
+            <h2>體積換算</h2>
+            <div class="form-group">
+                <label>輸入數值</label>
+                <input type="number" id="volumeValue" placeholder="請輸入數值" step="any">
+            </div>
+            <div class="form-group">
+                <label>來源單位</label>
+                <select id="volumeUnit">
+                    <option value="ml">毫升(ml)</option>
+                    <option value="l">公升(l)</option>
+                    <option value="m3">立方公尺(m³)</option>
+                    <option value="cm3">立方公分(cm³)</option>
+                    <option value="gal">加侖(gal)</option>
+                </select>
+            </div>
+            <button onclick="convertVolume()">計算換算</button>
+            <div id="volumeResult" class="result"></div>
+        </div>
+
+        <!-- 常用單位中英文對照 -->
+        <div class="card" style="grid-column: 1/-1;">
+            <h2>常用單位中英文對照表</h2>
+            <table class="table">
+                <tr>
+                    <th>中文名稱</th>
+                    <th>英文名稱</th>
+                    <th>符號</th>
+                    <th>類別</th>
+                </tr>
+                <tr><td>公克</td><td>Gram</td><td>g</td><td>重量</td></tr>
+                <tr><td>公斤</td><td>Kilogram</td><td>kg</td><td>重量</td></tr>
+                <tr><td>公噸</td><td>Ton</td><td>ton</td><td>重量</td></tr>
+                <tr><td>磅</td><td>Pound</td><td>lb</td><td>重量</td></tr>
+                <tr><td>盎司</td><td>Ounce</td><td>oz</td><td>重量</td></tr>
+                <tr><td>毫升</td><td>Milliliter</td><td>ml</td><td>體積</td></tr>
+                <tr><td>公升</td><td>Liter</td><td>l</td><td>體積</td></tr>
+                <tr><td>立方公尺</td><td>Cubic Meter</td><td>m³</td><td>體積</td></tr>
+                <tr><td>公尺</td><td>Meter</td><td>m</td><td>長度</td></tr>
+                <tr><td>公分</td><td>Centimeter</td><td>cm</td><td>長度</td></tr>
+                <tr><td>毫米</td><td>Millimeter</td><td>mm</td><td>長度</td></tr>
+                <tr><td>瓦特</td><td>Watt</td><td>W</td><td>功率</td></tr>
+                <tr><td>千瓦</td><td>Kilowatt</td><td>kW</td><td>功率</td></tr>
+                <tr><td>馬力</td><td>Horsepower</td><td>hp</td><td>功率</td></tr>
+            </table>
+        </div>
+
+        <!-- 功率換算 -->
+        <div class="card">
+            <h2>功率換算</h2>
+            <div class="form-group">
+                <label>輸入數值</label>
+                <input type="number" id="powerValue" placeholder="請輸入數值" step="any">
+            </div>
+            <div class="form-group">
+                <label>來源單位</label>
+                <select id="powerUnit">
+                    <option value="w">瓦特(W)</option>
+                    <option value="kw">千瓦(kW)</option>
+                    <option value="hp">馬力(hp)</option>
+                </select>
+            </div>
+            <button onclick="convertPower()">計算換算</button>
+            <div id="powerResult" class="result"></div>
+        </div>
+
+        <!-- 線徑換算 -->
+        <div class="card">
+            <h2>線徑換算(AWG/mm)</h2>
+            <div class="form-group">
+                <label>選擇類型</label>
+                <select id="wireType">
+                    <option value="awg">AWG → mm</option>
+                    <option value="mm">mm → AWG</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>輸入數值</label>
+                <input type="number" id="wireValue" placeholder="請輸入數值" step="any">
+            </div>
+            <button onclick="convertWire()">計算換算</button>
+            <div id="wireResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 重量換算
+        function convertWeight() {
+            const val = parseFloat(document.getElementById('weightValue').value);
+            const unit = document.getElementById('weightUnit').value;
+            if (isNaN(val)) { alert('請輸入有效數值'); return; }
+
+            let g, kg, ton, lb, oz;
+            switch(unit) {
+                case 'g': g=val; kg=val/1000; ton=val/1000000; lb=val*0.00220462; oz=val*0.035274; break;
+                case 'kg': g=val*1000; kg=val; ton=val/1000; lb=val*2.20462; oz=val*35.274; break;
+                case 'ton': g=val*1000000; kg=val*1000; ton=val; lb=val*2204.62; oz=val*35274; break;
+                case 'lb': g=val*453.592; kg=val*0.453592; ton=val*0.000453592; oz=val*16; break;
+                case 'oz': g=val*28.3495; kg=val*0.0283495; ton=val*0.0000283495; lb=val*0.0625; break;
+            }
+
+            document.getElementById('weightResult').innerHTML = 
+                `公克(g): ${g.toFixed(4)}<br>公斤(kg): ${kg.toFixed(4)}<br>公噸(ton): ${ton.toFixed(6)}<br>磅(lb): ${lb.toFixed(4)}<br>盎司(oz): ${oz.toFixed(4)}`;
+        }
+
+        // 體積換算
+        function convertVolume() {
+            const val = parseFloat(document.getElementById('volumeValue').value);
+            const unit = document.getElementById('volumeUnit').value;
+            if (isNaN(val)) { alert('請輸入有效數值'); return; }
+
+            let ml, l, m3, cm3, gal;
+            switch(unit) {
+                case 'ml': ml=val; l=val/1000; m3=val/1000000; cm3=val; gal=val*0.000264172; break;
+                case 'l': ml=val*1000; l=val; m3=val/1000; cm3=val*1000; gal=val*0.264172; break;
+                case 'm3': ml=val*1000000; l=val*1000; m3=val; cm3=val*1000000; gal=val*264.172; break;
+                case 'cm3': ml=val; l=val/1000; m3=val/1000000; cm3=val; gal=val*0.000264172; break;
+                case 'gal': ml=val*3785.41; l=val*3.78541; m3=val*0.00378541; cm3=val*3785.41; break;
+            }
+
+            document.getElementById('volumeResult').innerHTML = 
+                `毫升(ml): ${ml.toFixed(4)}<br>公升(l): ${l.toFixed(4)}<br>立方公尺(m³): ${m3.toFixed(6)}<br>立方公分(cm³): ${cm3.toFixed(4)}<br>加侖(gal): ${gal.toFixed(4)}`;
+        }
+
+        // 功率換算
+        function convertPower() {
+            const val = parseFloat(document.getElementById('powerValue').value);
+            const unit = document.getElementById('powerUnit').value;
+            if (isNaN(val)) { alert('請輸入有效數值'); return; }
+
+            let w, kw, hp;
+            switch(unit) {
+                case 'w': w=val; kw=val/1000; hp=val*0.00134102; break;
+                case 'kw': w=val*1000; kw=val; hp=val*1.34102; break;
+                case 'hp': w=val*745.7; kw=val*0.7457; hp=val; break;
+            }
+
+            document.getElementById('powerResult').innerHTML = 
+                `瓦特(W): ${w.toFixed(4)}<br>千瓦(kW): ${kw.toFixed(4)}<br>馬力(hp): ${hp.toFixed(4)}`;
+        }
+
+        // 線徑換算
+        function convertWire() {
+            const val = parseFloat(document.getElementById('wireValue').value);
+            const type = document.getElementById('wireType').value;
+            if (isNaN(val)) { alert('請輸入有效數值'); return; }
+
+            let result;
+            if (type === 'awg') {
+                const mm = Math.pow(92, (36-val)/39) * 0.127;
+                result = `AWG ${val} = ${mm.toFixed(4)} mm`;
+            } else {
+                const awg = 36 - 39*Math.log(val/0.127)/Math.log(92);
+                result = `${val} mm = AWG ${awg.toFixed(2)}`;
+            }
+
+            document.getElementById('wireResult').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
