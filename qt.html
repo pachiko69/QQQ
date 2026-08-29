@@ -17,6 +17,12 @@
         dialog::backdrop { background-color: rgba(0, 0, 0, 0.5); }
         th { cursor: pointer; user-select: none; }
         th:hover { background-color: #d1d5db; }
+        /* 隱除傳統數字輸入框的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -26,10 +32,10 @@
         <div class="max-w-7xl mx-auto flex flex-wrap gap-4 justify-between items-center">
             <h1 class="text-xl font-bold">報價單系統</h1>
             <div class="flex gap-2 text-sm sm:text-base">
-                <button onclick="switchTab('quote')" class="hover:bg-blue-600 px-3 py-2 rounded">1. 報價單</button>
-                <button onclick="switchTab('stats')" class="hover:bg-blue-600 px-3 py-2 rounded">2. 統計</button>
-                <button onclick="switchTab('manage')" class="hover:bg-blue-600 px-3 py-2 rounded">3. 各項管理</button>
-                <button onclick="switchTab('shortcut')" class="hover:bg-blue-600 px-3 py-2 rounded">4. 快捷按鍵表</button>
+                <button onclick="switchTab('quote')" class="hover:bg-blue-600 px-3 py-2 rounded">報價單</button>
+                <button onclick="switchTab('stats')" class="hover:bg-blue-600 px-3 py-2 rounded">統計</button>
+                <button onclick="switchTab('manage')" class="hover:bg-blue-600 px-3 py-2 rounded">管理</button>
+                <button onclick="switchTab('shortcut')" class="hover:bg-blue-600 px-3 py-2 rounded">工具按鍵</button>
             </div>
         </div>
     </nav>
@@ -63,7 +69,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold mb-1">狀態</label>
+                        <label class="block text-sm font-bold mb-1">報價單狀態</label>
                         <select id="quoteStatus" class="w-full border rounded p-2">
                             <option value="報價中">報價中</option>
                             <option value="已成交">已成交</option>
@@ -73,7 +79,7 @@
                 </div>
 
                 <div class="border p-4 rounded bg-gray-50">
-                    <h3 class="font-bold mb-2">加入商品 / 組合 (數量預設為 1)</h3>
+                    <h3 class="font-bold mb-2">加入商品或組合商品</h3>
                     <div class="flex gap-2 items-end">
                         <div class="flex-grow">
                             <label class="block text-xs font-bold mb-1">商品或組合代號/名稱搜尋</label>
@@ -89,10 +95,10 @@
                         <thead class="bg-gray-200">
                             <tr>
                                 <th class="border p-2">類別</th>
-                                <th class="border p-2">代號</th>
-                                <th class="border p-2">名稱</th>
-                                <th class="border p-2 w-28">數量 (可修改)</th>
-                                <th class="border p-2 w-32">單價 (可修改)</th>
+                                <th class="border p-2">商品代號</th>
+                                <th class="border p-2">商品名稱</th>
+                                <th class="border p-2 w-28">數量</th>
+                                <th class="border p-2 w-32">單價</th>
                                 <th class="border p-2">小計</th>
                                 <th class="border p-2">操作</th>
                             </tr>
@@ -106,9 +112,9 @@
                         <input type="checkbox" id="taxIncluded" onchange="calculateTotal()"> 含稅 (5%)
                     </label>
                     <div class="text-right">
-                        <p>總成本: <span id="lblTotalCost" class="font-mono">0</span></p>
-                        <p>預估利潤: <span id="lblTotalProfit" class="font-mono text-green-600">0</span></p>
-                        <p class="text-xl font-bold">報價總額(新台幣): <span id="lblTotalAmount" class="text-blue-700">0</span></p>
+                        <p>總成本:$ <span id="lblTotalCost" class="font-mono">0</span></p>
+                        <p>預估利潤:$ <span id="lblTotalProfit" class="font-mono text-green-600">0</span></p>
+                        <p class="text-xl font-bold">報價總額:$ <span id="lblTotalAmount" class="text-blue-700">0</span></p>
                     </div>
                 </div>
 
@@ -118,8 +124,8 @@
                 </div>
                 
                 <div class="text-center flex flex-wrap justify-center gap-4">
-                    <button type="button" onclick="saveQuotation()" class="bg-blue-700 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-blue-800 text-base">儲存報價單 (覆蓋)</button>
-                    <button type="button" onclick="saveAsNewQuotation()" class="bg-emerald-600 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-emerald-700 text-base">另存報價單 (新增)</button>
+                    <button type="button" onclick="saveQuotation()" class="bg-blue-700 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-blue-800 text-base">儲存</button>
+                    <button type="button" onclick="saveAsNewQuotation()" class="bg-emerald-600 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-emerald-700 text-base">另存</button>
                     <button type="button" onclick="copyQuoteItemsToClipboard()" class="bg-teal-600 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-teal-700 text-base">複製明細</button>
                     <button type="button" onclick="resetQuotationForm()" class="bg-gray-500 text-white font-bold py-3 px-6 rounded shadow-lg hover:bg-gray-600 text-base">清空重填</button>
                 </div>
@@ -133,24 +139,25 @@
                 <button onclick="fetchStats()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">重新整理資料</button>
             </div>
             
-            <h3 class="text-lg font-bold mb-2 mt-4 text-blue-700">商品資料統計 (點擊表頭可排序)</h3>
+            <h3 class="text-lg font-bold mb-2 mt-4 text-blue-700">商品統計</h3>
             <div class="overflow-y-auto max-h-64 border rounded mb-6">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-200 sticky top-0">
                         <tr>
-                            <th class="p-2 border-b" onclick="sortStats('products', 'product_code')">代號 ↕</th>
-                            <th class="p-2 border-b" onclick="sortStats('products', 'name')">名稱 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'product_code')">商品代號 ↕</th>
+                            <th class="p-2 border-b" onclick="sortStats('products', 'name')">商品名稱 ↕</th>
                             <th class="p-2 border-b">單位</th>
                             <th class="p-2 border-b" onclick="sortStats('products', 'price')">售價 ↕</th>
                             <th class="p-2 border-b" onclick="sortStats('products', 'cost')">成本 ↕</th>
                             <th class="p-2 border-b" onclick="sortStats('products', 'updated_at')">更新日期 ↕</th>
+                            <th class="p-2 border-b">操作</th>
                         </tr>
                     </thead>
                     <tbody id="statsProductTable"></tbody>
                 </table>
             </div>
 
-            <h3 class="text-lg font-bold mb-2 text-blue-700">報價單統計 (點擊表頭可排序)</h3>
+            <h3 class="text-lg font-bold mb-2 text-blue-700">報價單統計</h3>
             <div class="overflow-y-auto max-h-64 border rounded">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-200 sticky top-0">
@@ -161,6 +168,7 @@
                             <th class="p-2 border-b" onclick="sortStats('quotes', 'items_summary')">商品名稱 ↕</th>
                             <th class="p-2 border-b" onclick="sortStats('quotes', 'total_amount')">總金額 ↕</th>
                             <th class="p-2 border-b" onclick="sortStats('quotes', 'status')">狀態 ↕</th>
+                            <th class="p-2 border-b">操作</th>
                         </tr>
                     </thead>
                     <tbody id="statsQuoteTable"></tbody>
@@ -170,16 +178,17 @@
 
         <!-- ==================== 面板 3: 各項管理 ==================== -->
         <div id="tab-manage" class="tab-content">
-            <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-4">各項管理 & 資料滙入/出</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <button onclick="openCustomerManager()" class="bg-indigo-100 border border-indigo-300 p-4 rounded shadow hover:bg-indigo-200">客戶管理 (CRUD)</button>
-                <button onclick="openSupplierManager()" class="bg-indigo-100 border border-indigo-300 p-4 rounded shadow hover:bg-indigo-200">廠商管理 (CRUD)</button>
-                <button onclick="openProductManager()" class="bg-teal-100 border border-teal-300 p-4 rounded shadow hover:bg-teal-200">商品管理 (單品)</button>
-                <button onclick="openBundleManager()" class="bg-teal-100 border border-teal-300 p-4 rounded shadow hover:bg-teal-200">組合商品管理</button>
+            <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2 mb-4">資料管理 & 滙入/滙出</h2>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <button onclick="openCustomerManager()" class="bg-indigo-100 border border-indigo-300 p-4 rounded shadow hover:bg-indigo-200">客戶</button>
+                <button onclick="openSupplierManager()" class="bg-indigo-100 border border-indigo-300 p-4 rounded shadow hover:bg-indigo-200">廠商</button>
+                <button onclick="openProductManager()" class="bg-teal-100 border border-teal-300 p-4 rounded shadow hover:bg-teal-200">商品</button>
+                <button onclick="openBundleManager()" class="bg-teal-100 border border-teal-300 p-4 rounded shadow hover:bg-teal-200">組合商品</button>
+                <button onclick="openQuoteManager()" class="bg-amber-100 border border-amber-300 p-4 rounded shadow hover:bg-amber-200 font-bold text-amber-900">報價單</button>
             </div>
             
             <hr class="my-4">
-            <h3 class="font-bold text-lg mb-2">CSV 資料匯出 (Export)</h3>
+            <h3 class="font-bold text-lg mb-2">CSV 資料匯出</h3>
             <div class="flex gap-2 flex-wrap mb-4">
                 <button onclick="exportCSV('qt_products', '商品清單')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出商品</button>
                 <button onclick="exportCSV('qt_customers', '客戶清單')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出客戶</button>
@@ -187,7 +196,7 @@
                 <button onclick="exportCSV('qt_quotations', '報價單主檔')" class="bg-gray-700 text-white px-4 py-2 rounded">匯出報價單</button>
             </div>
 
-            <h3 class="font-bold text-lg mb-2 text-red-700">CSV 資料匯入 (Import)</h3>
+            <h3 class="font-bold text-lg mb-2 text-red-700">CSV 資料匯入</h3>
             <div class="flex gap-2 flex-wrap">
                 <button onclick="triggerImport('qt_products')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入商品</button>
                 <button onclick="triggerImport('qt_customers')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入客戶</button>
@@ -195,10 +204,10 @@
             </div>
         </div>
 
-        <!-- ==================== 面板 4: 快捷按鍵表 ==================== -->
+        <!-- ==================== 面板 4: 工具按鍵表 ==================== -->
         <div id="tab-shortcut" class="tab-content">
             <div class="flex justify-between items-center mb-4 border-b-2 border-blue-500 pb-2">
-                <h2 class="text-2xl font-bold">快捷按鍵表</h2>
+                <h2 class="text-2xl font-bold">常用工具</h2>
                 <span class="text-sm text-gray-500">提示：點擊按鈕開啟網頁；點擊右鍵編輯。</span>
             </div>
             <div class="shortcut-grid p-4 bg-gray-200 rounded-lg" id="shortcutGridContainer"></div>
@@ -206,6 +215,30 @@
     </div>
 
     <!-- ==================== 彈窗 Modal 區域 ==================== -->
+
+    <!-- 商品歷史報價 Modal -->
+    <dialog id="itemHistoryModal" class="p-6 rounded shadow-lg w-full max-w-4xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-blue-800" id="itemHistoryTitle">商品歷史交易記錄</h3>
+            <button onclick="document.getElementById('itemHistoryModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        <div class="overflow-y-auto max-h-96 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr>
+                        <th class="p-2 border-b">日期</th>
+                        <th class="p-2 border-b">報價單號</th>
+                        <th class="p-2 border-b">客戶</th>
+                        <th class="p-2 border-b">狀態</th>
+                        <th class="p-2 border-b">數量</th>
+                        <th class="p-2 border-b">單價</th>
+                        <th class="p-2 border-b">小計</th>
+                    </tr>
+                </thead>
+                <tbody id="itemHistoryTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
 
     <!-- 滙入舊報價單 Modal -->
     <dialog id="importQuoteModal" class="p-6 rounded shadow-lg w-full max-w-4xl bg-white">
@@ -227,6 +260,43 @@
         </div>
     </dialog>
 
+    <!-- 報價單管理 Modal -->
+    <dialog id="quoteManagerModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-amber-900">報價單管理 (排序 / 編輯 / 刪除 / 區間刪除)</h3>
+            <button onclick="document.getElementById('quoteManagerModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+        </div>
+        
+        <div class="bg-amber-50 p-4 rounded mb-4 border border-amber-200 flex flex-wrap gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">起始日期</label>
+                <input type="date" id="delStartDate" class="border p-2 rounded text-sm bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">結束日期</label>
+                <input type="date" id="delEndDate" class="border p-2 rounded text-sm bg-white">
+            </div>
+            <button onclick="deleteQuotesByDateRange()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-sm shadow">依日期區間刪除報價單</button>
+            <span class="text-xs text-gray-500 ml-auto">提示：將連同報價單明細一併刪除</span>
+        </div>
+
+        <div class="overflow-y-auto max-h-96 border rounded">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-200 sticky top-0">
+                    <tr>
+                        <th class="p-2 border-b" onclick="sortQuoteManager('quote_date')">日期 ↕</th>
+                        <th class="p-2 border-b" onclick="sortQuoteManager('customer_name')">客戶 ↕</th>
+                        <th class="p-2 border-b" onclick="sortQuoteManager('quote_id')">報價單號 ↕</th>
+                        <th class="p-2 border-b">總金額</th>
+                        <th class="p-2 border-b">狀態</th>
+                        <th class="p-2 border-b">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="quoteManagerTableBody"></tbody>
+            </table>
+        </div>
+    </dialog>
+
     <!-- 客戶管理 Modal -->
     <dialog id="customerModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
         <div class="flex justify-between items-center mb-4">
@@ -242,7 +312,7 @@
                 <div><label class="text-xs font-bold text-gray-600">電話</label><input type="text" id="custPhone" class="w-full border p-2 rounded bg-white" placeholder="電話"></div>
                 <div><label class="text-xs font-bold text-gray-600">地址</label><input type="text" id="custAddress" class="w-full border p-2 rounded bg-white" placeholder="地址"></div>
                 <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="custUrl" class="w-full border p-2 rounded bg-white" placeholder="網址"></div>
-                <div><label class="text-xs font-bold text-gray-600">排序</label><input type="number" id="custSort" class="w-full border p-2 rounded bg-white" value="0"></div>
+                <div><label class="text-xs font-bold text-gray-600">排序</label><input type="text" id="custSort" class="w-full border p-2 rounded bg-white text-center font-mono" value="0"></div>
                 <div class="col-span-1 md:col-span-3"><label class="text-xs font-bold text-gray-600">備註</label><input type="text" id="custNotes" class="w-full border p-2 rounded bg-white" placeholder="備註"></div>
             </div>
             <div class="flex gap-2 mt-2">
@@ -275,7 +345,7 @@
                 <div><label class="text-xs font-bold text-gray-600">電話</label><input type="text" id="supPhone" class="w-full border p-2 rounded bg-white" placeholder="電話"></div>
                 <div><label class="text-xs font-bold text-gray-600">地址</label><input type="text" id="supAddress" class="w-full border p-2 rounded bg-white" placeholder="地址"></div>
                 <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="supUrl" class="w-full border p-2 rounded bg-white" placeholder="網址"></div>
-                <div><label class="text-xs font-bold text-gray-600">排序</label><input type="number" id="supSort" class="w-full border p-2 rounded bg-white" value="0"></div>
+                <div><label class="text-xs font-bold text-gray-600">排序</label><input type="text" id="supSort" class="w-full border p-2 rounded bg-white text-center font-mono" value="0"></div>
             </div>
             <div class="flex gap-2 mt-2">
                 <button onclick="saveSupplier()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm">儲存</button>
@@ -295,7 +365,7 @@
     <!-- 商品管理 (單品) Modal -->
     <dialog id="productModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">商品管理 (單品)</h3>
+            <h3 class="text-xl font-bold">商品管理</h3>
             <button onclick="document.getElementById('productModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
         </div>
         <div class="bg-teal-50 p-4 rounded mb-4 border border-teal-200">
@@ -305,8 +375,8 @@
                 <div><label class="text-xs font-bold text-gray-600">商品代號*</label><input type="text" id="prodCode" class="w-full border p-2 rounded bg-white"></div>
                 <div><label class="text-xs font-bold text-gray-600">商品名稱*</label><input type="text" id="prodName" class="w-full border p-2 rounded bg-white"></div>
                 <div><label class="text-xs font-bold text-gray-600">單位</label><input type="text" id="prodUnit" class="w-full border p-2 rounded bg-white" placeholder="例: 個/台"></div>
-                <div><label class="text-xs font-bold text-gray-600">售價 (整數)*</label><input type="number" id="prodPrice" class="w-full border p-2 rounded bg-white" value="0"></div>
-                <div><label class="text-xs font-bold text-gray-600">成本 (整數)*</label><input type="number" id="prodCost" class="w-full border p-2 rounded bg-white" value="0"></div>
+                <div><label class="text-xs font-bold text-gray-600">售價*</label><input type="text" id="prodPrice" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
+                <div><label class="text-xs font-bold text-gray-600">成本*</label><input type="text" id="prodCost" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
                 <div><label class="text-xs font-bold text-gray-600">供應商 1</label><select id="prodSup1" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
                 <div><label class="text-xs font-bold text-gray-600">供應商 2</label><select id="prodSup2" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
                 <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="prodUrl" class="w-full border p-2 rounded bg-white"></div>
@@ -314,13 +384,26 @@
             </div>
             <div class="flex gap-2 mt-2">
                 <button onclick="saveProduct()" class="bg-teal-600 text-white px-4 py-2 rounded text-sm">儲存</button>
-                <button onclick="resetProductForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除 (切換為新增)</button>
+                <button onclick="saveAsNewProduct()" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm">另存新商品</button>
+                <button onclick="resetProductForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除</button>
             </div>
         </div>
+
+        <!-- 商品搜尋區 -->
+        <div class="mb-3">
+            <input type="text" id="productSearchInput" oninput="renderProductTable()" placeholder="輸入商品代號或名稱進行模糊搜尋..." class="w-full border p-2 rounded text-sm bg-white">
+        </div>
+
         <div class="overflow-y-auto max-h-64 border rounded">
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-200 sticky top-0">
-                    <tr><th class="p-2 border-b">代號</th><th class="p-2 border-b">名稱</th><th class="p-2 border-b">售價</th><th class="p-2 border-b">成本</th><th class="p-2 border-b">操作</th></tr>
+                    <tr>
+                        <th class="p-2 border-b" onclick="sortProductManager('product_code')">商品代號 ↕</th>
+                        <th class="p-2 border-b" onclick="sortProductManager('name')">商品名稱 ↕</th>
+                        <th class="p-2 border-b" onclick="sortProductManager('price')">售價 ↕</th>
+                        <th class="p-2 border-b" onclick="sortProductManager('cost')">成本 ↕</th>
+                        <th class="p-2 border-b">操作</th>
+                    </tr>
                 </thead>
                 <tbody id="productTableBody"></tbody>
             </table>
@@ -337,21 +420,22 @@
             <h4 class="font-bold mb-2 text-sm" id="bundleFormTitle">新增組合商品</h4>
             <input type="hidden" id="bundleIsEdit" value="false">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                <div><label class="text-xs font-bold">組合代號*</label><input type="text" id="bunCode" class="w-full border p-2 rounded bg-white"></div>
-                <div><label class="text-xs font-bold">組合名稱*</label><input type="text" id="bunName" class="w-full border p-2 rounded bg-white"></div>
+                <div><label class="text-xs font-bold">組合商品代號*</label><input type="text" id="bunCode" class="w-full border p-2 rounded bg-white"></div>
+                <div><label class="text-xs font-bold">組合商品名稱*</label><input type="text" id="bunName" class="w-full border p-2 rounded bg-white"></div>
                 <div><label class="text-xs font-bold">備註</label><input type="text" id="bunNotes" class="w-full border p-2 rounded bg-white"></div>
             </div>
             <h5 class="text-xs font-bold mb-2 border-b pb-1">挑選組合內容 (最少 2 項，最多 5 項)</h5>
             <div id="bundleItemsSetup" class="space-y-2"></div>
             <div class="flex gap-2 mt-4">
                 <button onclick="saveBundle()" class="bg-teal-600 text-white px-4 py-2 rounded text-sm">儲存組合</button>
-                <button onclick="resetBundleForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除 (切換為新增)</button>
+                <button onclick="saveAsNewBundle()" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm">另存新組合</button>
+                <button onclick="resetBundleForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除</button>
             </div>
         </div>
         <div class="overflow-y-auto max-h-64 border rounded">
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-200 sticky top-0">
-                    <tr><th class="p-2 border-b">組合代號</th><th class="p-2 border-b">名稱</th><th class="p-2 border-b">包含單品數</th><th class="p-2 border-b">操作</th></tr>
+                    <tr><th class="p-2 border-b">組合商品代號</th><th class="p-2 border-b">組合商品名稱</th><th class="p-2 border-b">包含單品數</th><th class="p-2 border-b">操作</th></tr>
                 </thead>
                 <tbody id="bundleTableBody"></tbody>
             </table>
@@ -360,9 +444,9 @@
 
     <!-- 快捷鍵編輯 Modal -->
     <dialog id="shortcutModal" class="p-6 rounded shadow-lg w-full max-w-sm">
-        <h3 class="text-xl font-bold mb-4">編輯快捷按鍵</h3>
+        <h3 class="text-xl font-bold mb-4">編輯工具按鍵</h3>
         <input type="hidden" id="shortcutIndex">
-        <div class="mb-2"><label class="block text-sm font-bold mb-1">名稱</label><input type="text" id="shortcutName" class="w-full border rounded p-2"></div>
+        <div class="mb-2"><label class="block text-sm font-bold mb-1">工具名稱</label><input type="text" id="shortcutName" class="w-full border rounded p-2"></div>
         <div class="mb-4"><label class="block text-sm font-bold mb-1">網址 (需包含 http/https)</label><input type="url" id="shortcutUrl" class="w-full border rounded p-2"></div>
         <div class="flex justify-end gap-2">
             <button onclick="document.getElementById('shortcutModal').close()" class="bg-gray-300 px-4 py-2 rounded">取消</button>
@@ -387,6 +471,8 @@
         
         let statsData = { products: [], quotes: [] };
         let sortState = { products: { field: 'product_code', asc: true }, quotes: { field: 'quote_date', asc: false } };
+        let quoteManagerState = { data: [], field: 'quote_date', asc: false };
+        let productManagerState = { field: 'product_code', asc: true };
 
         function getTaipeiDate() {
             return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
@@ -411,11 +497,15 @@
                 customersData = resC.data;
                 const selectC = document.getElementById('quoteCustomer');
                 if(selectC) {
-                    let cOptions = '<option value="">-- 請選擇客戶 --</option>';
-                    customersData.forEach(c => {
+                    let cOptions = '';
+                    customersData.forEach((c) => {
                         cOptions += `<option value="${c.name}">${c.name}</option>`;
                     });
                     selectC.innerHTML = cOptions;
+
+                    if ((!selectC.value || !customersData.some(c => c.name === selectC.value)) && customersData.length > 0) {
+                        selectC.value = customersData[0].name;
+                    }
                 }
             }
             
@@ -442,7 +532,14 @@
         // ==========================================
         async function resetQuotationForm() {
             document.getElementById('quoteDate').value = getTaipeiDate().toISOString().split('T')[0];
-            document.getElementById('quoteCustomer').value = '';
+            
+            const selectC = document.getElementById('quoteCustomer');
+            if(customersData.length > 0) {
+                selectC.value = customersData[0].name;
+            } else {
+                selectC.value = '';
+            }
+
             document.getElementById('quoteStatus').value = '報價中';
             document.getElementById('taxIncluded').checked = false;
             document.getElementById('quoteNotes').value = '';
@@ -477,12 +574,21 @@
 
             const bundle = bundlesData.find(b => b.bundle_code === searchKey || b.name === rawSearch);
             if (bundle) {
-                let tPrice = 0, tCost = 0;
                 bundle.items.forEach(bi => {
                     const p = productsData.find(pd => pd.product_code === bi.product_code);
-                    if(p) { tPrice += (p.price * bi.quantity); tCost += (p.cost * bi.quantity); }
+                    if (p) {
+                        pushToQuote({ 
+                            type: '單品', 
+                            is_bundle: false, 
+                            code: p.product_code, 
+                            name: p.name, 
+                            unit: p.unit || '部', 
+                            qty: bi.quantity, 
+                            price: p.price, 
+                            cost: p.cost 
+                        });
+                    }
                 });
-                pushToQuote({ type: '組合', is_bundle: true, code: bundle.bundle_code, name: bundle.name, unit: '組', qty: 1, price: tPrice, cost: tCost });
                 document.getElementById('itemSearch').value = '';
                 return;
             }
@@ -505,13 +611,88 @@
                     <td class="border p-2 text-xs">${item.type}</td>
                     <td class="border p-2">${item.code}</td>
                     <td class="border p-2">${item.name}</td>
-                    <td class="border p-2"><input type="number" min="1" value="${item.qty}" onchange="updateItemQty(${index}, this.value)" class="w-20 border text-center p-1 rounded font-bold"></td>
-                    <td class="border p-2"><input type="number" min="0" value="${item.price}" onchange="updateItemPrice(${index}, this.value)" class="w-28 border text-center p-1 rounded"></td>
+                    <td class="border p-2"><input type="text" value="${item.qty}" onchange="updateItemQty(${index}, this.value)" class="w-20 border text-center p-1 rounded font-mono"></td>
+                    <td class="border p-2"><input type="text" value="${item.price}" onchange="updateItemPrice(${index}, this.value)" class="w-28 border text-center p-1 rounded font-mono"></td>
                     <td class="border p-2 text-blue-700 font-bold" id="subtotal_${index}">${item.subtotal.toLocaleString()}</td>
-                    <td class="border p-2"><button type="button" onclick="quoteItems.splice(${index}, 1); renderQuoteItems();" class="text-red-500 hover:font-bold">刪除</button></td>
+                    <td class="border p-2 whitespace-nowrap">
+                        <button type="button" onclick="openItemHistory('${item.code}', '${item.name}')" class="text-emerald-600 font-bold mr-2 hover:underline">歷史</button>
+                        <button type="button" onclick="quoteItems.splice(${index}, 1); renderQuoteItems();" class="text-red-500 hover:font-bold">刪除</button>
+                    </td>
                 </tr>`;
             }); 
             calculateTotal();
+        }
+
+        async function openItemHistory(itemCode, itemName) {
+            document.getElementById('itemHistoryTitle').innerText = `商品歷史交易記錄: [${itemCode}] ${itemName}`;
+            const tbody = document.getElementById('itemHistoryTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">載入中...</td></tr>';
+            document.getElementById('itemHistoryModal').showModal();
+
+            const { data: itemsData, error: itemsErr } = await supabaseClient
+                .from('qt_quotation_items')
+                .select('quote_id, quantity, unit_price, subtotal')
+                .eq('item_code', itemCode);
+
+            if (itemsErr || !itemsData || itemsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">查無此商品的歷史交易記錄</td></tr>';
+                return;
+            }
+
+            const quoteIds = [...new Set(itemsData.map(i => i.quote_id))];
+
+            const { data: quotesData, error: quotesErr } = await supabaseClient
+                .from('qt_quotations')
+                .select('quote_id, quote_date, status, customer:qt_customers(name)')
+                .in('quote_id', quoteIds)
+                .order('quote_date', { ascending: false });
+
+            if (quotesErr || !quotesData || quotesData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">查無對應的歷史報價單主檔記錄</td></tr>';
+                return;
+            }
+
+            let historyList = [];
+            quotesData.forEach(q => {
+                const matchedItem = itemsData.find(i => i.quote_id === q.quote_id);
+                if (matchedItem) {
+                    historyList.push({
+                        quote_date: q.quote_date,
+                        quote_id: q.quote_id,
+                        customer_name: q.customer ? q.customer.name : '散客/未指定',
+                        status: q.status,
+                        quantity: matchedItem.quantity,
+                        unit_price: matchedItem.unit_price,
+                        subtotal: matchedItem.subtotal
+                    });
+                }
+            });
+
+            historyList.sort((a, b) => b.quote_date.localeCompare(a.quote_date));
+            historyList = historyList.slice(0, 15);
+
+            if (historyList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">查無歷史記錄</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            historyList.forEach(h => {
+                let statusBadge = `<span class="text-gray-600">${h.status}</span>`;
+                if (h.status === '已成交') statusBadge = '<span class="text-green-600 font-bold">已成交</span>';
+                else if (h.status === '報價中') statusBadge = '<span class="text-blue-600">報價中</span>';
+
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-2">${h.quote_date}</td>
+                    <td class="p-2 font-mono font-bold">${h.quote_id}</td>
+                    <td class="p-2">${h.customer_name}</td>
+                    <td class="p-2">${statusBadge}</td>
+                    <td class="p-2">${h.quantity}</td>
+                    <td class="p-2 text-blue-700 font-bold">${h.unit_price.toLocaleString()}</td>
+                    <td class="p-2">${h.subtotal.toLocaleString()}</td>
+                </tr>`;
+            });
         }
 
         function updateItemQty(index, val) {
@@ -652,6 +833,25 @@
         }
 
         // ==========================================
+        // 統計頁面的商品編輯導向
+        // ==========================================
+        async function editProductFromStats(productCode) {
+            await openProductManager();
+            const p = productsData.find(item => item.product_code === productCode);
+            if(p) {
+                editProduct(p);
+            }
+        }
+
+        // ==========================================
+        // 統計頁面的報價單編輯導向
+        // ==========================================
+        async function editQuoteFromStats(quoteId) {
+            await loadOldQuote(quoteId);
+            switchTab('quote');
+        }
+
+        // ==========================================
         // 滙入舊報價單
         // ==========================================
         function openImportOldQuoteModal() {
@@ -762,13 +962,12 @@
         }
 
         // ==========================================
-        // 2. 統計與查詢 (排序功能 - 含報價單商品名稱)
+        // 2. 統計與查詢 (排序功能與統計表格渲染)
         // ==========================================
         async function fetchStats() {
             const pRes = await supabaseClient.from('qt_products').select('*');
             if(pRes.data) statsData.products = pRes.data;
             
-            // 同時撈取報價單主檔與明細以整合商品名稱
             const qRes = await supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)');
             const iRes = await supabaseClient.from('qt_quotation_items').select('quote_id, item_name');
             
@@ -783,10 +982,7 @@
             if(qRes.data) {
                 statsData.quotes = qRes.data.map(q => {
                     const names = itemsMap[q.quote_id] || [];
-                    return {
-                        ...q,
-                        items_summary: names.join(', ') // 整合商品名稱供顯示與排序
-                    };
+                    return { ...q, items_summary: names.join(', ') };
                 });
             }
 
@@ -818,20 +1014,34 @@
                 const tbody = document.getElementById('statsProductTable'); tbody.innerHTML = '';
                 data.forEach(p => {
                     const dateStr = p.updated_at ? p.updated_at.split('T')[0] : '';
-                    tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="p-2 border-b">${p.product_code}</td><td class="p-2 border-b">${p.name}</td><td class="p-2 border-b">${p.unit||''}</td><td class="p-2 border-b">${p.price.toLocaleString()}</td><td class="p-2 border-b">${p.cost.toLocaleString()}</td><td class="p-2 border-b">${dateStr}</td></tr>`;
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-2">${p.product_code}</td>
+                        <td class="p-2">${p.name}</td>
+                        <td class="p-2">${p.unit||''}</td>
+                        <td class="p-2">${p.price.toLocaleString()}</td>
+                        <td class="p-2">${p.cost.toLocaleString()}</td>
+                        <td class="p-2">${dateStr}</td>
+                        <td class="p-2">
+                            <button onclick="editProductFromStats('${p.product_code}')" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 font-bold">編輯</button>
+                        </td>
+                    </tr>`;
                 });
             } else if(type === 'quotes') {
                 const tbody = document.getElementById('statsQuoteTable'); tbody.innerHTML = '';
                 data.forEach(q => {
                     const cName = q.customer ? q.customer.name : '';
                     tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-2 border-b">${q.quote_id}</td>
-                        <td class="p-2 border-b">${q.quote_date}</td>
-                        <td class="p-2 border-b">${cName}</td>
-                        <td class="p-2 border-b text-gray-600 truncate max-w-xs" title="${q.items_summary}">${q.items_summary || ''}</td>
-                        <td class="p-2 border-b">${(q.total_amount||0).toLocaleString()}</td>
-                        <td class="p-2 border-b">${q.status}</td>
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-2 font-mono">${q.quote_id}</td>
+                        <td class="p-2">${q.quote_date}</td>
+                        <td class="p-2">${cName}</td>
+                        <td class="p-2 text-gray-600 truncate max-w-xs" title="${q.items_summary}">${q.items_summary || ''}</td>
+                        <td class="p-2">${(q.total_amount||0).toLocaleString()}</td>
+                        <td class="p-2">${q.status}</td>
+                        <td class="p-2">
+                            <button onclick="editQuoteFromStats('${q.quote_id}')" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 font-bold">編輯</button>
+                        </td>
                     </tr>`;
                 });
             }
@@ -932,8 +1142,130 @@
         }
 
         // ==========================================
-        // 4. 各項管理 CRUD
+        // 4. 各項管理 CRUD & 報價單管理
         // ==========================================
+        async function openQuoteManager() {
+            document.getElementById('quoteManagerModal').showModal();
+            await fetchQuoteManagerData();
+        }
+
+        async function fetchQuoteManagerData() {
+            const { data, error } = await supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)');
+            if (error) {
+                return alert('讀取報價單失敗: ' + error.message);
+            }
+            quoteManagerState.data = data || [];
+            renderQuoteManagerTable();
+        }
+
+        function sortQuoteManager(field) {
+            if (quoteManagerState.field === field) {
+                quoteManagerState.asc = !quoteManagerState.asc;
+            } else {
+                quoteManagerState.field = field;
+                quoteManagerState.asc = true;
+            }
+            renderQuoteManagerTable();
+        }
+
+        function renderQuoteManagerTable() {
+            const { field, asc } = quoteManagerState;
+            let data = [...quoteManagerState.data];
+
+            data.sort((a, b) => {
+                let valA = a[field], valB = b[field];
+                if (field === 'customer_name') {
+                    valA = a.customer ? a.customer.name : '';
+                    valB = b.customer ? b.customer.name : '';
+                }
+                if (valA === null) valA = '';
+                if (valB === null) valB = '';
+                if (typeof valA === 'string') return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                return asc ? (valA - valB) : (valB - valA);
+            });
+
+            const tbody = document.getElementById('quoteManagerTableBody');
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">目前無報價單資料</td></tr>';
+                return;
+            }
+
+            data.forEach(q => {
+                const cName = q.customer ? q.customer.name : '散客/未指定';
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-2">${q.quote_date}</td>
+                    <td class="p-2 font-bold text-blue-700">${cName}</td>
+                    <td class="p-2 font-mono">${q.quote_id}</td>
+                    <td class="p-2">${(q.total_amount || 0).toLocaleString()}</td>
+                    <td class="p-2">${q.status}</td>
+                    <td class="p-2 whitespace-nowrap">
+                        <button onclick="editQuoteFromManager('${q.quote_id}')" class="text-blue-600 mr-3 font-bold hover:underline">編輯</button>
+                        <button onclick="deleteSingleQuote('${q.quote_id}')" class="text-red-600 font-bold hover:underline">刪除</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        async function editQuoteFromManager(quoteId) {
+            await loadOldQuote(quoteId);
+            document.getElementById('quoteManagerModal').close();
+            switchTab('quote');
+        }
+
+        async function deleteSingleQuote(quoteId) {
+            if (!confirm(`確定要刪除報價單 ${quoteId} 嗎？（將同步刪除其明細）`)) return;
+            await supabaseClient.from('qt_quotation_items').delete().eq('quote_id', quoteId);
+            const { error } = await supabaseClient.from('qt_quotations').delete().eq('quote_id', quoteId);
+            if (error) {
+                alert('刪除失敗: ' + error.message);
+            } else {
+                alert('刪除成功！');
+                await fetchQuoteManagerData();
+                await fetchStats();
+            }
+        }
+
+        async function deleteQuotesByDateRange() {
+            const startDate = document.getElementById('delStartDate').value;
+            const endDate = document.getElementById('delEndDate').value;
+            if (!startDate || !endDate) {
+                return alert('請完整選擇起始日期與結束日期！');
+            }
+            if (startDate > endDate) {
+                return alert('起始日期不可大於結束日期！');
+            }
+
+            if (!confirm(`確定要刪除介於 ${startDate} 至 ${endDate} 之間的的所有報價單與明細嗎？此操作無法復原！`)) return;
+
+            const { data: matchedQuotes, error: fetchErr } = await supabaseClient
+                .from('qt_quotations')
+                .select('quote_id')
+                .gte('quote_date', startDate)
+                .lte('quote_date', endDate);
+
+            if (fetchErr) return alert('查詢區間失敗: ' + fetchErr.message);
+            if (!matchedQuotes || matchedQuotes.length === 0) {
+                return alert('在此日期區間內找不到任何報價單。');
+            }
+
+            const quoteIds = matchedQuotes.map(q => q.quote_id);
+
+            await supabaseClient.from('qt_quotation_items').delete().in('quote_id', quoteIds);
+            const { error: delErr } = await supabaseClient.from('qt_quotations').delete().in('quote_id', quoteIds);
+
+            if (delErr) {
+                alert('區間刪除失敗: ' + delErr.message);
+            } else {
+                alert(`成功刪除 ${quoteIds.length} 筆報價單！`);
+                document.getElementById('delStartDate').value = '';
+                document.getElementById('delEndDate').value = '';
+                await fetchQuoteManagerData();
+                await fetchStats();
+            }
+        }
+
         async function openCustomerManager() { document.getElementById('customerModal').showModal(); resetCustomerForm(); await fetchCustomers(); }
         async function fetchCustomers() {
             const { data } = await supabaseClient.from('qt_customers').select('*').order('sort_order', { ascending: true });
@@ -1047,29 +1379,71 @@
             document.getElementById('productModal').showModal();
             let supOpts = '<option value="">無</option>'; suppliersData.forEach(s => supOpts += `<option value="${s.id}">${s.name}</option>`);
             document.getElementById('prodSup1').innerHTML = supOpts; document.getElementById('prodSup2').innerHTML = supOpts;
+            document.getElementById('productSearchInput').value = '';
             resetProductForm(); await fetchProducts();
         }
         async function fetchProducts() {
-            const { data } = await supabaseClient.from('qt_products').select('*').order('product_code');
+            const { data } = await supabaseClient.from('qt_products').select('*');
             if (data) {
                 productsData = data;
-                const tbody = document.getElementById('productTableBody'); tbody.innerHTML = '';
-                data.forEach(p => {
-                    tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-2 border-b">${p.product_code}</td>
-                        <td class="p-2 border-b">${p.name}</td>
-                        <td class="p-2 border-b">${p.price.toLocaleString()}</td>
-                        <td class="p-2 border-b">${p.cost.toLocaleString()}</td>
-                        <td class="p-2 border-b whitespace-nowrap">
-                            <button onclick='openExternalUrl("${p.url || ''}", "此商品")' class="text-emerald-600 mr-2 font-bold hover:underline">網頁</button>
-                            <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-600 mr-2">編輯</button>
-                            <button onclick="deleteProduct('${p.product_code}')" class="text-red-600">刪除</button>
-                        </td>
-                    </tr>`;
-                });
+                renderProductTable();
                 reloadSearchData();
             }
+        }
+
+        function sortProductManager(field) {
+            if (productManagerState.field === field) {
+                productManagerState.asc = !productManagerState.asc;
+            } else {
+                productManagerState.field = field;
+                productManagerState.asc = true;
+            }
+            renderProductTable();
+        }
+
+        function renderProductTable() {
+            const keyword = document.getElementById('productSearchInput').value.trim().toLowerCase();
+            let data = [...productsData];
+
+            if (keyword) {
+                data = data.filter(p => 
+                    (p.product_code && p.product_code.toLowerCase().includes(keyword)) ||
+                    (p.name && p.name.toLowerCase().includes(keyword))
+                );
+            }
+
+            const { field, asc } = productManagerState;
+            data.sort((a, b) => {
+                let valA = a[field], valB = b[field];
+                if (valA === null) valA = '';
+                if (valB === null) valB = '';
+                if (typeof valA === 'string') return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                return asc ? (valA - valB) : (valB - valA);
+            });
+
+            const tbody = document.getElementById('productTableBody'); 
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">找不到符合的商品</td></tr>';
+                return;
+            }
+
+            data.forEach(p => {
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-2 border-b">${p.product_code}</td>
+                    <td class="p-2 border-b">${p.name}</td>
+                    <td class="p-2 border-b">${p.price.toLocaleString()}</td>
+                    <td class="p-2 border-b">${p.cost.toLocaleString()}</td>
+                    <td class="p-2 border-b whitespace-nowrap">
+                        <button onclick='openExternalUrl("${p.url || ''}", "此商品")' class="text-emerald-600 mr-2 font-bold hover:underline">網頁</button>
+                        <button onclick="openItemHistory('${p.product_code}', '${p.name}')" class="text-purple-600 mr-2 font-bold hover:underline">歷史</button>
+                        <button onclick='editProduct(${JSON.stringify(p)})' class="text-blue-600 mr-2">編輯</button>
+                        <button onclick="deleteProduct('${p.product_code}')" class="text-red-600">刪除</button>
+                    </td>
+                </tr>`;
+            });
         }
 
         async function saveProduct() {
@@ -1080,9 +1454,48 @@
             const res = isEdit ? await supabaseClient.from('qt_products').update(pl).eq('product_code', code) : await supabaseClient.from('qt_products').insert([pl]);
             if (res.error) alert('儲存失敗: ' + res.error.message); else { resetProductForm(); fetchProducts(); }
         }
+
+        async function saveAsNewProduct() {
+            const code = document.getElementById('prodCode').value.trim();
+            const name = document.getElementById('prodName').value.trim();
+            if(!code || !name) return alert('商品代號與名稱必填！');
+
+            const { data: existing } = await supabaseClient.from('qt_products').select('product_code, name').or(`product_code.eq.${code},name.eq.${name}`);
+            if (existing && existing.length > 0) {
+                const matchedCode = existing.some(p => p.product_code === code);
+                const matchedName = existing.some(p => p.name === name);
+                let msg = '另存失敗！偵測到重複：';
+                if(matchedCode) msg += `\n- 商品代號 "${code}" 已存在`;
+                if(matchedName) msg += `\n- 商品名稱 "${name}" 已存在`;
+                return alert(msg);
+            }
+
+            const pl = { 
+                product_code: code, 
+                name: name, 
+                unit: document.getElementById('prodUnit').value, 
+                price: parseInt(document.getElementById('prodPrice').value)||0, 
+                cost: parseInt(document.getElementById('prodCost').value)||0, 
+                supplier1_id: document.getElementById('prodSup1').value||null, 
+                supplier2_id: document.getElementById('prodSup2').value||null, 
+                url: document.getElementById('prodUrl').value, 
+                notes: document.getElementById('prodNotes').value, 
+                updated_at: getTaipeiDate().toISOString() 
+            };
+
+            const { error } = await supabaseClient.from('qt_products').insert([pl]);
+            if (error) {
+                alert('另存新商品失敗: ' + error.message);
+            } else {
+                alert('另存新商品成功！');
+                resetProductForm();
+                fetchProducts();
+            }
+        }
+
         function editProduct(p) {
             document.getElementById('productFormTitle').innerText = "編輯商品"; document.getElementById('prodIsEdit').value = "true";
-            const cInput = document.getElementById('prodCode'); cInput.value = p.product_code; cInput.readOnly = true; cInput.classList.add('bg-gray-200');
+            const cInput = document.getElementById('prodCode'); cInput.value = p.product_code; cInput.readOnly = false; cInput.classList.remove('bg-gray-200');
             document.getElementById('prodName').value = p.name; document.getElementById('prodUnit').value = p.unit||''; document.getElementById('prodPrice').value = p.price; document.getElementById('prodCost').value = p.cost; document.getElementById('prodSup1').value = p.supplier1_id||''; document.getElementById('prodSup2').value = p.supplier2_id||''; document.getElementById('prodUrl').value = p.url||''; document.getElementById('prodNotes').value = p.notes||'';
         }
         function resetProductForm() {
@@ -1097,7 +1510,7 @@
         function buildBundleItemSlots() {
             const container = document.getElementById('bundleItemsSetup'); container.innerHTML = '';
             let pOptions = '<option value="">--請選擇單品--</option>'; productsData.forEach(p => pOptions += `<option value="${p.product_code}">${p.product_code} - ${p.name}</option>`);
-            for(let i=1; i<=5; i++) container.innerHTML += `<div class="flex gap-2 items-center bg-white p-2 border rounded"><span class="font-bold text-gray-500 w-6">${i}.</span><select id="bunProd_${i}" class="flex-grow border p-1 rounded">${pOptions}</select><label class="text-sm">數量:</label><input type="number" id="bunQty_${i}" value="1" min="1" class="w-20 border p-1 rounded text-center"></div>`;
+            for(let i=1; i<=5; i++) container.innerHTML += `<div class="flex gap-2 items-center bg-white p-2 border rounded"><span class="font-bold text-gray-500 w-6">${i}.</span><select id="bunProd_${i}" class="flex-grow border p-1 rounded">${pOptions}</select><label class="text-sm">數量:</label><input type="text" id="bunQty_${i}" value="1" class="w-20 border p-1 rounded text-center font-mono"></div>`;
         }
         async function fetchBundles() {
             const { data } = await supabaseClient.from('qt_bundles').select('*, items:qt_bundle_items(*)').order('bundle_code');
@@ -1119,9 +1532,50 @@
             await supabaseClient.from('qt_bundle_items').insert(vItems);
             resetBundleForm(); fetchBundles();
         }
+
+        async function saveAsNewBundle() {
+            const code = document.getElementById('bunCode').value.trim();
+            const name = document.getElementById('bunName').value.trim();
+            if(!code || !name) return alert('組合代號與名稱必填！');
+
+            const { data: existing } = await supabaseClient.from('qt_bundles').select('bundle_code, name').or(`bundle_code.eq.${code},name.eq.${name}`);
+            if (existing && existing.length > 0) {
+                const matchedCode = existing.some(b => b.bundle_code === code);
+                const matchedName = existing.some(b => b.name === name);
+                let msg = '另存失敗！偵測到重複：';
+                if(matchedCode) msg += `\n- 組合代號 "${code}" 已存在`;
+                if(matchedName) msg += `\n- 組合名稱 "${name}" 已存在`;
+                return alert(msg);
+            }
+
+            let vItems = [];
+            for(let i=1; i<=5; i++) { 
+                const pCode = document.getElementById(`bunProd_${i}`).value; 
+                const qty = parseInt(document.getElementById(`bunQty_${i}`).value)||0; 
+                if(pCode && qty>0) vItems.push({ bundle_code: code, product_code: pCode, quantity: qty }); 
+            }
+            if(vItems.length < 2) return alert('組合至少需2項單品');
+
+            const { error: err1 } = await supabaseClient.from('qt_bundles').insert({ 
+                bundle_code: code, 
+                name: name, 
+                notes: document.getElementById('bunNotes').value, 
+                updated_at: getTaipeiDate().toISOString() 
+            });
+
+            if (err1) return alert('另存新組合失敗: ' + err1.message);
+
+            const { error: err2 } = await supabaseClient.from('qt_bundle_items').insert(vItems);
+            if (err2) return alert('另存新組合明細失敗: ' + err2.message);
+
+            alert('另存新組合成功！');
+            resetBundleForm(); 
+            fetchBundles();
+        }
+
         function editBundle(b) {
             document.getElementById('bundleFormTitle').innerText = "編輯組合"; document.getElementById('bundleIsEdit').value = "true";
-            const cInput = document.getElementById('bunCode'); cInput.value = b.bundle_code; cInput.readOnly = true; cInput.classList.add('bg-gray-200');
+            const cInput = document.getElementById('bunCode'); cInput.value = b.bundle_code; cInput.readOnly = false; cInput.classList.remove('bg-gray-200');
             document.getElementById('bunName').value = b.name; document.getElementById('bunNotes').value = b.notes||'';
             for(let i=1; i<=5; i++) { document.getElementById(`bunProd_${i}`).value = ''; document.getElementById(`bunQty_${i}`).value = '1'; }
             b.items.forEach((item, idx) => { if(idx<5) { document.getElementById(`bunProd_${idx+1}`).value = item.product_code; document.getElementById(`bunQty_${idx+1}`).value = item.quantity; } });
