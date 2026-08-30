@@ -91,16 +91,17 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border text-sm text-center">
+                    <table class="w-full border-collapse border text-sm">
                         <thead class="bg-gray-200">
                             <tr>
-                                <th class="border p-2">類別</th>
-                                <th class="border p-2">商品代號</th>
-                                <th class="border p-2">商品名稱</th>
-                                <th class="border p-2 w-28">數量</th>
-                                <th class="border p-2 w-32">單價</th>
-                                <th class="border p-2">小計</th>
-                                <th class="border p-2">操作</th>
+                                <th class="border p-2 text-left">商品代號</th>
+                                <th class="border p-2 text-left">商品名稱</th>
+                                <th class="border p-2 text-right w-28">數量</th>
+                                <th class="border p-2 text-right w-32">單價</th>
+                                <th class="border p-2 text-right">小計</th>
+                                <th class="border p-2 text-right">成本</th>
+                                <th class="border p-2 text-right">利潤</th>
+                                <th class="border p-2 text-center">操作</th>
                             </tr>
                         </thead>
                         <tbody id="quoteItemsTable"></tbody>
@@ -112,7 +113,7 @@
                         <input type="checkbox" id="taxIncluded" onchange="calculateTotal()"> 含稅 (5%)
                     </label>
                     <div class="text-right">
-                        <p>總成本:$ <span id="lblTotalCost" class="font-mono">0</span></p>
+                        <p>總成本:$ <span id="lblTotalCost" class="font-mono text-red-600">0</span></p>
                         <p>預估利潤:$ <span id="lblTotalProfit" class="font-mono text-green-600">0</span></p>
                         <p class="text-xl font-bold">報價總額:$ <span id="lblTotalAmount" class="text-blue-700">0</span></p>
                     </div>
@@ -484,6 +485,25 @@
             await resetQuotationForm();
             await loadShortcuts();
             await fetchStats(); 
+            initDialogBackdropClick();
+        }
+
+        // 監聽所有 <dialog> 彈窗，若點擊或移出對話框範圍（點擊 backdrop 區域）則關閉
+        function initDialogBackdropClick() {
+            document.querySelectorAll('dialog').forEach(dialog => {
+                dialog.addEventListener('click', (event) => {
+                    const rect = dialog.getBoundingClientRect();
+                    const isInDialog = (
+                        event.clientX >= rect.left &&
+                        event.clientX <= rect.right &&
+                        event.clientY >= rect.top &&
+                        event.clientY <= rect.bottom
+                    );
+                    if (!isInDialog) {
+                        dialog.close();
+                    }
+                });
+            });
         }
 
         function switchTab(tabId) {
@@ -598,8 +618,9 @@
 
         function pushToQuote(d) {
             const subtotal = Math.round(d.price * d.qty);
+            const totalCost = Math.round(d.cost * d.qty);
             const profit = Math.round((d.price - d.cost) * d.qty);
-            quoteItems.push({ type: d.type, is_bundle: d.is_bundle, code: d.code, name: d.name, unit: d.unit, qty: d.qty, price: d.price, cost: d.cost, subtotal: subtotal, profit: profit });
+            quoteItems.push({ type: d.type, is_bundle: d.is_bundle, code: d.code, name: d.name, unit: d.unit, qty: d.qty, price: d.price, cost: d.cost, subtotal: subtotal, totalCost: totalCost, profit: profit });
             renderQuoteItems();
         }
 
@@ -607,23 +628,47 @@
             const tbody = document.getElementById('quoteItemsTable'); 
             tbody.innerHTML = '';
             quoteItems.forEach((item, index) => {
+                const totalCost = item.totalCost !== undefined ? item.totalCost : Math.round(item.cost * item.qty);
+                const profit = item.profit !== undefined ? item.profit : Math.round((item.price - item.cost) * item.qty);
                 tbody.innerHTML += `
                 <tr>
-                    <td class="border p-2 text-xs">${item.type}</td>
-                    <td class="border p-2">${item.code}</td>
-                    <td class="border p-2">${item.name}</td>
-                    <td class="border p-2"><input type="text" value="${item.qty}" onchange="updateItemQty(${index}, this.value)" class="w-20 border text-center p-1 rounded font-mono"></td>
-                    <td class="border p-2"><input type="text" value="${item.price}" onchange="updateItemPrice(${index}, this.value)" class="w-28 border text-center p-1 rounded font-mono"></td>
-                    <td class="border p-2 text-blue-700 font-bold" id="subtotal_${index}">${item.subtotal.toLocaleString()}</td>
-                    <td class="border p-2 whitespace-nowrap">
+                    <td class="border p-2 text-left">${item.code}</td>
+                    <td class="border p-2 text-left">${item.name}</td>
+                    <td class="border p-2 text-right"><input type="text" value="${item.qty}" onchange="updateItemQty(${index}, this.value)" class="w-20 border text-center p-1.5 rounded font-mono text-lg ml-auto block"></td>
+                    <td class="border p-2 text-right"><input type="text" value="${item.price}" onchange="updateItemPrice(${index}, this.value)" class="w-28 border text-center p-1.5 rounded font-mono text-lg ml-auto block"></td>
+                    <td class="border p-2 text-right text-blue-700 font-bold" id="subtotal_${index}">${item.subtotal.toLocaleString()}</td>
+                    <td class="border p-2 text-right text-red-600 font-bold" id="cost_${index}">${totalCost.toLocaleString()}</td>
+                    <td class="border p-2 text-right text-green-600 font-bold" id="profit_${index}">${profit.toLocaleString()}</td>
+                    <td class="border p-2 text-center whitespace-nowrap">
                         <button type="button" onclick="moveQuoteItemUp(${index})" class="text-gray-600 font-bold mr-1 hover:underline" title="往上移">▲</button>
                         <button type="button" onclick="moveQuoteItemDown(${index})" class="text-gray-600 font-bold mr-2 hover:underline" title="往下移">▼</button>
+                        <button type="button" onclick="editQuoteItemSource('${item.code}', ${item.is_bundle})" class="text-blue-600 font-bold mr-2 hover:underline">編輯</button>
                         <button type="button" onclick="openItemHistory('${item.code}', '${item.name}')" class="text-emerald-600 font-bold mr-2 hover:underline">歷史</button>
                         <button type="button" onclick="quoteItems.splice(${index}, 1); renderQuoteItems();" class="text-red-500 hover:font-bold">刪除</button>
                     </td>
                 </tr>`;
             }); 
             calculateTotal();
+        }
+
+        async function editQuoteItemSource(itemCode, isBundle) {
+            if (isBundle) {
+                const bundle = bundlesData.find(b => b.bundle_code === itemCode);
+                await openBundleManager();
+                if (bundle) {
+                    editBundle(bundle);
+                } else {
+                    alert(`找不到組合代號 ${itemCode} 的資料！`);
+                }
+            } else {
+                const prod = productsData.find(p => p.product_code === itemCode);
+                await openProductManager();
+                if (prod) {
+                    editProduct(prod);
+                } else {
+                    alert(`找不到商品代號 ${itemCode} 的資料！`);
+                }
+            }
         }
 
         function moveQuoteItemUp(index) {
@@ -716,8 +761,11 @@
             const qty = parseInt(val) || 1;
             quoteItems[index].qty = qty < 1 ? 1 : qty;
             quoteItems[index].subtotal = Math.round(quoteItems[index].price * quoteItems[index].qty);
+            quoteItems[index].totalCost = Math.round(quoteItems[index].cost * quoteItems[index].qty);
             quoteItems[index].profit = Math.round((quoteItems[index].price - quoteItems[index].cost) * quoteItems[index].qty);
             document.getElementById(`subtotal_${index}`).innerText = quoteItems[index].subtotal.toLocaleString();
+            document.getElementById(`cost_${index}`).innerText = quoteItems[index].totalCost.toLocaleString();
+            document.getElementById(`profit_${index}`).innerText = quoteItems[index].profit.toLocaleString();
             calculateTotal();
         }
 
@@ -727,6 +775,7 @@
             quoteItems[index].subtotal = Math.round(price * quoteItems[index].qty);
             quoteItems[index].profit = Math.round((price - quoteItems[index].cost) * quoteItems[index].qty);
             document.getElementById(`subtotal_${index}`).innerText = quoteItems[index].subtotal.toLocaleString();
+            document.getElementById(`profit_${index}`).innerText = quoteItems[index].profit.toLocaleString();
             calculateTotal();
         }
 
@@ -754,7 +803,11 @@
 
         function calculateTotal() {
             let tAmt = 0, tCost = 0, tProfit = 0;
-            quoteItems.forEach(i => { tAmt += i.subtotal; tCost += (i.cost * i.qty); tProfit += i.profit; });
+            quoteItems.forEach(i => { 
+                tAmt += i.subtotal; 
+                tCost += (i.totalCost !== undefined ? i.totalCost : (i.cost * i.qty)); 
+                tProfit += (i.profit !== undefined ? i.profit : ((i.price - i.cost) * i.qty)); 
+            });
             if(document.getElementById('taxIncluded').checked) tAmt = Math.round(tAmt * 1.05);
             document.getElementById('lblTotalAmount').innerText = tAmt.toLocaleString(); 
             document.getElementById('lblTotalCost').innerText = tCost.toLocaleString(); 
@@ -960,6 +1013,8 @@
             if(iData) {
                 quoteItems = iData.map(i => {
                     const p = productsData.find(prod => prod.product_code === i.item_code);
+                    const unitCost = i.cost !== undefined ? i.cost : (p ? p.cost : 0);
+                    const itemProfit = i.profit !== undefined ? i.profit : Math.round((i.unit_price - unitCost) * i.quantity);
                     return {
                         type: i.is_bundle ? '組合' : '單品', 
                         is_bundle: i.is_bundle, 
@@ -968,9 +1023,10 @@
                         unit: p ? (p.unit || '部') : '部',
                         qty: i.quantity, 
                         price: i.unit_price, 
-                        cost: i.cost, 
+                        cost: unitCost, 
                         subtotal: i.subtotal, 
-                        profit: i.profit
+                        totalCost: Math.round(unitCost * i.quantity),
+                        profit: itemProfit
                     };
                 });
                 renderQuoteItems();
@@ -1612,6 +1668,7 @@
             const { data } = await supabaseClient.from('qt_shortcuts').select('*').order('grid_index');
             if (data) { shortcutsData = data; renderShortcuts(); }
         }
+        function renderSchortcuts() {} // (placeholder kept if needed)
         function renderShortcuts() {
             const container = document.getElementById('shortcutGridContainer'); container.innerHTML = '';
             for(let i = 0; i < 25; i++) {
