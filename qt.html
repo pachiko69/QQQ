@@ -201,6 +201,7 @@
                 <button onclick="triggerImport('qt_products')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入商品</button>
                 <button onclick="triggerImport('qt_customers')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入客戶</button>
                 <button onclick="triggerImport('qt_suppliers')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入廠商</button>
+                <button onclick="triggerImport('qt_quotations')" class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded">匯入報價單</button>
             </div>
         </div>
 
@@ -615,12 +616,28 @@
                     <td class="border p-2"><input type="text" value="${item.price}" onchange="updateItemPrice(${index}, this.value)" class="w-28 border text-center p-1 rounded font-mono"></td>
                     <td class="border p-2 text-blue-700 font-bold" id="subtotal_${index}">${item.subtotal.toLocaleString()}</td>
                     <td class="border p-2 whitespace-nowrap">
+                        <button type="button" onclick="moveQuoteItemUp(${index})" class="text-gray-600 font-bold mr-1 hover:underline" title="往上移">▲</button>
+                        <button type="button" onclick="moveQuoteItemDown(${index})" class="text-gray-600 font-bold mr-2 hover:underline" title="往下移">▼</button>
                         <button type="button" onclick="openItemHistory('${item.code}', '${item.name}')" class="text-emerald-600 font-bold mr-2 hover:underline">歷史</button>
                         <button type="button" onclick="quoteItems.splice(${index}, 1); renderQuoteItems();" class="text-red-500 hover:font-bold">刪除</button>
                     </td>
                 </tr>`;
             }); 
             calculateTotal();
+        }
+
+        function moveQuoteItemUp(index) {
+            if (index <= 0) return; // 已經是最頂部
+            const item = quoteItems.splice(index, 1)[0];
+            quoteItems.splice(index - 1, 0, item);
+            renderQuoteItems();
+        }
+
+        function moveQuoteItemDown(index) {
+            if (index >= quoteItems.length - 1) return; // 已經是最底部
+            const item = quoteItems.splice(index, 1)[0];
+            quoteItems.splice(index + 1, 0, item);
+            renderQuoteItems();
         }
 
         async function openItemHistory(itemCode, itemName) {
@@ -1599,7 +1616,7 @@
             const container = document.getElementById('shortcutGridContainer'); container.innerHTML = '';
             for(let i = 0; i < 25; i++) {
                 const b = shortcutsData.find(s => s.grid_index === i) || { grid_index: i, name: '未設定', url: '' };
-                const btn = document.createElement('button'); btn.className = "bg-white border hover:border-blue-500 rounded p-4 h-24 shadow text-gray-700 font-bold break-all"; btn.innerText = b.name;
+                const btn = document.createElement('button'); btn.className = "bg-white border hover:border-blue-500 rounded p-4 h-16 shadow text-gray-700 font-bold break-all"; btn.innerText = b.name;
                 btn.onclick = () => { if(b.url) window.open(b.url, '_blank'); };
                 btn.oncontextmenu = (e) => { e.preventDefault(); document.getElementById('shortcutIndex').value = i; document.getElementById('shortcutName').value = b.name!=='未設定'?b.name:''; document.getElementById('shortcutUrl').value = b.url||''; document.getElementById('shortcutModal').showModal(); };
                 container.appendChild(btn);
