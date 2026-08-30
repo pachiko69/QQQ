@@ -1616,12 +1616,19 @@
             const container = document.getElementById('shortcutGridContainer'); container.innerHTML = '';
             for(let i = 0; i < 25; i++) {
                 const b = shortcutsData.find(s => s.grid_index === i) || { grid_index: i, name: '未設定', url: '' };
-                const btn = document.createElement('button'); btn.className = "bg-white border hover:border-blue-500 rounded p-4 h-16 shadow text-gray-700 font-bold break-all"; btn.innerText = b.name;
+                const btn = document.createElement('button');
+                
+                // 判斷當前按鍵是否有設定網址，如果有則套用淺藍色背景 (bg-blue-100)，否則維持白色
+                let hasUrl = b.url && b.url.trim() !== '';
+                btn.className = `border rounded p-4 h-16 shadow font-bold break-all transition-colors ${hasUrl ? 'bg-blue-100 border-blue-300 text-blue-900 hover:bg-blue-200' : 'bg-white text-gray-700 hover:border-blue-500'}`;
+                
+                btn.innerText = b.name;
                 btn.onclick = () => { if(b.url) window.open(b.url, '_blank'); };
                 btn.oncontextmenu = (e) => { e.preventDefault(); document.getElementById('shortcutIndex').value = i; document.getElementById('shortcutName').value = b.name!=='未設定'?b.name:''; document.getElementById('shortcutUrl').value = b.url||''; document.getElementById('shortcutModal').showModal(); };
                 container.appendChild(btn);
             }
         }
+
         async function saveShortcut() {
             const pl = { grid_index: parseInt(document.getElementById('shortcutIndex').value), name: document.getElementById('shortcutName').value||'未設定', url: document.getElementById('shortcutUrl').value };
             await supabaseClient.from('qt_shortcuts').upsert(pl, { onConflict: 'grid_index' });
