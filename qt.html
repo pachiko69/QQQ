@@ -48,7 +48,7 @@
                 <h2 class="text-2xl font-bold border-b-2 border-blue-500 pb-2">新增/編輯報價單</h2>
                 <div class="flex gap-2">
                     <button onclick="openImportOldQuoteModal()" class="bg-gray-500 text-white px-4 py-2 rounded shadow">滙入舊報價單</button>
-                    <button onclick="switchTab('manage')" class="bg-green-600 text-white px-4 py-2 rounded shadow">管理(客戶/廠商/商品)</button>
+                    <button onclick="switchTab('manage')" class="bg-green-600 text-white px-4 py-2 rounded shadow">管理</button>
                 </div>
             </div>
             
@@ -83,7 +83,7 @@
                     <div class="flex gap-2 items-end">
                         <div class="flex-grow">
                             <label class="block text-xs font-bold mb-1">商品或組合代號/名稱搜尋</label>
-                            <input list="productsList" id="itemSearch" class="w-full border rounded p-2 bg-white" placeholder="請輸入代號或名稱">
+                            <input list="productsList" id="itemSearch" class="w-full border rounded p-2 bg-red-100" placeholder="請輸入代號或名稱">
                             <datalist id="productsList"></datalist>
                         </div>
                         <button type="button" onclick="addQuoteItem()" class="bg-blue-600 text-white px-6 py-2 rounded h-[42px] whitespace-nowrap">加入明細</button>
@@ -365,35 +365,37 @@
     </dialog>
 
     <!-- 商品管理 (單品) Modal -->
-    <dialog id="productModal" class="p-6 rounded shadow-lg w-full max-w-5xl bg-white">
+    <dialog id="productModal" class="p-6 rounded shadow-lg w-screen h-screen max-w-none max-h-none m-0 bg-white">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-bold">商品管理</h3>
-            <button onclick="document.getElementById('productModal').close()" class="text-red-500 font-bold text-xl">&times;</button>
+            <button onclick="document.getElementById('productModal').close()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2 rounded text-sm shadow transition-colors">關閉</button>
         </div>
         <div class="bg-teal-50 p-4 rounded mb-4 border border-teal-200">
             <h4 class="font-bold mb-2 text-sm" id="productFormTitle">新增商品</h4>
             <input type="hidden" id="prodIsEdit" value="false">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
-                <div><label class="text-xs font-bold text-gray-600">商品代號*</label><input type="text" id="prodCode" class="w-full border p-2 rounded bg-white"></div>
-                <div><label class="text-xs font-bold text-gray-600">商品名稱*</label><input type="text" id="prodName" class="w-full border p-2 rounded bg-white"></div>
-                <div><label class="text-xs font-bold text-gray-600">單位</label><input type="text" id="prodUnit" class="w-full border p-2 rounded bg-white" placeholder="例: 個/台"></div>
-                <div><label class="text-xs font-bold text-gray-600">售價*</label><input type="text" id="prodPrice" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
-                <div><label class="text-xs font-bold text-gray-600">成本*</label><input type="text" id="prodCost" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
-                <div><label class="text-xs font-bold text-gray-600">供應商 1</label><select id="prodSup1" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
-                <div><label class="text-xs font-bold text-gray-600">供應商 2</label><select id="prodSup2" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
-                <div><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="prodUrl" class="w-full border p-2 rounded bg-white"></div>
-                <div class="col-span-2 md:col-span-4"><label class="text-xs font-bold text-gray-600">備註</label><input type="text" id="prodNotes" class="w-full border p-2 rounded bg-white"></div>
-            </div>
-            <div class="flex gap-2 mt-2">
-                <button onclick="saveProduct()" class="bg-teal-600 text-white px-4 py-2 rounded text-sm">儲存</button>
-                <button onclick="saveAsNewProduct()" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm">另存新商品</button>
-                <button onclick="resetProductForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm">清除</button>
+            <div class="grid grid-cols-12 gap-3 mb-2 items-end">
+                <div class="col-span-2"><label class="text-xs font-bold text-gray-600">商品代號*</label><input type="text" id="prodCode" class="w-full border p-2 rounded bg-white"></div>
+                <div class="col-span-6"><label class="text-xs font-bold text-gray-600">商品名稱*</label><input type="text" id="prodName" class="w-full border p-2 rounded bg-white"></div>
+                <div class="col-span-1"><label class="text-xs font-bold text-gray-600">單位</label><input type="text" id="prodUnit" class="w-full border p-2 rounded bg-white" placeholder="例: 個/台"></div>
+                <div class="col-span-1"><label class="text-xs font-bold text-gray-600">售價*</label><input type="text" id="prodPrice" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
+                <div class="col-span-2"><label class="text-xs font-bold text-gray-600">成本*</label><input type="text" id="prodCost" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
+                
+                <div class="col-span-2"><label class="text-xs font-bold text-gray-600">供應商 1</label><select id="prodSup1" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
+                <div class="col-span-2"><label class="text-xs font-bold text-gray-600">供應商 2</label><select id="prodSup2" class="w-full border p-2 rounded bg-white"><option value="">無</option></select></div>
+                <div class="col-span-8"><label class="text-xs font-bold text-gray-600">網址</label><input type="text" id="prodUrl" class="w-full border p-2 rounded bg-white"></div>
+                
+                <div class="col-span-7"><label class="text-xs font-bold text-gray-600">備註</label><input type="text" id="prodNotes" class="w-full border p-2 rounded bg-white"></div>
+                <div class="col-span-5 flex gap-2">
+                    <button onclick="saveProduct()" class="bg-teal-600 text-white px-4 py-2 rounded text-sm flex-1">儲存</button>
+                    <button onclick="saveAsNewProduct()" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm flex-1">另存新商品</button>
+                    <button onclick="resetProductForm()" class="bg-gray-400 text-white px-4 py-2 rounded text-sm flex-1">清除</button>
+                </div>
             </div>
         </div>
 
         <!-- 商品搜尋區 -->
         <div class="mb-3">
-            <input type="text" id="productSearchInput" oninput="renderProductTable()" placeholder="輸入商品代號或名稱進行模糊搜尋..." class="w-full border p-2 rounded text-sm bg-white">
+            <input type="text" id="productSearchInput" oninput="renderProductTable()" placeholder="輸入商品代號或名稱進行模糊搜尋..." class="w-full border p-2 rounded text-sm bg-red-100">
         </div>
 
         <div class="overflow-y-auto max-h-64 border rounded">
@@ -456,9 +458,19 @@
         </div>
     </dialog>
 
+    <!-- ==================== 滑鼠右鍵彈出選單 ==================== -->
+    <div id="customContextMenu" class="hidden fixed bg-white border border-gray-300 shadow-xl rounded-md py-1 z-50 text-sm">
+        <button onclick="handleContextMenuAction('product')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2">
+            📦 商品管理
+        </button>
+        <button onclick="handleContextMenuAction('quote')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2">
+            📄 報價單管理
+        </button>
+    </div>
+
     <script>
         // ==========================================
-        // 核心設定與全域變數
+        // 核心設定與全域變數 (原廠正確連線設定)
         // ==========================================
         const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
@@ -545,6 +557,32 @@
                 productsData.forEach(p => options += `<option value="${p.product_code} ${p.name}">[單品] ${p.product_code} - ${p.name}</option>`);
                 bundlesData.forEach(b => options += `<option value="${b.bundle_code} ${b.name}">[組合] ${b.bundle_code} - ${b.name}</option>`);
                 listP.innerHTML = options;
+            }
+        }
+
+        // ==========================================
+        // 滑鼠右鍵彈窗功能
+        // ==========================================
+        const contextMenu = document.getElementById('customContextMenu');
+
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const { clientX, clientY } = e;
+            contextMenu.style.left = `${clientX}px`;
+            contextMenu.style.top = `${clientY}px`;
+            contextMenu.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', () => {
+            contextMenu.classList.add('hidden');
+        });
+
+        function handleContextMenuAction(action) {
+            contextMenu.classList.add('hidden');
+            if (action === 'product') {
+                openProductManager();
+            } else if (action === 'quote') {
+                openQuoteManager();
             }
         }
 
@@ -672,14 +710,14 @@
         }
 
         function moveQuoteItemUp(index) {
-            if (index <= 0) return; // 已經是最頂部
+            if (index <= 0) return;
             const item = quoteItems.splice(index, 1)[0];
             quoteItems.splice(index - 1, 0, item);
             renderQuoteItems();
         }
 
         function moveQuoteItemDown(index) {
-            if (index >= quoteItems.length - 1) return; // 已經是最底部
+            if (index >= quoteItems.length - 1) return;
             const item = quoteItems.splice(index, 1)[0];
             quoteItems.splice(index + 1, 0, item);
             renderQuoteItems();
@@ -902,9 +940,6 @@
             await resetQuotationForm();
         }
 
-        // ==========================================
-        // 統計頁面的商品編輯導向
-        // ==========================================
         async function editProductFromStats(productCode) {
             await openProductManager();
             const p = productsData.find(item => item.product_code === productCode);
@@ -913,17 +948,11 @@
             }
         }
 
-        // ==========================================
-        // 統計頁面的報價單編輯導向
-        // ==========================================
         async function editQuoteFromStats(quoteId) {
             await loadOldQuote(quoteId);
             switchTab('quote');
         }
 
-        // ==========================================
-        // 滙入舊報價單
-        // ==========================================
         function openImportOldQuoteModal() {
             document.getElementById('importQuoteModal').showModal();
             document.getElementById('oldQuotesTableBody').innerHTML = '';
@@ -1034,9 +1063,6 @@
             document.getElementById('importQuoteModal').close();
         }
 
-        // ==========================================
-        // 2. 統計與查詢 (排序功能與統計表格渲染)
-        // ==========================================
         async function fetchStats() {
             const pRes = await supabaseClient.from('qt_products').select('*');
             if(pRes.data) statsData.products = pRes.data;
@@ -1120,9 +1146,6 @@
             }
         }
 
-        // ==========================================
-        // 3. CSV 資料匯出 / 匯入
-        // ==========================================
         async function exportCSV(table, filename) {
             const { data, error } = await supabaseClient.from(table).select('*');
             if(error || !data || data.length === 0) return alert('無資料可匯出');
@@ -1200,9 +1223,6 @@
             reader.readAsText(file);
         }
 
-        // ==========================================
-        // 通用外部網頁另開函式
-        // ==========================================
         function openExternalUrl(url, itemName = '此項目') {
             if (!url || url.trim() === '') {
                 return alert(`${itemName}尚未設定網址 (url)！`);
@@ -1214,9 +1234,6 @@
             window.open(targetUrl, '_blank');
         }
 
-        // ==========================================
-        // 4. 各項管理 CRUD & 報價單管理
-        // ==========================================
         async function openQuoteManager() {
             document.getElementById('quoteManagerModal').showModal();
             await fetchQuoteManagerData();
@@ -1661,21 +1678,17 @@
         }
         async function deleteBundle(code) { if(confirm('確定刪除組合？')) { await supabaseClient.from('qt_bundles').delete().eq('bundle_code', code); fetchBundles(); } }
 
-        // ==========================================
-        // 5. 快捷按鍵
-        // ==========================================
         async function loadShortcuts() {
             const { data } = await supabaseClient.from('qt_shortcuts').select('*').order('grid_index');
             if (data) { shortcutsData = data; renderShortcuts(); }
         }
-        function renderSchortcuts() {} // (placeholder kept if needed)
+
         function renderShortcuts() {
             const container = document.getElementById('shortcutGridContainer'); container.innerHTML = '';
             for(let i = 0; i < 25; i++) {
                 const b = shortcutsData.find(s => s.grid_index === i) || { grid_index: i, name: '未設定', url: '' };
                 const btn = document.createElement('button');
                 
-                // 判斷當前按鍵是否有設定網址，如果有則套用淺藍色背景 (bg-blue-100)，否則維持白色
                 let hasUrl = b.url && b.url.trim() !== '';
                 btn.className = `border rounded p-4 h-16 shadow font-bold break-all transition-colors ${hasUrl ? 'bg-blue-100 border-blue-300 text-blue-900 hover:bg-blue-200' : 'bg-white text-gray-700 hover:border-blue-500'}`;
                 
