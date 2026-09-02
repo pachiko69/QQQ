@@ -235,6 +235,7 @@
                         <th class="p-2 border-b">數量</th>
                         <th class="p-2 border-b">單價</th>
                         <th class="p-2 border-b">小計</th>
+                        <th class="p-2 border-b text-right">成本</th>
                     </tr>
                 </thead>
                 <tbody id="itemHistoryTableBody"></tbody>
@@ -726,16 +727,16 @@
         async function openItemHistory(itemCode, itemName) {
             document.getElementById('itemHistoryTitle').innerText = `商品歷史交易記錄: [${itemCode}] ${itemName}`;
             const tbody = document.getElementById('itemHistoryTableBody');
-            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">載入中...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">載入中...</td></tr>';
             document.getElementById('itemHistoryModal').showModal();
 
             const { data: itemsData, error: itemsErr } = await supabaseClient
                 .from('qt_quotation_items')
-                .select('quote_id, quantity, unit_price, subtotal')
+                .select('quote_id, quantity, unit_price, subtotal, cost')
                 .eq('item_code', itemCode);
 
             if (itemsErr || !itemsData || itemsData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">查無此商品的歷史交易記錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">查無此商品的歷史交易記錄</td></tr>';
                 return;
             }
 
@@ -748,7 +749,7 @@
                 .order('quote_date', { ascending: false });
 
             if (quotesErr || !quotesData || quotesData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">查無對應的歷史報價單主檔記錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">查無對應的歷史報價單主檔記錄</td></tr>';
                 return;
             }
 
@@ -763,7 +764,8 @@
                         status: q.status,
                         quantity: matchedItem.quantity,
                         unit_price: matchedItem.unit_price,
-                        subtotal: matchedItem.subtotal
+                        subtotal: matchedItem.subtotal,
+                        cost: matchedItem.cost
                     });
                 }
             });
@@ -772,7 +774,7 @@
             historyList = historyList.slice(0, 15);
 
             if (historyList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">查無歷史記錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">查無歷史記錄</td></tr>';
                 return;
             }
 
@@ -781,6 +783,8 @@
                 let statusBadge = `<span class="text-gray-600">${h.status}</span>`;
                 if (h.status === '已成交') statusBadge = '<span class="text-green-600 font-bold">已成交</span>';
                 else if (h.status === '報價中') statusBadge = '<span class="text-blue-600">報價中</span>';
+                
+                const totalCost = (h.cost !== undefined && h.cost !== null ? h.cost : 0) * h.quantity;
 
                 tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b">
@@ -791,6 +795,7 @@
                     <td class="p-2">${h.quantity}</td>
                     <td class="p-2 text-blue-700 font-bold">${h.unit_price.toLocaleString()}</td>
                     <td class="p-2">${h.subtotal.toLocaleString()}</td>
+                    <td class="p-2 text-right text-red-600 font-bold">${totalCost.toLocaleString()}</td>
                 </tr>`;
             });
         }
@@ -1160,7 +1165,7 @@
                 csvRows.push(values.join(','));
             });
 
-            const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = filename + "_" + getTaipeiDate().toISOString().split('T')[0] + ".csv";
@@ -1183,7 +1188,7 @@
                 else if (c === '"') { inQuotes = !inQuotes; }
                 else if (c === ',' && !inQuotes) { row.push(val); val = ''; }
                 else if (c === '\n' && !inQuotes) { row.push(val); result.push(row); row = []; val = ''; }
-                else if (c === '\r') { }
+                else if (c === '\n') { }
                 else { val += c; }
             }
             row.push(val); result.push(row);
