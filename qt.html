@@ -838,7 +838,7 @@
             const textToCopy = lines.join('\n');
 
             navigator.clipboard.writeText(textToCopy).then(() => {
-                alert('商品明細已成功複製到剪貼簿！');
+                //alert('商品明細已成功複製到剪貼簿！');
             }).catch(err => {
                 alert('複製失敗，請檢查瀏覽器權限：' + err);
             });
@@ -887,7 +887,7 @@
             const { error: err2 } = await supabaseClient.from('qt_quotation_items').insert(itemsToInsert);
             if (err2) return alert('儲存明細失敗: ' + err2.message);
 
-            alert('報價單儲存成功！');
+            //alert('報價單儲存成功！');
             await resetQuotationForm();
         }
 
@@ -1582,7 +1582,7 @@
             if (error) {
                 alert('另存新商品失敗: ' + error.message);
             } else {
-                alert('另存新商品成功！');
+                //alert('另存新商品成功！');
                 resetProductForm();
                 fetchProducts();
             }
