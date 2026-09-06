@@ -236,6 +236,7 @@
                         <th class="p-2 border-b">單價</th>
                         <th class="p-2 border-b">小計</th>
                         <th class="p-2 border-b text-right">成本</th>
+			<th class="p-2 border-b text-right">利潤</th>
                     </tr>
                 </thead>
                 <tbody id="itemHistoryTableBody"></tbody>
@@ -727,7 +728,7 @@
         async function openItemHistory(itemCode, itemName) {
             document.getElementById('itemHistoryTitle').innerText = `商品歷史交易記錄: [${itemCode}] ${itemName}`;
             const tbody = document.getElementById('itemHistoryTableBody');
-            tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">載入中...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">載入中...</td></tr>';
             document.getElementById('itemHistoryModal').showModal();
 
             const { data: itemsData, error: itemsErr } = await supabaseClient
@@ -736,7 +737,7 @@
                 .eq('item_code', itemCode);
 
             if (itemsErr || !itemsData || itemsData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">查無此商品的歷史交易記錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">查無此商品的歷史交易記錄</td></tr>';
                 return;
             }
 
@@ -749,7 +750,7 @@
                 .order('quote_date', { ascending: false });
 
             if (quotesErr || !quotesData || quotesData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">查無對應的歷史報價單主檔記錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">查無對應的歷史報價單主檔記錄</td></tr>';
                 return;
             }
 
@@ -774,7 +775,7 @@
             historyList = historyList.slice(0, 15);
 
             if (historyList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">查無歷史記錄</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">查無歷史記錄</td></tr>';
                 return;
             }
 
@@ -785,7 +786,7 @@
                 else if (h.status === '報價中') statusBadge = '<span class="text-blue-600">報價中</span>';
                 
                 const totalCost = (h.cost !== undefined && h.cost !== null ? h.cost : 0) * h.quantity;
-
+		const profit = h.subtotal - totalCost;
                 tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-2">${h.quote_date}</td>
@@ -793,9 +794,10 @@
                     <td class="p-2">${h.customer_name}</td>
                     <td class="p-2">${statusBadge}</td>
                     <td class="p-2">${h.quantity}</td>
-                    <td class="p-2 text-blue-700 font-bold">${h.unit_price.toLocaleString()}</td>
-                    <td class="p-2">${h.subtotal.toLocaleString()}</td>
-                    <td class="p-2 text-right text-red-600 font-bold">${totalCost.toLocaleString()}</td>
+                    <td class="p-2 text-black-700 font-bold">${h.unit_price.toLocaleString()}</td>
+                    <td class="p-2 text-right text-blue-600 font-bold">${h.subtotal.toLocaleString()}</td>
+                    <td class="p-2 text-right text-green-600 font-bold">${totalCost.toLocaleString()}</td>
+		    <td class="p-2 text-right text-red-600 font-bold">${profit.toLocaleString()}</td>
                 </tr>`;
             });
         }
