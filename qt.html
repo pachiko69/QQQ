@@ -376,7 +376,7 @@
             <h4 class="font-bold mb-2 text-sm" id="productFormTitle">新增商品</h4>
             <input type="hidden" id="prodIsEdit" value="false">
             <div class="grid grid-cols-12 gap-3 mb-2 items-end">
-                <div class="col-span-2"><label class="text-xs font-bold text-gray-600">商品代號*</label><input type="text" id="prodCode" class="w-full border p-2 rounded bg-white"></div>
+                <div class="col-span-2"><label class="text-xs font-bold text-gray-600">商品代號*</label><input type="text" id="prodCode" class="w-full border p-2 rounded bg-white" oncontextmenu="generateAutoProductCode(event)" placeholder="右鍵自動產生代號" title="點擊右鍵自動產生今日代號"></div>
                 <div class="col-span-6"><label class="text-xs font-bold text-gray-600">商品名稱*</label><input type="text" id="prodName" class="w-full border p-2 rounded bg-white"></div>
                 <div class="col-span-1"><label class="text-xs font-bold text-gray-600">單位</label><input type="text" id="prodUnit" class="w-full border p-2 rounded bg-white" placeholder="例: 個/台"></div>
                 <div class="col-span-1"><label class="text-xs font-bold text-gray-600">售價*</label><input type="text" id="prodPrice" class="w-full border p-2 rounded bg-white text-right font-mono" value="0"></div>
@@ -395,15 +395,30 @@
             </div>
         </div>
 
-        <!-- 商品搜尋區 -->
-        <div class="mb-3">
-            <input type="text" id="productSearchInput" oninput="renderProductTable()" placeholder="輸入商品代號或名稱進行模糊搜尋..." class="w-full border p-2 rounded text-sm bg-red-100">
+        <!-- 商品搜尋與勾選多筆刪除操作區 -->
+        <div class="mb-3 space-y-2">
+            <div>
+                <input type="text" id="productSearchInput" oninput="onFuzzySearchInput()" placeholder="輸入商品代號或名稱進行模糊搜尋..." class="w-full border p-2 rounded text-sm bg-red-100">
+            </div>
+            <div class="flex flex-wrap gap-2 items-end bg-red-50 p-3 rounded border border-red-200">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">起始商品代號</label>
+                    <input type="text" id="delStartProdCode" class="border p-2 rounded text-sm bg-white" placeholder="例如: A001">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">結束商品代號</label>
+                    <input type="text" id="delEndProdCode" class="border p-2 rounded text-sm bg-white" placeholder="例如: A099">
+                </div>
+                <button onclick="searchProductsByRange()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-sm shadow">搜尋區間商品</button>
+                <button onclick="deleteSelectedProducts()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-sm shadow ml-auto">刪除已勾選商品</button>
+            </div>
         </div>
 
         <div class="overflow-y-auto max-h-64 border rounded">
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-200 sticky top-0">
                     <tr>
+                        <th class="p-2 border-b w-10 text-center"><input type="checkbox" id="selectAllProducts" onchange="toggleAllProducts(this)" class="w-4 h-4 cursor-pointer text-blue-600 rounded"></th>
                         <th class="p-2 border-b" onclick="sortProductManager('product_code')">商品代號 ↕</th>
                         <th class="p-2 border-b" onclick="sortProductManager('name')">商品名稱 ↕</th>
                         <th class="p-2 border-b" onclick="sortProductManager('price')">售價 ↕</th>
@@ -489,6 +504,9 @@
         let sortState = { products: { field: 'product_code', asc: true }, quotes: { field: 'quote_date', asc: false } };
         let quoteManagerState = { data: [], field: 'quote_date', asc: false };
         let productManagerState = { field: 'product_code', asc: true };
+        
+        // 紀錄目前的商品過濾狀態
+        let activeProductFilter = { type: 'none' }; 
 
         function getTaipeiDate() {
             return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
@@ -502,7 +520,20 @@
             initDialogBackdropClick();
         }
 
-        // 監聽所有 <dialog> 彈窗，若點擊或移出對話框範圍（點擊 backdrop 區域）則關閉
+        // 監聽全頁面雙擊左鍵事件
+        document.addEventListener('dblclick', (e) => {
+            const targetTag = e.target.tagName.toLowerCase();
+            if (['input', 'textarea', 'select', 'button', 'a'].includes(targetTag)) {
+                return;
+            }
+
+            const itemSearchInput = document.getElementById('itemSearch');
+            if (itemSearchInput) {
+                itemSearchInput.focus(); 
+                itemSearchInput.select(); 
+            }
+        });
+
         function initDialogBackdropClick() {
             document.querySelectorAll('dialog').forEach(dialog => {
                 dialog.addEventListener('click', (event) => {
@@ -556,8 +587,8 @@
             const listP = document.getElementById('productsList');
             if(listP) {
                 let options = '';
-                productsData.forEach(p => options += `<option value="${p.product_code} ${p.name}">[單品] ${p.product_code} - ${p.name}</option>`);
-                bundlesData.forEach(b => options += `<option value="${b.bundle_code} ${b.name}">[組合] ${b.bundle_code} - ${b.name}</option>`);
+                productsData.forEach(p => options += `<option value="${p.product_code} ${p.name}"></option>`);
+                bundlesData.forEach(b => options += `<option value="${b.bundle_code} ${b.name}"></option>`);
                 listP.innerHTML = options;
             }
         }
@@ -786,7 +817,7 @@
                 else if (h.status === '報價中') statusBadge = '<span class="text-blue-600">報價中</span>';
                 
                 const totalCost = (h.cost !== undefined && h.cost !== null ? h.cost : 0) * h.quantity;
-		const profit = h.subtotal - totalCost;
+		        const profit = h.subtotal - totalCost;
                 tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-2">${h.quote_date}</td>
@@ -797,7 +828,7 @@
                     <td class="p-2 text-black-700 font-bold">${h.unit_price.toLocaleString()}</td>
                     <td class="p-2 text-right text-blue-600 font-bold">${h.subtotal.toLocaleString()}</td>
                     <td class="p-2 text-right text-green-600 font-bold">${totalCost.toLocaleString()}</td>
-		    <td class="p-2 text-right text-red-600 font-bold">${profit.toLocaleString()}</td>
+		            <td class="p-2 text-right text-red-600 font-bold">${profit.toLocaleString()}</td>
                 </tr>`;
             });
         }
@@ -840,7 +871,6 @@
             const textToCopy = lines.join('\n');
 
             navigator.clipboard.writeText(textToCopy).then(() => {
-                //alert('商品明細已成功複製到剪貼簿！');
             }).catch(err => {
                 alert('複製失敗，請檢查瀏覽器權限：' + err);
             });
@@ -889,7 +919,6 @@
             const { error: err2 } = await supabaseClient.from('qt_quotation_items').insert(itemsToInsert);
             if (err2) return alert('儲存明細失敗: ' + err2.message);
 
-            //alert('報價單儲存成功！');
             await resetQuotationForm();
         }
 
@@ -1477,8 +1506,13 @@
             let supOpts = '<option value="">無</option>'; suppliersData.forEach(s => supOpts += `<option value="${s.id}">${s.name}</option>`);
             document.getElementById('prodSup1').innerHTML = supOpts; document.getElementById('prodSup2').innerHTML = supOpts;
             document.getElementById('productSearchInput').value = '';
-            resetProductForm(); await fetchProducts();
+            document.getElementById('delStartProdCode').value = '';
+            document.getElementById('delEndProdCode').value = '';
+            activeProductFilter = { type: 'none' };
+            resetProductForm(); 
+            await fetchProducts();
         }
+
         async function fetchProducts() {
             const { data } = await supabaseClient.from('qt_products').select('*');
             if (data) {
@@ -1486,6 +1520,34 @@
                 renderProductTable();
                 reloadSearchData();
             }
+        }
+
+        // 自動產生商品代號邏輯 (右鍵觸發)
+        function generateAutoProductCode(e) {
+            e.preventDefault();
+            e.stopPropagation(); // 防止觸發全域自訂選單
+            
+            const tDate = getTaipeiDate();
+            const yyyy = tDate.getFullYear();
+            const mm = String(tDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(tDate.getDate()).padStart(2, '0');
+            const prefix = `T${yyyy}${mm}${dd}`;
+            
+            const matchedCodes = productsData
+                .map(p => p.product_code)
+                .filter(code => code && code.startsWith(prefix));
+                
+            let maxSeq = 0;
+            matchedCodes.forEach(code => {
+                const seqStr = code.slice(prefix.length);
+                const seqNum = parseInt(seqStr, 10);
+                if (!isNaN(seqNum) && seqNum > maxSeq) {
+                    maxSeq = seqNum;
+                }
+            });
+            
+            const newSeq = String(maxSeq + 1).padStart(2, '0');
+            document.getElementById('prodCode').value = prefix + newSeq;
         }
 
         function sortProductManager(field) {
@@ -1498,15 +1560,85 @@
             renderProductTable();
         }
 
+        function onFuzzySearchInput() {
+            activeProductFilter = { type: 'keyword' };
+            const cb = document.getElementById('selectAllProducts');
+            if(cb) cb.checked = false; 
+            renderProductTable();
+        }
+
+        function toggleAllProducts(source) {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function searchProductsByRange() {
+            const startCode = document.getElementById('delStartProdCode').value.trim();
+            const endCode = document.getElementById('delEndProdCode').value.trim();
+            
+            if (!startCode || !endCode) {
+                return alert('請完整填寫起始與結束商品代號！');
+            }
+            if (startCode > endCode) {
+                return alert('起始代號不能大於結束代號！');
+            }
+            
+            document.getElementById('productSearchInput').value = ''; 
+            activeProductFilter = { type: 'range', start: startCode, end: endCode };
+            renderProductTable();
+            
+            setTimeout(() => {
+                const selectAllCb = document.getElementById('selectAllProducts');
+                if (selectAllCb) {
+                    selectAllCb.checked = true;
+                    toggleAllProducts(selectAllCb);
+                }
+            }, 50);
+        }
+
+        async function deleteSelectedProducts() {
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+            if (checkboxes.length === 0) {
+                return alert('請先勾選要刪除的商品！');
+            }
+            
+            const codesToDelete = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (!confirm(`確定要刪除已勾選的 ${codesToDelete.length} 筆商品嗎？\n(注意：此操作無法復原！)`)) {
+                return;
+            }
+            
+            const { error } = await supabaseClient.from('qt_products').delete().in('product_code', codesToDelete);
+            
+            if (error) {
+                alert('刪除失敗: ' + error.message);
+            } else {
+                alert(`成功刪除 ${codesToDelete.length} 筆商品！`);
+                document.getElementById('delStartProdCode').value = '';
+                document.getElementById('delEndProdCode').value = '';
+                document.getElementById('productSearchInput').value = '';
+                const selectAllCb = document.getElementById('selectAllProducts');
+                if (selectAllCb) selectAllCb.checked = false;
+                
+                activeProductFilter = { type: 'none' };
+                await fetchProducts();
+            }
+        }
+
         function renderProductTable() {
-            const keyword = document.getElementById('productSearchInput').value.trim().toLowerCase();
             let data = [...productsData];
 
-            if (keyword) {
-                data = data.filter(p => 
-                    (p.product_code && p.product_code.toLowerCase().includes(keyword)) ||
-                    (p.name && p.name.toLowerCase().includes(keyword))
-                );
+            if (activeProductFilter.type === 'keyword') {
+                const keyword = document.getElementById('productSearchInput').value.trim().toLowerCase();
+                if (keyword) {
+                    data = data.filter(p => 
+                        (p.product_code && p.product_code.toLowerCase().includes(keyword)) ||
+                        (p.name && p.name.toLowerCase().includes(keyword))
+                    );
+                }
+            } else if (activeProductFilter.type === 'range') {
+                const { start, end } = activeProductFilter;
+                data = data.filter(p => p.product_code >= start && p.product_code <= end);
             }
 
             const { field, asc } = productManagerState;
@@ -1522,13 +1654,16 @@
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">找不到符合的商品</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">找不到符合的商品</td></tr>';
                 return;
             }
 
             data.forEach(p => {
                 tbody.innerHTML += `
                 <tr class="hover:bg-gray-50">
+                    <td class="p-2 border-b text-center">
+                        <input type="checkbox" class="product-checkbox w-4 h-4 cursor-pointer text-blue-600 rounded" value="${p.product_code}">
+                    </td>
                     <td class="p-2 border-b">${p.product_code}</td>
                     <td class="p-2 border-b">${p.name}</td>
                     <td class="p-2 border-b">${p.price.toLocaleString()}</td>
@@ -1584,7 +1719,6 @@
             if (error) {
                 alert('另存新商品失敗: ' + error.message);
             } else {
-                //alert('另存新商品成功！');
                 resetProductForm();
                 fetchProducts();
             }
@@ -1601,7 +1735,13 @@
             ['prodName','prodUnit','prodUrl','prodNotes','prodSup1','prodSup2'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('prodPrice').value = 0; document.getElementById('prodCost').value = 0;
         }
-        async function deleteProduct(code) { if(confirm('確定刪除單品？')) { await supabaseClient.from('qt_products').delete().eq('product_code', code); fetchProducts(); } }
+        
+        async function deleteProduct(code) { 
+            if(confirm('確定刪除單品？')) { 
+                await supabaseClient.from('qt_products').delete().eq('product_code', code); 
+                fetchProducts(); 
+            } 
+        }
 
         async function openBundleManager() { document.getElementById('bundleModal').showModal(); resetBundleForm(); buildBundleItemSlots(); await fetchBundles(); }
         function buildBundleItemSlots() {
