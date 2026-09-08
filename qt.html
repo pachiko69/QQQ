@@ -513,10 +513,12 @@
         }
 
         async function init() {
-            await reloadSearchData();
+            await Promise.all([
+                reloadSearchData(),
+                loadShortcuts(),
+                fetchStats()
+            ]);
             await resetQuotationForm();
-            await loadShortcuts();
-            await fetchStats(); 
             initDialogBackdropClick();
         }
 
@@ -558,7 +560,13 @@
         }
 
         async function reloadSearchData() {
-            const resC = await supabaseClient.from('qt_customers').select('*').order('sort_order', { ascending: true });
+            const [resC, resS, resP, resB] = await Promise.all([
+                supabaseClient.from('qt_customers').select('*').order('sort_order', { ascending: true }),
+                supabaseClient.from('qt_suppliers').select('*').order('sort_order', { ascending: true }),
+                supabaseClient.from('qt_products').select('*'),
+                supabaseClient.from('qt_bundles').select('*, items:qt_bundle_items(*)')
+            ]);
+
             if(resC.data) {
                 customersData = resC.data;
                 const selectC = document.getElementById('quoteCustomer');
@@ -575,13 +583,8 @@
                 }
             }
             
-            const resS = await supabaseClient.from('qt_suppliers').select('*').order('sort_order', { ascending: true });
             if(resS.data) suppliersData = resS.data;
-
-            const resP = await supabaseClient.from('qt_products').select('*');
             if(resP.data) productsData = resP.data;
-
-            const resB = await supabaseClient.from('qt_bundles').select('*, items:qt_bundle_items(*)');
             if(resB.data) bundlesData = resB.data;
             
             const listP = document.getElementById('productsList');
@@ -1100,11 +1103,13 @@
         }
 
         async function fetchStats() {
-            const pRes = await supabaseClient.from('qt_products').select('*');
+            const [pRes, qRes, iRes] = await Promise.all([
+                supabaseClient.from('qt_products').select('*'),
+                supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)'),
+                supabaseClient.from('qt_quotation_items').select('quote_id, item_name')
+            ]);
+
             if(pRes.data) statsData.products = pRes.data;
-            
-            const qRes = await supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)');
-            const iRes = await supabaseClient.from('qt_quotation_items').select('quote_id, item_name');
             
             let itemsMap = {};
             if(iRes.data) {
