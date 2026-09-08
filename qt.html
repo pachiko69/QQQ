@@ -403,11 +403,11 @@
             <div class="flex flex-wrap gap-2 items-end bg-red-50 p-3 rounded border border-red-200">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">起始商品代號</label>
-                    <input type="text" id="delStartProdCode" class="border p-2 rounded text-sm bg-white" placeholder="例如: A001">
+                    <input type="text" id="delStartProdCode" class="border p-2 rounded text-sm bg-white" placeholder="例如: T2026090801">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">結束商品代號</label>
-                    <input type="text" id="delEndProdCode" class="border p-2 rounded text-sm bg-white" placeholder="例如: A099">
+                    <input type="text" id="delEndProdCode" class="border p-2 rounded text-sm bg-white" placeholder="例如: T2026090899">
                 </div>
                 <button onclick="searchProductsByRange()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-sm shadow">搜尋區間商品</button>
                 <button onclick="deleteSelectedProducts()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-sm shadow ml-auto">刪除已勾選商品</button>
@@ -1304,17 +1304,45 @@
             let data = [...quoteManagerState.data];
 
             data.sort((a, b) => {
-                let valA = a[field], valB = b[field];
-                if (field === 'customer_name') {
-                    valA = a.customer ? a.customer.name : '';
-                    valB = b.customer ? b.customer.name : '';
+                // 1. 取得主要排序欄位的值
+                let valA = field === 'customer_name' ? (a.customer ? a.customer.name : '') : (a[field] !== null ? a[field] : '');
+                let valB = field === 'customer_name' ? (b.customer ? b.customer.name : '') : (b[field] !== null ? b[field] : '');
+
+                // 2. 主要比對邏輯
+                let primaryCompare = 0;
+                if (typeof valA === 'string' && typeof valB === 'string') {
+                    primaryCompare = valA.localeCompare(valB);
+                } else {
+                    primaryCompare = (valA > valB ? 1 : (valA < valB ? -1 : 0));
                 }
-                if (valA === null) valA = '';
-                if (valB === null) valB = '';
-                if (typeof valA === 'string') return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                return asc ? (valA - valB) : (valB - valA);
+
+                // 若主要條件不相同，直接依使用者選擇的 asc (遞增/遞減) 回傳結果
+                if (primaryCompare !== 0) {
+                    return asc ? primaryCompare : -primaryCompare;
+                }
+
+                // 3. 次要比對邏輯 (當主要條件的值完全相同時，自動觸發)
+                if (field === 'quote_date') {
+                    // 情況 A：主排序是「日期」 (日期相同時，次排序依「客戶名稱」筆畫/字母遞增)
+                    let cNameA = a.customer ? a.customer.name : '';
+                    let cNameB = b.customer ? b.customer.name : '';
+                    return cNameA.localeCompare(cNameB);
+                } 
+                else if (field === 'customer_name') {
+                    // 情況 B：主排序是「客戶」 (客戶相同時，次排序依「日期」由新到舊遞減)
+                    let dateA = a.quote_date || '';
+                    let dateB = b.quote_date || '';
+                    return dateB.localeCompare(dateA); 
+                } 
+                else {
+                    // 其他欄位 (如單號、總金額) 若相同，統一預設次排序依「日期」由新到舊遞減
+                    let dateA = a.quote_date || '';
+                    let dateB = b.quote_date || '';
+                    return dateB.localeCompare(dateA);
+                }
             });
 
+            // 以下渲染 HTML 表格邏輯不變
             const tbody = document.getElementById('quoteManagerTableBody');
             tbody.innerHTML = '';
             if (data.length === 0) {
