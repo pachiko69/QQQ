@@ -1025,11 +1025,14 @@
                 }
             }
 
+            // 優化點：根據是否有輸入關鍵字，動態調整載入筆數上限
+            const queryLimit = keyword ? 500 : 50; 
+
             let query = supabaseClient
                 .from('qt_quotations')
                 .select('*, customer:qt_customers(name)')
                 .order('quote_date', { ascending: false })
-                .limit(40);
+                .limit(queryLimit);
 
             if (keyword) {
                 let orConditions = [`quote_id.ilike.%${keyword}%`, `status.ilike.%${keyword}%`];
