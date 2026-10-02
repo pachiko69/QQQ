@@ -513,12 +513,12 @@
         }
 
         async function init() {
-            await Promise.all([
-                reloadSearchData(),
-                loadShortcuts(),
-                fetchStats()
-            ]);
+            // 解除阻塞：只先等待必要的搜尋資料載入
+            await reloadSearchData();
             await resetQuotationForm();
+            
+            // 工具按鍵與事件監聽放背景執行，不阻塞畫面
+            loadShortcuts();
             initDialogBackdropClick();
         }
 
@@ -587,13 +587,7 @@
             if(resP.data) productsData = resP.data;
             if(resB.data) bundlesData = resB.data;
             
-            const listP = document.getElementById('productsList');
-            if(listP) {
-                let options = '';
-                productsData.forEach(p => options += `<option value="${p.product_code} ${p.name}"></option>`);
-                bundlesData.forEach(b => options += `<option value="${b.bundle_code} ${b.name}"></option>`);
-                listP.innerHTML = options;
-            }
+            // 已移除原本一次性載入全部 datalist 的寫法，改由下方事件監聽動態處理
         }
 
         // ==========================================
@@ -1106,13 +1100,14 @@
         }
 
         async function fetchStats() {
-            const [pRes, qRes, iRes] = await Promise.all([
-                supabaseClient.from('qt_products').select('*'),
+            // 移除 products 的拉取，只拉取報價單相關歷史資料
+            const [qRes, iRes] = await Promise.all([
                 supabaseClient.from('qt_quotations').select('*, customer:qt_customers(name)'),
                 supabaseClient.from('qt_quotation_items').select('quote_id, item_name')
             ]);
 
-            if(pRes.data) statsData.products = pRes.data;
+            // 直接沿用開機時就載入好的商品全域變數
+            statsData.products = [...productsData];
             
             let itemsMap = {};
             if(iRes.data) {
@@ -1596,11 +1591,17 @@
             renderProductTable();
         }
 
+        let searchTimeout = null;
         function onFuzzySearchInput() {
-            activeProductFilter = { type: 'keyword' };
-            const cb = document.getElementById('selectAllProducts');
-            if(cb) cb.checked = false; 
-            renderProductTable();
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            searchTimeout = setTimeout(() => {
+                activeProductFilter = { type: 'keyword' };
+                const cb = document.getElementById('selectAllProducts');
+                if(cb) cb.checked = false; 
+                renderProductTable();
+            }, 300);
         }
 
         function toggleAllProducts(source) {
@@ -1887,6 +1888,44 @@
             await supabaseClient.from('qt_shortcuts').upsert(pl, { onConflict: 'grid_index' });
             document.getElementById('shortcutModal').close(); loadShortcuts();
         }
+
+        // 針對報價單搜尋框實作動態且限量的自動完成
+        document.getElementById('itemSearch').addEventListener('input', function(e) {
+            const keyword = e.target.value.trim().toLowerCase();
+            const listP = document.getElementById('productsList');
+            
+            // 如果沒有輸入內容，就清空建議清單
+            if (!keyword) {
+                listP.innerHTML = '';
+                return;
+            }
+
+            let options = '';
+            let matchCount = 0;
+            const MAX_RESULTS = 20; // 限制最多只產生 20 個選項，避免瀏覽器效能崩潰
+
+            // 搜尋單品
+            for (let p of productsData) {
+                if (matchCount >= MAX_RESULTS) break;
+                if ((p.product_code && p.product_code.toLowerCase().includes(keyword)) || 
+                    (p.name && p.name.toLowerCase().includes(keyword))) {
+                    options += `<option value="${p.product_code} ${p.name}"></option>`;
+                    matchCount++;
+                }
+            }
+
+            // 搜尋組合
+            for (let b of bundlesData) {
+                if (matchCount >= MAX_RESULTS) break;
+                if ((b.bundle_code && b.bundle_code.toLowerCase().includes(keyword)) || 
+                    (b.name && b.name.toLowerCase().includes(keyword))) {
+                    options += `<option value="${b.bundle_code} ${b.name}"></option>`;
+                    matchCount++;
+                }
+            }
+            
+            listP.innerHTML = options;
+        });
 
         window.onload = init;
     </script>
