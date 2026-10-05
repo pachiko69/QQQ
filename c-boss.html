@@ -219,22 +219,20 @@
             padding-bottom: 1rem;
             border-bottom: 2px solid #fef3c7;
         }
-        /* 手機末3碼標籤專屬樣式 */test
+        /* 手機末3碼標籤專屬樣式 */
         .phone-label {
             width: 80px !important; /* 自定義寬度 */
-        /* 可選：調整文字對齊方式 */
             text-align: justify;
         }   
         /* 菜品補差價標籤專屬樣式 */
         .DifPrice-label {
             width: 100px !important; /* 自定義寬度 */
-        /* 可選：調整文字對齊方式 */
             text-align: justify;
         }           
-.food-num {
-    width: auto !important; /* 自動寬度，不留空白 */
-    padding-right: 4px; /* 可微調一點點間距，不要就刪掉 */
-}        
+        .food-num {
+            width: auto !important; /* 自動寬度，不留空白 */
+            padding-right: 4px; /* 可微調一點點間距，不要就刪掉 */
+        }        
         .order-detail-section {
             margin-bottom: 1.5rem;
             padding-bottom: 1rem;
@@ -294,7 +292,7 @@
             <h1 class="text-2xl font-bold">雞老闆輕食料理(鹹水雞 & 蔬菜)</h1>
             <p class="mt-1">訂購專線：0989-170-661  |  LINE ID：cuteice5533</p>
             <p class="mt-1">營業時間：下午4:30 ~ 10:30  |  地址：高雄市三民區三民街161號(三民市場)
-<a href="https://www.google.com/maps/place/%E9%9B%9E%E8%80%81%E9%97%86%E9%B9%B9%E6%B0%B4%E9%9B%9E%26%E8%94%AC%E8%8F%9C/@22.635419,120.2914699,18.42z/data=!4m6!3m5!1s0x346e046130f448d5:0xeecfeef941d3fa91!8m2!3d22.6356818!4d120.2922058!16s%2Fg%2F11c611yljz?authuser=0&entry=ttu&g_ep=EgoyMDI2MDkxNi4wIKXMDSoASAFQAw%3D%3D" target="_blank">地圖</a></p>
+<a href="https://www.google.com/maps/place/%E9%9B%9E%E8%80%81%E9%97%86%E9%B9%B9%E6%B0%B4%E9%9B%9E%26%E8%94%AC%E8%8F%9C/@22.635419,120.2914699,18.42z/data=!4m6!3m5!1s0x346e046130f448d5:0xeecfeef941d3fa91!8m2!3d22.6356818!4d120.2922058!16s%2Fg%2F11c611yljz?authuser=0&entry=ttu&g_ep=EgoyMDI2MDkxNi4wIKXMDSoASAFQAw%3D%3D" target="_blank" style="color:#fff;text-decoration:underline;">地圖</a></p>
         </div>
 
         <!-- 點餐類型切換 -->
@@ -501,10 +499,6 @@
                     <span class="detail-label DifPrice-label">小菜補差價：</span>
                     <span id="successDiffPrice"></span> 元
                 </div>
-
-                   
-                    
-            
                 <div class="detail-item">
                     <span class="detail-label">口味加價：</span>
                     <span id="successFlavorPrice"></span> 元
@@ -567,6 +561,44 @@
             t.classList.add("show");
             setTimeout(() => t.classList.remove("show"), 1000);
         }
+
+        // 支援手機與各種瀏覽器的萬用複製函式
+        function copyTextToClipboard(text) {
+            // 優先使用現代的 Clipboard API (需 HTTPS)
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            } else {
+                // 降級方案 (Fallback) - 適用於手機 APP 內建瀏覽器 (如 LINE)
+                return new Promise((resolve, reject) => {
+                    let textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    
+                    // 將 textarea 隱藏在畫面外，避免手機鍵盤彈出或畫面跳動
+                    textArea.style.position = "fixed";
+                    textArea.style.top = "-9999px";
+                    textArea.style.left = "-9999px";
+                    textArea.style.opacity = "0";
+                    document.body.appendChild(textArea);
+                    
+                    textArea.focus();
+                    textArea.select();
+                    
+                    try {
+                        let successful = document.execCommand('copy');
+                        if (successful) {
+                            resolve();
+                        } else {
+                            reject(new Error('複製指令失敗'));
+                        }
+                    } catch (err) {
+                        reject(err);
+                    }
+                    
+                    document.body.removeChild(textArea);
+                });
+            }
+        }
+
         function closeTip() {
             document.getElementById("tipBox").classList.add("hidden");
         }
@@ -996,7 +1028,7 @@
                     flavorInfo: flavorInfo,
                     totalAll: totalAll
                 };
-                
+
                 // === 新增：將訂單資料格式化並複製到剪貼簿 ===
                 let orderTypeText = "單點";
                 if (currentOrderType === "meal") {
@@ -1019,14 +1051,19 @@ ${foodText}
 應付總額：${totalAll} 元
 訂單編號：${orderNo}`;
 
-                // 呼叫瀏覽器 API 複製文字
-                navigator.clipboard.writeText(clipboardText).then(() => {
-                    alert("訂單已送出，並且明細已自動複製到剪貼簿，可直接貼上至 Line 或其他地方。");
+                // 呼叫強化的複製函式
+                copyTextToClipboard(clipboardText).then(() => {
+                    // 為了手機版更好的體驗，這裡同時觸發畫面上既有的 showToast 提示
+                    showToast("訂單明細已複製，可直接貼上至 LINE");
+                    setTimeout(() => {
+                        alert("✅ 訂單已送出，並已複製明細，您可以直接去 LINE 貼上傳送囉！");
+                    }, 500);
                 }).catch(err => {
                     console.error("複製到剪貼簿失敗：", err);
+                    alert("✅ 訂單已送出！ (自動複製失敗，請手動截圖或反白複製)");
                 });
                 // ===========================================
-
+                
                 // 顯示訂單成功頁面
                 showSuccessPage(orderData);
             }
