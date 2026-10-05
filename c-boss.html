@@ -34,7 +34,10 @@
         .text-red-600{color:#dc2626;}
         .text-blue-600{color:#2563eb;}
         .bg-blue-100{background:#dbeafe;}
-        .hidden{display:none;}
+        
+        /* 加入 !important 強制隱藏元件 */
+        .hidden{display:none !important;}
+        
         .meal-active{border:2px solid #f59e0b;background:#fffbeb;}
         .bg-red-50{background:#fef2f2;}
         .text-green-600{color:#16a34a;}
@@ -871,9 +874,11 @@
             return `${year}-${month}-${day} ${h}:${m}:${s}`;
         }
 
+        /* ==== 關鍵修正：改用 classList 來切換顯示與隱藏 ==== */
         function showSuccessPage(orderData) {
-            document.getElementById("orderMainPage").style.display = "none";
-            document.getElementById("orderSuccessPage").style.display = "block";
+            // 用 classList.add 和 remove 來取代 style.display，避免被 !important 覆蓋
+            document.getElementById("orderMainPage").classList.add("hidden");
+            document.getElementById("orderSuccessPage").classList.remove("hidden");
             
             document.getElementById("successOrderNo").textContent = orderData.orderNo;
             document.getElementById("successOrderTime").textContent = orderData.nowTime;
@@ -911,15 +916,15 @@
                 document.getElementById("successBoneOption").style.display = "none";
             }
             
-            // 提醒使用者可以手動操作
             setTimeout(() => {
                 showToast("訂單已送出，請點擊下方按鈕複製或產生截圖。");
             }, 500);
         }
 
+        /* ==== 關鍵修正：改用 classList 來切換顯示與隱藏 ==== */
         function backToOrderPage() {
-            document.getElementById("orderSuccessPage").style.display = "none";
-            document.getElementById("orderMainPage").style.display = "block";
+            document.getElementById("orderSuccessPage").classList.add("hidden");
+            document.getElementById("orderMainPage").classList.remove("hidden");
             clearSelect();
         }
 
@@ -957,7 +962,6 @@
                 return { name: item.name, price: item.price, diffTxt: diffTxt };
             });
 
-            // 準備要複製的文字，先存在全域變數中
             let orderTypeText = "單點";
             if (currentOrderType === "meal") {
                 const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
@@ -978,7 +982,6 @@ ${foodText}
 應付總額：${totalAll} 元
 訂單編號：${orderNo}`;
 
-            // 發送資料庫請求
             showToast("處理中...");
             const { error } = await client.from("food_orderlist").insert([{
                 order_no: orderNo,
@@ -1006,7 +1009,6 @@ ${foodText}
                     totalAll: totalAll
                 };
                 
-                // 放棄在這裡自動複製，因為會被手機瀏覽器擋下，直接顯示成功頁面
                 showSuccessPage(orderData);
             }
         }
