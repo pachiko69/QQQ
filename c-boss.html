@@ -6,8 +6,6 @@
     <title>雞老闆輕食料理 - 線上點餐</title>
     <!-- 引入 Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- 引入 html2canvas 處理截圖 -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         *{box-sizing:border-box;}
         body{background-color:#fef3c7;font-family:system-ui,sans-serif;margin:0;padding:0;}
@@ -35,7 +33,7 @@
         .text-blue-600{color:#2563eb;}
         .bg-blue-100{background:#dbeafe;}
         
-        /* 強制隱藏元件 */
+        /* 強制隱藏元件 (解決卡背景問題) */
         .hidden{display:none !important;}
         
         .meal-active{border:2px solid #f59e0b;background:#fffbeb;}
@@ -46,8 +44,6 @@
         .flex-1{flex:1;}
         .py-3{padding:0.75rem 0;}
         .bg-gray-400{background:#9ca3af;}
-        .bg-green-600{background-color:#16a34a;}
-        .bg-blue-600{background-color:#2563eb;}
         .justify-between{justify-content:space-between;}
         @media (max-width:768px){
             .grid-cols-3{grid-template-columns:1fr;}
@@ -254,6 +250,24 @@
             margin: 1rem 0;
             text-align: right;
         }
+        .copy-btn {
+            display: block;
+            width: 100%;
+            background: #16a34a;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 0.8rem;
+            font-weight: bold;
+            text-decoration: none;
+            margin-top: 2rem;
+            cursor: pointer;
+            border: none;
+            font-size: 1.1rem;
+        }
+        .copy-btn:hover {
+            background: #15803d;
+        }
         .back-btn {
             display: block;
             width: 100%;
@@ -275,36 +289,6 @@
         .order-no {
             color: #2563eb;
             font-weight: bold;
-        }
-        
-        /* 截圖預覽視窗樣式 */
-        #screenshotModal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        #screenshotImage {
-            max-width: 95%;
-            max-height: 75vh;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        .close-modal-btn {
-            margin-top: 1.5rem;
-            background: #ea580c;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            font-size: 1.1rem;
         }
     </style>
 </head>
@@ -442,8 +426,7 @@
 
     <!-- 訂單成功頁面 -->
     <div id="orderSuccessPage" class="hidden">
-        <!-- 截圖區域：這裡面的內容會被轉成圖片 -->
-        <div id="captureArea" class="success-container">
+        <div class="success-container">
             <div class="success-title">✅ 訂單明細確認</div>
             
             <div class="order-detail-section">
@@ -501,27 +484,11 @@
                     應付總金額：<span id="successTotalPrice"></span> 元
                 </div>
             </div>
-        </div>
-
-        <!-- 手機友善的動作按鈕區 -->
-        <div style="max-width: 800px; margin: 1rem auto;">
-            <div class="flex gap-3 mb-3">
-                <!-- 直接點擊觸發複製，避開安全性限制 -->
-                <button onclick="manualCopyText()" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold">📋 複製文字</button>
-                <!-- 產生截圖讓使用者長按儲存 -->
-                <button onclick="generateScreenshot()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">📸 產生圖片截圖</button>
-            </div>
+            
+            <!-- 手動複製按鈕 (手機端高相容性) -->
+            <button onclick="manualCopyText()" class="copy-btn">📋 複製訂單內容</button>
             <button class="back-btn" onclick="backToOrderPage()">返回繼續點餐</button>
         </div>
-    </div>
-
-    <!-- 截圖預覽與儲存彈窗 -->
-    <div id="screenshotModal" class="hidden">
-        <div style="color:white; font-size:1.2rem; margin-bottom:1rem; font-weight:bold; text-align:center;">
-            👇 請「長按」下方圖片即可儲存或分享
-        </div>
-        <img id="screenshotImage" src="" alt="訂單截圖">
-        <button class="close-modal-btn" onclick="closeScreenshotModal()">關閉圖片</button>
     </div>
 
     <!-- 提示彈窗 -->
@@ -566,7 +533,7 @@
             }
         }
 
-        // 降級複製方案
+        // 降級複製方案 (LINE 等手機內建瀏覽器必備)
         function fallbackCopyText(text) {
             let textArea = document.createElement("textarea");
             textArea.value = text;
@@ -582,41 +549,12 @@
                 if (successful) {
                     alert("✅ 複製成功！可以直接去 LINE 貼上了。");
                 } else {
-                    alert("❌ 複製失敗，請使用「產生圖片截圖」功能。");
+                    alert("❌ 複製失敗，請手動反白訂單內容複製。");
                 }
             } catch (err) {
-                alert("❌ 您的瀏覽器不支援複製，請使用「產生圖片截圖」。");
+                alert("❌ 您的瀏覽器不支援複製，請手動反白訂單內容複製。");
             }
             document.body.removeChild(textArea);
-        }
-
-        // === 關鍵修正：針對手機端最佳化的截圖功能 ===
-        function generateScreenshot() {
-            const element = document.getElementById('captureArea');
-            showToast("正在產生圖片，請稍候...");
-            
-            // 解決手機端因為頁面向下捲動，導致截圖到一片空白的 Bug
-            window.scrollTo(0, 0);
-            
-            // 使用 html2canvas
-            html2canvas(element, {
-                scale: 1.5, // 降低倍率，避免手機記憶體不足導致繪製崩潰
-                backgroundColor: "#ffffff",
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                // 將格式從 png 改為 jpeg 並設定壓縮率 0.9，解決 Base64 檔案過大手機無法顯示的問題
-                const imgData = canvas.toDataURL("image/jpeg", 0.9);
-                document.getElementById('screenshotImage').src = imgData;
-                document.getElementById('screenshotModal').classList.remove('hidden');
-            }).catch(err => {
-                console.error("產生截圖失敗:", err);
-                alert("產生截圖失敗，請改用文字複製功能。");
-            });
-        }
-
-        function closeScreenshotModal() {
-            document.getElementById('screenshotModal').classList.add('hidden');
         }
 
         function closeTip() {
@@ -881,6 +819,7 @@
         }
 
         function showSuccessPage(orderData) {
+            // 用 classList 來切換顯示，解決黃色背景卡住的問題
             document.getElementById("orderMainPage").classList.add("hidden");
             document.getElementById("orderSuccessPage").classList.remove("hidden");
             
@@ -920,8 +859,10 @@
                 document.getElementById("successBoneOption").style.display = "none";
             }
             
+            window.scrollTo(0, 0); // 確保成功頁面會在最頂端
+            
             setTimeout(() => {
-                showToast("訂單已送出，請點擊下方按鈕複製或產生截圖。");
+                showToast("訂單已送出，請點擊下方按鈕複製內容。");
             }, 500);
         }
 
@@ -929,6 +870,7 @@
             document.getElementById("orderSuccessPage").classList.add("hidden");
             document.getElementById("orderMainPage").classList.remove("hidden");
             clearSelect();
+            window.scrollTo(0, 0);
         }
 
         async function submitOrder() {
