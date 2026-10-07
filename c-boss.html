@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雞老闆輕食料理 - 線上點餐</title>
+    <!-- 引入 Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        *{box-sizing:border-box;}
+        body{background-color:#fef3c7;font-family:system-ui,sans-serif;margin:0;padding:0;}
+        .max-w-5xl{max-width:1200px;margin:0 auto;padding:1rem;}
+        .bg-orange-600{background-color:#ea580c;}
+        .text-white{color:#fff;}
+        .rounded-xl{border-radius:1rem;}
+        .p-4{padding:1rem;}
+        .mb-4{margin-bottom:1rem;}
+        .text-center{text-align:center;}
+        .text-2xl{font-size:1.5rem;}
+        .font-bold{font-weight:bold;}
+        .bg-white{background:#fff;}
+        .shadow{box-shadow:0 2px 8px #00000015;}
+        .grid{display:grid;}
+        .gap-3{gap:0.75rem;}
+        .border{border:1px solid #ddd;}
+        .rounded-lg{border-radius:0.5rem;}
+        .p-3{padding:0.75rem;}
+        .cursor-pointer{cursor:pointer;}
+        .text-sm{font-size:0.875rem;}
+        .text-gray-500{color:#6b7280;}
+        .text-red-500{color:#ef4444;}
+        .text-red-600{color:#dc2626;}
+        .text-blue-600{color:#2563eb;}
+        .bg-blue-100{background:#dbeafe;}
+        
+        .hidden{display:none !important;}
+        
+        .meal-active{border:2px solid #f59e0b;background:#fffbeb;}
+        .bg-red-50{background:#fef2f2;}
+        .text-green-600{color:#16a34a;}
+        .flex{display:flex;}
+        .gap-3{gap:0.75rem;}
+        .flex-1{flex:1;}
+        .py-3{padding:0.75rem 0;}
+        .bg-gray-400{background:#9ca3af;}
+        .justify-between{justify-content:space-between;}
+        @media (max-width:768px){
+            .grid-cols-3{grid-template-columns:1fr;}
+            .food-grid{grid-template-columns:repeat(2,1fr)!important;}
+        }
+        .food-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .category-title {
+            font-weight: bold;
+            margin: 1rem 0 0.5rem;
+            color: #ea580c;
+            font-size: 1rem;
+        }
+        .meal-food-item {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.82rem;
+        }
+        .meal-food-item:hover {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+        .meal-food-price {
+            font-size: 0.72rem;
+            margin-top: 0.2rem;
+        }
+        .single-food-item {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            background: #fff;
+            font-size: 0.82rem;
+        }
+        .single-food-item:hover {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+        .single-food-price {
+            color: #16a34a;
+            font-size: 0.72rem;
+            margin-top: 0.2rem;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .toast.show { opacity: 1; }
+        .order-type-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .order-type-btn.active {
+            background: #ea580c;
+            color: white;
+            border-color: #ea580c;
+        }
+        #selectList {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        #selectList button {
+            font-size: 0.9rem;
+        }
+        .flavor-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        .flavor-title {
+            font-weight: bold;
+            color: #ea580c;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+        .option-group {
+            margin-bottom: 0.8rem;
+        }
+        .option-label {
+            display: inline-block;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+        .option-group-title {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .checkbox-option {
+            margin-right: 8px;
+        }
+        .flavor-note {
+            font-size: 0.8rem;
+            color: #dc2626;
+            margin-top: 0.5rem;
+        }
+        .phone-input-area {
+            margin-top:1rem;
+        }
+        #phoneLast3 {
+            width:100px;
+            padding:6px;
+            border:1px solid #ccc;
+            border-radius:4px;
+            font-size:1rem;
+        }
+        .required-mark {
+            color:#ef4444;
+        }
+        .sold-out {
+            background: #f5f5f5 !important;
+            color: #999 !important;
+            cursor: not-allowed !important;
+            border-color: #eee !important;
+        }
+        .sold-out-text {
+            color: #ef4444;
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+            font-weight: bold;
+        }
+        .chicken-leg-option {
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px dashed #eee;
+        }
+        
+        /* 訂單成功頁面預設隱藏，使用 inline-style 切換 */
+        #orderSuccessPage {
+            display: none;
+            background-color: #fef3c7;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        .success-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .success-title {
+            color: #ea580c;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #fef3c7;
+        }
+        .phone-label {
+            width: 80px !important;
+            text-align: justify;
+        }   
+        .DifPrice-label {
+            width: 100px !important;
+            text-align: justify;
+        }           
+        .food-num {
+            width: auto !important;
+            padding-right: 4px;
+        }        
+        .order-detail-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-title {
+            font-weight: bold;
+            color: #ea580c;
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+        }
+        .detail-item {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+        .detail-label {
+            display: inline-block;
+            width: 80px;
+            color: #666;
+        }
+        .total-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #dc2626;
+            margin: 1rem 0;
+            text-align: right;
+        }
+        .copy-btn {
+            display: block;
+            width: 100%;
+            background: #16a34a;
+            color: white;
+            text-align: center;
+            padding: 1.2rem;
+            border-radius: 0.8rem;
+            font-weight: bold;
+            text-decoration: none;
+            margin-top: 2rem;
+            cursor: pointer;
+            border: none;
+            font-size: 1.2rem;
+        }
+        .copy-btn:hover {
+            background: #15803d;
+        }
+        .back-btn {
+            display: block;
+            width: 100%;
+            background: #9ca3af;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 0.8rem;
+            font-weight: bold;
+            text-decoration: none;
+            margin-top: 1rem;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+        .back-btn:hover {
+            background: #6b7280;
+        }
+        .order-no {
+            color: #2563eb;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- 主要點餐頁面 -->
+    <div id="orderMainPage" class="max-w-5xl" style="display: block;">
+        <!-- 店家資訊 -->
+        <div class="bg-orange-600 text-white rounded-xl p-4 mb-4 text-center">
+            <h1 class="text-2xl font-bold">雞老闆輕食料理(鹹水雞 & 蔬菜) V0.18</h1>
+            <p class="mt-1">訂購專線：0989-170-661  |  LINE ID：cuteice5533</p>
+            <p class="mt-1">營業時間：下午4:30 ~ 10:30  |  地址：高雄市三民區三民街161號(三民市場)
+<a href="https://www.google.com/maps/place/%E9%9B%9E%E8%80%81%E9%97%86%E9%B9%B9%E6%B0%B4%E9%9B%9E%26%E8%94%AC%E8%8F%9C/@22.635419,120.2914699,18.42z/data=!4m6!3m5!1s0x346e046130f448d5:0xeecfeef941d3fa91!8m2!3d22.6356818!4d120.2922058!16s%2Fg%2F11c611yljz?authuser=0&entry=ttu&g_ep=EgoyMDI2MDkxNi4wIKXMDSoASAFQAw%3D%3D" target="_blank" style="color:#fff;text-decoration:underline;">地圖</a></p>
+        </div>
+
+        <!-- 點餐類型切換 -->
+        <div class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">📋 點餐類型</h2>
+            <div>
+                <button class="order-type-btn" onclick="switchOrderType('meal')">雞老闆推薦套餐</button>
+                <button class="order-type-btn active" onclick="switchOrderType('single')">單點選項</button>
+            </div>
+        </div>
+
+        <!-- 套餐選擇區 -->
+        <div id="mealSection" class="bg-white rounded-xl p-4 shadow mb-4 hidden">
+            <h2 class="font-bold text-lg mb-3">🍱 選擇套餐</h2>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="smallBamboo" data-num="0" data-price="125">
+                    <div class="font-semibold">小筍餐</div>
+                    <div class="text-sm text-gray-500">半雞+脆筍1份</div>
+                    <div class="text-red-500 font-bold">$125</div>
+                </div>
+                <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="family" data-num="7" data-price="330">
+                    <div class="font-semibold">全家餐</div>
+                    <div class="text-sm text-gray-500">全雞+任選7種小菜</div>
+                    <div class="text-red-500 font-bold">$330</div>
+                </div>
+                <div class="meal-item border rounded-lg p-3 cursor-pointer text-center" data-type="smallSet" data-num="4" data-price="175">
+                    <div class="font-semibold">小套餐</div>
+                    <div class="text-sm text-gray-500">半雞+任選4種小菜</div>
+                    <div class="text-red-500 font-bold">$175</div>
+                </div>
+            </div>
+            <p class="text-sm text-red-600 mt-2">⚠️ 限點20元以內小菜，超過20元需補差價</p>
+        </div>
+
+        <!-- 單點頁面 -->
+        <div id="singleSection" class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">🍴 單點選項</h2>
+            <div id="singleFoodContainer"></div>
+        </div>
+
+        <!-- 套餐食材區 (已改為分類排版) -->
+        <div id="mealFoodSection" class="bg-white rounded-xl p-4 shadow mb-4 hidden">
+            <h2 class="font-bold text-lg mb-3">🥬 挑選食材</h2>
+            <div id="mealFoodContainer"></div>
+        </div>
+
+        <!-- 套餐選品提示 -->
+        <div id="tipBox" class="hidden bg-blue-100 rounded p-3 mb-4">
+            <span id="tipText"></span>
+            <button onclick="closeTip()" class="ml-3 text-blue-600">關閉</button>
+        </div>
+
+        <!-- 已選清單 -->
+        <div class="bg-white rounded-xl p-4 shadow mb-4">
+            <h2 class="font-bold text-lg mb-3">🛒 已選菜品</h2>
+            <div id="selectList" class="mb-3"></div>
+            
+            <!-- 新增口味選項區 -->
+            <div class="flavor-section">
+                <div class="flavor-title">🎨 自訂口味</div>
+                
+                <div class="option-group">
+                    <div class="option-group-title">口味：</div>
+                    <label class="option-label"><input type="radio" name="flavor" value="原味" checked onchange="updateFlavorPrice()"> 原味</label>
+                    <label class="option-label"><input type="radio" name="flavor" value="蒜味" onchange="updateFlavorPrice()"> 蒜味</label>
+                    <label class="option-label"><input type="radio" name="flavor" value="椒麻" onchange="updateFlavorPrice()"> 椒麻</label>
+                    <label class="option-label"><input type="radio" name="flavor" value="泰式" onchange="updateFlavorPrice()"> 泰式</label>
+                    <label class="option-label"><input type="radio" name="flavor" value="檸檬" onchange="updateFlavorPrice()"> 檸檬</label>
+                    <div class="flavor-note" id="flavor-note">※ 未滿100元限做原味,選其他口味加價10元；滿百元所有口味免加價</div>
+                </div>
+
+                <div class="option-group">
+                    <div class="option-group-title">鹹度：</div>
+                    <label class="option-label"><input type="radio" name="salt" value="清淡"> 清淡</label>
+                    <label class="option-label"><input type="radio" name="salt" value="正常" checked> 正常</label>
+                    <label class="option-label"><input type="radio" name="salt" value="重鹹"> 重鹹</label>
+                </div>
+
+                <div class="option-group">
+                    <div class="option-group-title">配料 (可多選)：</div>
+                    <label class="option-label"><input type="checkbox" name="topping" value="蔥花" class="checkbox-option"> 蔥花</label>
+                    <label class="option-label"><input type="checkbox" name="topping" value="蒜泥" class="checkbox-option"> 蒜泥</label>
+                    <label class="option-label"><input type="checkbox" name="topping" value="洋蔥" class="checkbox-option"> 洋蔥</label>
+                    <label class="option-label"><input type="checkbox" name="topping" value="香油" class="checkbox-option"> 香油</label>
+                </div>
+
+                <div class="option-group">
+                    <div class="option-group-title">辣度：</div>
+                    <label class="option-label"><input type="radio" name="spicy" value="不辣" checked> 不辣</label>
+                    <label class="option-label"><input type="radio" name="spicy" value="微辣"> 微辣</label>
+                    <label class="option-label"><input type="radio" name="spicy" value="小辣"> 小辣</label>
+                    <label class="option-label"><input type="radio" name="spicy" value="中辣"> 中辣</label>
+                    <label class="option-label"><input type="radio" name="spicy" value="大辣"> 大辣</label>
+                </div>
+
+                <div id="chickenLegOption" class="option-group chicken-leg-option hidden">
+                    <div class="option-group-title">雞腿處理：</div>
+                    <label class="option-label"><input type="checkbox" id="removeBone" class="checkbox-option"> 雞腿去骨</label>
+                </div>
+
+                <div class="option-group phone-input-area">
+                    <div class="option-group-title">
+                        請填手機號碼末3碼,將成為你的取餐號碼 <span class="required-mark">*</span>：
+                    </div>
+                    <input id="phoneLast3" type="text" maxlength="3" placeholder="輸入3位數字" oninput="this.value = this.value.replace(/[^0-9]/g,'')">
+                    <div class="text-sm text-gray-500 mt-1">必填，僅限輸入0-9數字，共3碼</div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between font-bold mt-4">
+                <span>套餐金額：<span id="mealPrice">0</span> 元</span>
+                <span>補差價總計：<span id="diffPrice">0</span> 元</span>
+                <span>口味加價：<span id="flavorPrice">0</span> 元</span>
+                <span class="text-red-600">應付總金額：<span id="allPrice">0</span> 元</span>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="clearSelect()" class="flex-1 bg-gray-400 text-white py-3 rounded-xl">清空選擇</button>
+            <button onclick="submitOrder()" class="flex-1 bg-orange-600 text-white py-3 rounded-xl font-bold">確認結帳送出訂單</button>
+        </div>
+    </div>
+
+    <!-- 訂單成功頁面 -->
+    <div id="orderSuccessPage">
+        <div class="success-container">
+            <div class="success-title">✅ 訂單明細確認</div>
+            
+            <div class="order-detail-section">
+                <div class="detail-title">📝 訂單基本資訊</div>
+                <div class="detail-item">
+                    <span class="detail-label">訂單編號：</span>
+                    <span id="successOrderNo" class="order-no"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">下單時間：</span>
+                    <span id="successOrderTime"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label phone-label">取餐叫號：</span>
+                    <span id="successPhoneLast3" style="font-weight:bold; color:#ea580c; font-size:1.2rem;"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">訂單類型：</span>
+                    <span id="successOrderType"></span>
+                </div>
+            </div>
+
+            <div class="order-detail-section">
+                <div class="detail-title">🥢 菜品清單</div>
+                <div id="successFoodList"></div>
+            </div>
+
+            <div class="order-detail-section">
+                <div class="detail-title">🎨 口味設定</div>
+                <div class="detail-item">
+                    <span class="detail-label">口味：</span>
+                    <span id="successFlavor"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">鹹度：</span>
+                    <span id="successSalt"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">配料：</span>
+                    <span id="successToppings"></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">辣度：</span>
+                    <span id="successSpicy"></span>
+                </div>
+                <div class="detail-item" id="successBoneOption" style="display:none;">
+                    <span class="detail-label">雞腿處理：</span>
+                    <span>雞腿去骨</span>
+                </div>
+            </div>
+
+            <div class="order-detail-section" style="border-bottom: none; margin-bottom:0;">
+                <div class="detail-title">💰 金額明細</div>
+                <div class="total-amount" style="text-align: left;">
+                    應付總金額：<span id="successTotalPrice"></span> 元
+                </div>
+            </div>
+            
+            <!-- 手動複製按鈕 (手機端高相容性) -->
+            <button onclick="manualCopyText()" class="copy-btn">📋 複製訂單內容 (點我複製)</button>
+            <button class="back-btn" onclick="backToOrderPage()">返回繼續點餐</button>
+        </div>
+    </div>
+
+    <!-- 提示彈窗 -->
+    <div id="toast" class="toast">已加入購物車</div>
+
+    <script>
+        const SUPABASE_URL = "https://zexwhzgxunfnbschkizq.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_OPftLOAUJFzwKZ8eK7GIXg_2LEEMMwn";
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let selectMeal = null;
+        let needSelectNum = 0;
+        let selectFoodArr = [];
+        let baseMealPrice = 0;
+        let totalDiff = 0;
+        let currentOrderType = 'single';
+        let flavorExtraPrice = 0;
+        let globalClipboardText = ""; 
+
+        let categoryList = [];
+        let productWithCate = [];
+
+        function showToast(msg = "已加入購物車") {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2000);
+        }
+
+        // 手動點擊觸發的複製函式
+        function manualCopyText() {
+            if (!globalClipboardText) return;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(globalClipboardText).then(() => {
+                    alert("✅ 複製成功！可以直接去 LINE 貼上了。");
+                }).catch(err => {
+                    fallbackCopyText(globalClipboardText);
+                });
+            } else {
+                fallbackCopyText(globalClipboardText);
+            }
+        }
+
+        // 降級複製方案 (LINE 等手機內建瀏覽器必備)
+        function fallbackCopyText(text) {
+            let textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.top = "-9999px";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                let successful = document.execCommand('copy');
+                if (successful) {
+                    alert("✅ 複製成功！可以直接去 LINE 貼上了。");
+                } else {
+                    alert("❌ 複製失敗，請手動反白訂單內容複製。");
+                }
+            } catch (err) {
+                alert("❌ 您的瀏覽器不支援複製，請手動反白訂單內容複製。");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function closeTip() {
+            document.getElementById("tipBox").classList.add("hidden");
+        }
+
+        function switchOrderType(type) {
+            currentOrderType = type;
+            document.querySelectorAll(".order-type-btn").forEach(btn => {
+                btn.classList.toggle("active", btn.getAttribute("onclick").includes(type));
+            });
+            document.getElementById("mealSection").classList.toggle("hidden", type === "single");
+            document.getElementById("singleSection").classList.toggle("hidden", type === "meal");
+            document.getElementById("mealFoodSection").classList.toggle("hidden", type === "single");
+            clearSelect();
+            if (type === "single") {
+                closeTip();
+                renderSingleFoodByDB();
+            } else {
+                renderMealFoodByDB();
+            }
+            updateFlavorPrice();
+            checkChickenLegOption();
+        }
+
+        function clearSelect() {
+            selectFoodArr = [];
+            selectMeal = null;
+            needSelectNum = 0;
+            baseMealPrice = 0;
+            totalDiff = 0;
+            flavorExtraPrice = 0;
+            globalClipboardText = "";
+            document.querySelectorAll(".meal-item").forEach(i => i.classList.remove("meal-active"));
+            document.querySelector('input[name="flavor"][value="原味"]').checked = true;
+            document.querySelector('input[name="salt"][value="清淡"]').checked = true;
+            document.querySelector('input[name="spicy"][value="不辣"]').checked = true;
+            document.querySelectorAll('input[name="topping"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.getElementById("removeBone").checked = false;
+            document.getElementById("phoneLast3").value = "";
+            calcPrice();
+            renderSelectList();
+            closeTip();
+            checkChickenLegOption();
+        }
+
+        function checkChickenLegOption() {
+            const hasChickenLeg = selectFoodArr.some(item => 
+                item.name.includes("雞腿") || item.name.includes("腿")
+            );
+            const legOption = document.getElementById("chickenLegOption");
+            if (hasChickenLeg) {
+                legOption.classList.remove("hidden");
+            } else {
+                legOption.classList.add("hidden");
+                document.getElementById("removeBone").checked = false;
+            }
+        }
+
+        document.querySelectorAll(".meal-item").forEach(item => {
+            item.addEventListener("click", () => {
+                if (currentOrderType !== "meal") return;
+                document.querySelectorAll(".meal-item").forEach(i => i.classList.remove("meal-active"));
+                item.classList.add("meal-active");
+                selectMeal = item.dataset.type;
+                needSelectNum = Number(item.dataset.num);
+                baseMealPrice = Number(item.dataset.price);
+                selectFoodArr = [];
+                calcPrice();
+                renderSelectList();
+                updateFlavorPrice();
+                checkChickenLegOption();
+                if (needSelectNum > 0) {
+                    document.getElementById("tipBox").classList.remove("hidden");
+                    document.getElementById("tipText").textContent = `請再選 ${needSelectNum} 樣小菜完成點餐`;
+                } else closeTip();
+            })
+        })
+
+        async function loadAllData() {
+            try {
+                const { data: cateData } = await client.from("food_category").select("*").order("sort");
+                categoryList = cateData;
+                const { data: prodData } = await client.from("food_product").select(`
+                    id, name, price, cate_id, status,
+                    food_category(name)
+                `);
+                productWithCate = prodData;
+                renderSingleFoodByDB();
+                updateFlavorPrice();
+            } catch (err) {
+                console.error("讀取資料失敗：", err);
+            }
+        }
+
+        function renderMealFoodByDB() {
+            const wrap = document.getElementById("mealFoodContainer");
+            wrap.innerHTML = "";
+            categoryList.forEach(cate => {
+                const cateId = cate.id;
+                const cateName = cate.name;
+                const items = productWithCate.filter(p => p.cate_id === cateId);
+                if (items.length === 0) return;
+                const titleDiv = document.createElement("div");
+                titleDiv.className = "category-title";
+                titleDiv.textContent = "▸ " + cateName;
+                wrap.appendChild(titleDiv);
+                const gridDiv = document.createElement("div");
+                gridDiv.className = "food-grid";
+                items.forEach(food => {
+                    const isSoldOut = food.status === 'soldout';
+                    const over20 = food.price > 20;
+                    const itemDiv = document.createElement("div");
+                    
+                    let itemClass = "meal-food-item " + (over20 ? "bg-red-50" : "");
+                    if (isSoldOut) itemClass += " sold-out";
+                    itemDiv.className = itemClass;
+                    
+                    let priceHtml = `
+                        <div class="meal-food-price ${over20 ? "text-red-500" : "text-green-600"}">
+                            ${food.price}元 ${over20 ? "(補差價)" : ""}
+                        </div>
+                    `;
+                    if (isSoldOut) priceHtml = `<div class="sold-out-text">❌ 售完</div>`;
+                    
+                    itemDiv.innerHTML = `<div>${food.name}</div>${priceHtml}`;
+                    
+                    if (!isSoldOut) {
+                        itemDiv.onclick = () => chooseFood(food.id, food.name, food.price);
+                    }
+                    gridDiv.appendChild(itemDiv);
+                })
+                wrap.appendChild(gridDiv);
+            })
+        }
+
+        function renderSingleFoodByDB() {
+            const wrap = document.getElementById("singleFoodContainer");
+            wrap.innerHTML = "";
+            categoryList.forEach(cate => {
+                const cateId = cate.id;
+                const cateName = cate.name;
+                const items = productWithCate.filter(p => p.cate_id === cateId);
+                if (items.length === 0) return;
+                const titleDiv = document.createElement("div");
+                titleDiv.className = "category-title";
+                titleDiv.textContent = "▸ " + cateName;
+                wrap.appendChild(titleDiv);
+                const gridDiv = document.createElement("div");
+                gridDiv.className = "food-grid";
+                items.forEach(food => {
+                    const isSoldOut = food.status === 'soldout';
+                    const itemDiv = document.createElement("div");
+                    
+                    let itemClass = "single-food-item";
+                    if (isSoldOut) itemClass += " sold-out";
+                    itemDiv.className = itemClass;
+                    
+                    let priceHtml = `<div class="single-food-price">${food.price}元</div>`;
+                    if (isSoldOut) priceHtml = `<div class="sold-out-text">❌ 售完</div>`;
+                    
+                    itemDiv.innerHTML = `<div>${food.name}</div>${priceHtml}`;
+                    
+                    if (!isSoldOut) {
+                        itemDiv.onclick = () => chooseFood(food.id, food.name, food.price);
+                    }
+                    gridDiv.appendChild(itemDiv);
+                })
+                wrap.appendChild(gridDiv);
+            })
+        }
+
+        function chooseFood(id, name, price) {
+            if (currentOrderType === "meal") {
+                if (!selectMeal) { alert("請先選擇套餐"); return; }
+                if (needSelectNum > 0 && selectFoodArr.length >= needSelectNum) {
+                    alert(`此套餐限選${needSelectNum}樣小菜`);
+                    return;
+                }
+            }
+            const exist = selectFoodArr.find(x => x.id === id);
+            if (exist) { showToast("已選過此品項"); return; }
+            selectFoodArr.push({ id, name, price });
+            calcPrice();
+            renderSelectList();
+            showToast(`已加入 ${name}`);
+            checkChickenLegOption();
+        }
+
+        function updateFlavorPrice() {
+            const baseTotal = baseMealPrice + totalDiff;
+            const selectedFlavor = document.querySelector('input[name="flavor"]:checked').value;
+            if(baseTotal < 100 && selectedFlavor !== "原味"){
+                flavorExtraPrice = 10;
+            }else{
+                flavorExtraPrice = 0;
+            }
+            document.getElementById("flavorPrice").textContent = flavorExtraPrice;
+            const allTotal = baseTotal + flavorExtraPrice;
+            document.getElementById("allPrice").textContent = allTotal;
+        }
+
+        function calcPrice() {
+            totalDiff = 0;
+            if (currentOrderType === "meal") {
+                selectFoodArr.forEach(item => {
+                    if (item.price > 20) totalDiff += item.price - 20;
+                })
+            } else {
+                baseMealPrice = 0;
+                totalDiff = 0;
+                selectFoodArr.forEach(item => baseMealPrice += item.price);
+            }
+            document.getElementById("mealPrice").textContent = currentOrderType === "meal" ? baseMealPrice : 0;
+            document.getElementById("diffPrice").textContent = totalDiff;
+            updateFlavorPrice();
+        }
+
+        function renderSelectList() {
+            let html = "";
+            selectFoodArr.forEach((item, idx) => {
+                let diffTxt = "";
+                if (currentOrderType === "meal" && item.price > 20) {
+                    diffTxt = `(補${item.price - 20}元)`;
+                }
+                html += `
+                <div>${idx+1}. ${item.name} ${item.price}元 ${diffTxt}
+                <button onclick="delFood(${item.id})" style="color:#ef4444;border:none;background:none;cursor:pointer;">移除</button>
+                </div>
+                `;
+            })
+            document.getElementById("selectList").innerHTML = html || "尚未選擇食材";
+        }
+
+        function delFood(id) {
+            selectFoodArr = selectFoodArr.filter(x => x.id !== id);
+            calcPrice();
+            renderSelectList();
+            showToast("已移除品項");
+            checkChickenLegOption();
+        }
+
+        function getFlavorInfo() {
+            const flavor = document.querySelector('input[name="flavor"]:checked').value;
+            const salt = document.querySelector('input[name="salt"]:checked').value;
+            const toppings = [];
+            document.querySelectorAll('input[name="topping"]:checked').forEach(checkbox => {
+                toppings.push(checkbox.value);
+            });
+            const spicy = document.querySelector('input[name="spicy"]:checked').value;
+            const removeBone = document.getElementById("removeBone").checked;
+            return { flavor, salt, toppings, spicy, removeBone };
+        }
+
+        function getNowDateTime(){
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth()+1).padStart(2,'0');
+            const day = String(now.getDate()).padStart(2,'0');
+            const h = String(now.getHours()).padStart(2,'0');
+            const m = String(now.getMinutes()).padStart(2,'0');
+            const s = String(now.getSeconds()).padStart(2,'0');
+            return `${year}-${month}-${day} ${h}:${m}:${s}`;
+        }
+
+        function showSuccessPage(orderData) {
+            try {
+                // ==== 最保險的切換寫法：使用 inline-style ====
+                document.getElementById("orderMainPage").style.display = "none";
+                document.getElementById("orderSuccessPage").style.display = "block";
+                
+                document.getElementById("successOrderNo").textContent = orderData.orderNo;
+                document.getElementById("successOrderTime").textContent = orderData.nowTime;
+                document.getElementById("successPhoneLast3").textContent = orderData.phone3;
+                
+                let orderTypeText = "";
+                if (currentOrderType === "meal") {
+                    const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
+                    orderTypeText = mealTypeMap[selectMeal] || "套餐";
+                } else {
+                    orderTypeText = "單點";
+                }
+                document.getElementById("successOrderType").textContent = orderTypeText;
+                
+                let foodListHtml = "";
+                orderData.foodList.forEach((item, idx) => {
+                    foodListHtml += `
+    <div class="detail-item">
+        <span class="detail-label food-num">${idx+1}.</span>
+        ${item.name} ${item.price}元 ${item.diffTxt || ""}
+    </div>`;
+                });
+                document.getElementById("successFoodList").innerHTML = foodListHtml;
+                
+                document.getElementById("successTotalPrice").textContent = orderData.totalAll;
+                
+                document.getElementById("successFlavor").textContent = orderData.flavorInfo.flavor;
+                document.getElementById("successSalt").textContent = orderData.flavorInfo.salt;
+                document.getElementById("successToppings").textContent = orderData.flavorInfo.toppings.length > 0 ? orderData.flavorInfo.toppings.join("、") : "無";
+                document.getElementById("successSpicy").textContent = orderData.flavorInfo.spicy;
+                
+                if (orderData.flavorInfo.removeBone) {
+                    document.getElementById("successBoneOption").style.display = "block";
+                } else {
+                    document.getElementById("successBoneOption").style.display = "none";
+                }
+                
+                window.scrollTo(0, 0);
+            } catch (err) {
+                alert("顯示成功畫面時發生錯誤：" + err.message);
+            }
+        }
+
+        function backToOrderPage() {
+            document.getElementById("orderSuccessPage").style.display = "none";
+            document.getElementById("orderMainPage").style.display = "block";
+            clearSelect();
+            window.scrollTo(0, 0);
+        }
+
+        async function submitOrder() {
+            try {
+                if (currentOrderType === "meal") {
+                    if (!selectMeal) { alert("請先選套餐"); return; }
+                    if (needSelectNum > 0 && selectFoodArr.length < needSelectNum) {
+                        alert(`還差 ${needSelectNum - selectFoodArr.length} 樣小菜`);
+                        return;
+                    }
+                } else {
+                    if (selectFoodArr.length === 0) { alert("請至少選一樣食材"); return; }
+                }
+
+                const phone3 = document.getElementById("phoneLast3").value.trim();
+                if(phone3 === ""){
+                    alert("請填寫手機號碼末3碼,將成為你的取餐號碼.");
+                    document.getElementById("phoneLast3").focus();
+                    return;
+                }
+                if(phone3.length !== 3){
+                    alert("手機末3碼需輸入3位數字");
+                    document.getElementById("phoneLast3").focus();
+                    return;
+                }
+
+                const flavorInfo = getFlavorInfo();
+                const orderNo = "ORD" + Date.now();
+                const nowTime = getNowDateTime();
+                const totalAll = baseMealPrice + totalDiff + flavorExtraPrice;
+
+                const foodList = selectFoodArr.map((item, idx) => {
+                    let diffTxt = "";
+                    if(currentOrderType==="meal" && item.price>20) diffTxt = `(補${item.price-20}元)`;
+                    return { name: item.name, price: item.price, diffTxt: diffTxt };
+                });
+
+                let orderTypeText = "單點";
+                if (currentOrderType === "meal") {
+                    const mealTypeMap = { "smallBamboo": "小筍餐", "family": "全家餐", "smallSet": "小套餐" };
+                    orderTypeText = mealTypeMap[selectMeal] || "套餐";
+                }
+                let foodText = foodList.map((f, i) => `${i + 1}. ${f.name} ${f.price}元 ${f.diffTxt}`.trim()).join('\n');
+                let toppingsText = flavorInfo.toppings.length > 0 ? flavorInfo.toppings.join("、") : "無";
+                let boneText = flavorInfo.removeBone ? "、雞腿去骨" : "";
+                
+                globalClipboardText = `【雞老闆輕食料理 訂單明細】
+取餐叫號：${phone3}
+訂單類型：${orderTypeText}
+
+餐點內容：
+${foodText}
+
+口味設定：${flavorInfo.flavor}、${flavorInfo.salt}、${flavorInfo.spicy}、配料(${toppingsText})${boneText}
+應付總額：${totalAll} 元
+訂單編號：${orderNo}`;
+
+                showToast("訂單處理中，請稍候...");
+                
+                const { error } = await client.from("food_orderlist").insert([{
+                    order_no: orderNo,
+                    order_type: currentOrderType === "meal" ? selectMeal : "single",
+                    select_food: selectFoodArr,
+                    total_price: totalAll,
+                    diff_price: totalDiff,
+                    flavor_price: flavorExtraPrice,
+                    flavor_info: flavorInfo,
+                    phone_last3: phone3,
+                    create_time: nowTime,
+                    note: flavorInfo.removeBone ? "雞腿去骨" : ""
+                }]);
+                
+                if (error) {
+                    console.log(error);
+                    alert("訂單送出失敗：" + JSON.stringify(error));
+                } else {
+                    const orderData = {
+                        orderNo: orderNo,
+                        nowTime: nowTime,
+                        phone3: phone3,
+                        foodList: foodList,
+                        flavorInfo: flavorInfo,
+                        totalAll: totalAll
+                    };
+                    
+                    showSuccessPage(orderData);
+                }
+            } catch (err) {
+                // 如果手機發生奇怪的錯誤，會在這裡跳出提示
+                alert("發生未預期錯誤，請截圖給店家：" + err.message);
+            }
+        }
+
+        loadAllData();
+    </script>
+</body>
+</html>
