@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品標籤管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-8 text-gray-800 font-sans relative">
+    <div id="app" class="max-w-7xl mx-auto space-y-8">
+        <h1 class="text-3xl font-bold text-center text-blue-600">📦 商品標籤管理系統</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- ================= 左側區塊 ================= -->
+            <div class="space-y-8">
+                
+                <!-- 1. 標籤管理 (新增與列表) -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🏷️ 標籤管理</h2>
+                    
+                    <!-- 新增標籤表單 -->
+                    <form @submit.prevent="addTag" class="space-y-3 mb-6">
+                        <div class="flex gap-2">
+                            <select v-model="newTag.category" class="border p-2 rounded w-1/3" required>
+                                <option value="brand">品牌標籤</option>
+                                <option value="supplier">供應商標籤</option>
+                                <option value="attribute">屬性標籤</option>
+                            </select>
+                            <input v-model="newTag.name" type="text" placeholder="標籤名稱" class="border p-2 rounded w-2/3" required>
+                        </div>
+                        <input v-if="newTag.category !== 'attribute'" v-model="newTag.url" type="url" placeholder="網站連結 (URL)" class="w-full border p-2 rounded">
+                        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">新增標籤</button>
+                    </form>
+
+                    <!-- 標籤列表 (加入模糊搜尋) -->
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-sm text-gray-600">現有標籤清單：</h3>
+                    </div>
+                    <!-- 搜尋標籤輸入框 -->
+                    <input v-model="tagSearchQuery" type="text" placeholder="🔍 模糊搜尋標籤 (編輯/刪除)..." class="w-full border p-2 rounded mb-2 text-sm bg-gray-50 focus:bg-white transition">
+                    
+                    <ul class="space-y-2 max-h-[250px] overflow-y-auto pr-2 border-t pt-2">
+                        <li v-for="tag in filteredAllTags" :key="tag.id" class="border p-2 rounded bg-gray-50 flex justify-between items-center">
+                            <div class="overflow-hidden">
+                                <span class="font-bold">{{ tag.name }}</span>
+                                <span class="text-xs text-gray-500 ml-1">({{ tagCategoryName(tag.category) }})</span>
+                                <a v-if="tag.url" :href="tag.url" target="_blank" class="text-blue-500 text-xs ml-2 hover:underline truncate inline-block align-bottom max-w-[150px]">🌐 連結</a>
+                            </div>
+                            <div class="flex space-x-3 shrink-0">
+                                <button @click="openTagEditModal(tag)" class="text-blue-600 text-sm hover:underline font-bold">編輯</button>
+                                <button @click="deleteTag(tag.id)" class="text-red-500 text-sm hover:underline font-bold">刪除</button>
+                            </div>
+                        </li>
+                        <li v-if="filteredAllTags.length === 0" class="text-gray-500 text-center py-2 text-sm">找不到符合的標籤</li>
+                    </ul>
+                </div>
+
+                <!-- 2. 新增商品 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">📦 新增商品</h2>
+                    <form @submit.prevent="addProduct" class="space-y-3">
+                        <input v-model="newProduct.name" type="text" placeholder="商品名稱" class="w-full border p-2 rounded" required>
+                        <input v-model="newProduct.url" type="url" placeholder="商品網址" class="w-full border p-2 rounded">
+                        <textarea v-model="newProduct.note" placeholder="備註" class="w-full border p-2 rounded"></textarea>
+                        
+                        <div class="border p-3 rounded bg-gray-50">
+                            <h3 class="font-bold text-sm mb-2">選擇標籤：</h3>
+                            <div class="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto p-1">
+                                <label v-for="tag in allTags" :key="tag.id" class="flex items-center space-x-1 text-sm bg-white border px-2 py-1 rounded cursor-pointer hover:bg-blue-50">
+                                    <input type="checkbox" :value="tag.id" v-model="newProduct.selectedTags">
+                                    <span>{{ tag.name }}</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">新增商品</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ================= 右側區塊 ================= -->
+            <div class="space-y-8">
+                
+                <!-- 3. 商品模糊查詢 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🔍 查詢商品 (名稱)</h2>
+                    <input v-model="searchQuery" @input="searchProducts" type="text" placeholder="輸入商品名稱模糊搜尋..." class="w-full border p-2 rounded mb-4 bg-gray-50 focus:bg-white transition">
+                    
+                    <ul class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        <li v-for="product in searchResults" :key="product.id" class="border p-3 rounded bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg">{{ product.name }}</h3>
+                                    <p v-if="product.note" class="text-gray-600 text-sm mt-1">{{ product.note }}</p>
+                                    <a v-if="product.url" :href="product.url" target="_blank" class="text-blue-500 text-sm hover:underline">🔗 前往商品</a>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button @click="openProductEditModal(product)" class="text-blue-600 text-sm hover:underline font-bold">編輯</button>
+                                    <button @click="deleteProduct(product.id)" class="text-red-500 text-sm hover:underline font-bold">刪除</button>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <span v-for="pt in product.label_product_tags" :key="pt.tag_id" class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded flex items-center gap-1">
+                                    {{ pt.label_tags.name }} 
+                                    <a v-if="pt.label_tags.url" :href="pt.label_tags.url" target="_blank" class="text-blue-600 hover:text-blue-800">🌐</a>
+                                </span>
+                            </div>
+                        </li>
+                        <li v-if="searchResults.length === 0" class="text-gray-500 text-center py-4">無符合商品</li>
+                    </ul>
+                </div>
+
+                <!-- 4. 依標籤查詢商品 (加入模糊搜尋) -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🎯 依標籤尋找商品</h2>
+                    
+                    <!-- 尚未選擇標籤時：顯示搜尋列與標籤池 -->
+                    <div v-if="!selectedSearchTagObj">
+                        <input v-model="productTagSearchQuery" type="text" placeholder="🔍 模糊搜尋標籤以尋找商品..." class="w-full border p-2 rounded mb-2 bg-gray-50 focus:bg-white transition">
+                        
+                        <div class="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto p-2 border rounded bg-gray-50 mb-4">
+                            <button v-for="tag in filteredProductTags" :key="tag.id"
+                                    @click="selectTagForSearch(tag)"
+                                    class="text-sm px-3 py-1 bg-white border border-gray-300 rounded-full hover:bg-blue-500 hover:text-white transition-colors duration-200">
+                                {{ tag.name }}
+                            </button>
+                            <span v-if="filteredProductTags.length === 0" class="text-gray-500 text-sm">找不到相關標籤</span>
+                        </div>
+                    </div>
+
+                    <!-- 已選擇標籤時：顯示目前選取的標籤，並提供清除按鈕 -->
+                    <div v-else class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded flex justify-between items-center">
+                        <span class="font-bold text-blue-800">
+                            目前選取：{{ selectedSearchTagObj.name }} 
+                            <span class="text-xs font-normal text-blue-600">({{ tagCategoryName(selectedSearchTagObj.category) }})</span>
+                        </span>
+                        <button @click="clearSelectedTag" class="text-red-500 hover:underline text-sm font-bold bg-white px-2 py-1 rounded border border-red-200">重新選擇</button>
+                    </div>
+
+                    <ul class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                        <li v-for="item in tagSearchResults" :key="item.product_id" class="border p-3 rounded bg-gray-50 flex justify-between items-center">
+                            <span class="font-bold">{{ item.label_products.name }}</span>
+                            <button @click="openProductEditModal(item.label_products)" class="text-blue-600 text-sm hover:underline">編輯</button>
+                        </li>
+                        <li v-if="selectedSearchTagObj && tagSearchResults.length === 0" class="text-gray-500 text-center py-2">此標籤尚無對應商品</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 模態框 (Modals) ================= -->
+
+        <!-- A. 編輯【標籤】 Modal -->
+        <div v-if="editingTag" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">✏️ 編輯標籤</h2>
+                <form @submit.prevent="updateTag" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">標籤名稱</label>
+                        <input v-model="editingTag.name" type="text" class="w-full border p-2 rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">標籤分類</label>
+                        <select v-model="editingTag.category" class="w-full border p-2 rounded" required>
+                            <option value="brand">品牌標籤</option>
+                            <option value="supplier">供應商標籤</option>
+                            <option value="attribute">商品屬性標籤</option>
+                        </select>
+                    </div>
+                    <div v-if="editingTag.category !== 'attribute'">
+                        <label class="block text-sm font-bold mb-1">網站連結 (URL)</label>
+                        <input v-model="editingTag.url" type="url" class="w-full border p-2 rounded">
+                    </div>
+                    
+                    <div class="flex space-x-3 mt-6">
+                        <button type="button" @click="closeTagEditModal" class="w-1/2 bg-gray-400 text-white p-2 rounded hover:bg-gray-500">取消</button>
+                        <button type="submit" class="w-1/2 bg-blue-600 text-white p-2 rounded hover:bg-blue-700">儲存標籤</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- B. 編輯【商品】 Modal -->
+        <div v-if="editingProduct" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">✏️ 編輯商品</h2>
+                <form @submit.prevent="updateProduct" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-bold mb-1">商品名稱</label>
+                        <input v-model="editingProduct.name" type="text" class="w-full border p-2 rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">商品網址</label>
+                        <input v-model="editingProduct.url" type="url" class="w-full border p-2 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">備註</label>
+                        <textarea v-model="editingProduct.note" class="w-full border p-2 rounded"></textarea>
+                    </div>
+                    
+                    <div class="border p-3 rounded bg-gray-50">
+                        <h3 class="font-bold text-sm mb-2">更新標籤：</h3>
+                        <div class="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto p-1">
+                            <label v-for="tag in allTags" :key="tag.id" class="flex items-center space-x-1 text-sm bg-white border px-2 py-1 rounded cursor-pointer hover:bg-blue-50">
+                                <input type="checkbox" :value="tag.id" v-model="editingProduct.selectedTags">
+                                <span>{{ tag.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3 mt-6">
+                        <button type="button" @click="closeProductEditModal" class="w-1/2 bg-gray-400 text-white p-2 rounded hover:bg-gray-500">取消</button>
+                        <button type="submit" class="w-1/2 bg-blue-600 text-white p-2 rounded hover:bg-blue-700">儲存修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://nllzyoxyeycqjqaregxx.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbHp5b3h5ZXljcWpxYXJlZ3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTc2ODQsImV4cCI6MjA5NzkzMzY4NH0.l-LlBNKY57Gwv6VbT1LXEmTKG5V0kNe9veUXHHYAI2M";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 引入 Vue 3 的 computed 來實作即時過濾功能
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const allTags = ref([]);
+                const searchResults = ref([]);
+                const tagSearchResults = ref([]);
+                
+                const newTag = ref({ name: '', category: 'brand', url: '' });
+                const newProduct = ref({ name: '', url: '', note: '', selectedTags: [] });
+                
+                const searchQuery = ref('');
+                
+                // 標籤相關的搜尋字串
+                const tagSearchQuery = ref('');             // 用於左側：標籤管理的模糊搜尋
+                const productTagSearchQuery = ref('');      // 用於右側：依標籤尋找商品的模糊搜尋
+                const selectedSearchTag = ref('');          // 記錄選中的標籤 ID
+
+                // 狀態變數 (控制彈出視窗)
+                const editingProduct = ref(null);
+                const editingTag = ref(null);
+
+                // ---------------- 計算屬性 (即時模糊搜尋核心) ----------------
+                
+                // 過濾【左側標籤管理】的清單
+                const filteredAllTags = computed(() => {
+                    if (!tagSearchQuery.value) return allTags.value;
+                    const query = tagSearchQuery.value.toLowerCase();
+                    return allTags.value.filter(tag => tag.name.toLowerCase().includes(query));
+                });
+
+                // 過濾【右側依標籤找商品】的清單
+                const filteredProductTags = computed(() => {
+                    if (!productTagSearchQuery.value) return allTags.value;
+                    const query = productTagSearchQuery.value.toLowerCase();
+                    return allTags.value.filter(tag => tag.name.toLowerCase().includes(query));
+                });
+
+                // 取得目前選取的標籤完整物件 (供 UI 顯示目前選取的標籤名稱)
+                const selectedSearchTagObj = computed(() => {
+                    if (!selectedSearchTag.value) return null;
+                    return allTags.value.find(t => t.id === selectedSearchTag.value) || null;
+                });
+
+                // ---------------- 核心功能 ----------------
+
+                const fetchTags = async () => {
+                    const { data, error } = await supabaseClient.from('label_tags').select('*').order('created_at', { ascending: false });
+                    if (!error) allTags.value = data;
+                };
+
+                const tagCategoryName = (cat) => {
+                    const map = { 'brand': '品牌', 'supplier': '供應商', 'attribute': '屬性' };
+                    return map[cat] || cat;
+                };
+
+                // ---------------- 標籤 (Tag) 管理功能 ----------------
+
+                const addTag = async () => {
+                    if (newTag.value.category === 'attribute') newTag.value.url = null;
+                    const { error } = await supabaseClient.from('label_tags').insert([newTag.value]);
+                    if (error) { alert('新增標籤失敗或名稱重複！'); }
+                    else {
+                        newTag.value = { name: '', category: 'brand', url: '' };
+                        fetchTags();
+                    }
+                };
+
+                const openTagEditModal = (tag) => {
+                    editingTag.value = { ...tag };
+                };
+
+                const closeTagEditModal = () => {
+                    editingTag.value = null;
+                };
+
+                const updateTag = async () => {
+                    if (editingTag.value.category === 'attribute') editingTag.value.url = null;
+                    
+                    const { error } = await supabaseClient
+                        .from('label_tags')
+                        .update({
+                            name: editingTag.value.name,
+                            category: editingTag.value.category,
+                            url: editingTag.value.url
+                        })
+                        .eq('id', editingTag.value.id);
+
+                    if (error) {
+                        alert('更新標籤失敗！可能是名稱已存在');
+                    } else {
+                        closeTagEditModal();
+                        fetchTags();
+                        searchProducts(); 
+                    }
+                };
+
+                const deleteTag = async (id) => {
+                    if (confirm('確定要刪除此標籤嗎？這會同時移除商品上的該標籤。')) {
+                        await supabaseClient.from('label_tags').delete().eq('id', id);
+                        fetchTags();
+                        searchProducts(); 
+                        if (selectedSearchTag.value === id) {
+                            clearSelectedTag(); // 若刪除的剛好是正在查詢的標籤，則清除查詢狀態
+                        } else if (selectedSearchTag.value) {
+                            searchProductsByTag();
+                        }
+                    }
+                };
+
+                // ---------------- 商品 (Product) 管理功能 ----------------
+
+                const addProduct = async () => {
+                    const { data: productData, error: productError } = await supabaseClient
+                        .from('label_products')
+                        .insert([{
+                            name: newProduct.value.name,
+                            url: newProduct.value.url,
+                            note: newProduct.value.note
+                        }]).select();
+
+                    if (productError) { alert('新增商品失敗'); return; }
+
+                    const productId = productData[0].id;
+                    if (newProduct.value.selectedTags.length > 0) {
+                        const tagInserts = newProduct.value.selectedTags.map(tagId => ({
+                            product_id: productId, tag_id: tagId
+                        }));
+                        await supabaseClient.from('label_product_tags').insert(tagInserts);
+                    }
+
+                    alert('商品新增成功！');
+                    newProduct.value = { name: '', url: '', note: '', selectedTags: [] };
+                    searchProducts();
+                };
+
+                const deleteProduct = async (id) => {
+                    if (confirm('確定要刪除此商品嗎？')) {
+                        await supabaseClient.from('label_products').delete().eq('id', id);
+                        searchProducts();
+                        if(selectedSearchTag.value) searchProductsByTag();
+                    }
+                };
+
+                const searchProducts = async () => {
+                    let query = supabaseClient
+                        .from('label_products')
+                        .select(`*, label_product_tags( tag_id, label_tags(*) )`)
+                        .order('created_at', { ascending: false });
+
+                    if (searchQuery.value) {
+                        query = query.ilike('name', `%${searchQuery.value}%`);
+                    }
+                    
+                    const { data, error } = await query.limit(20);
+                    if (!error) searchResults.value = data;
+                };
+
+                // 右側依標籤找商品的操作
+                const selectTagForSearch = (tag) => {
+                    selectedSearchTag.value = tag.id;
+                    searchProductsByTag();
+                };
+
+                const clearSelectedTag = () => {
+                    selectedSearchTag.value = '';
+                    tagSearchResults.value = [];
+                    productTagSearchQuery.value = ''; // 清除搜尋字串
+                };
+
+                const searchProductsByTag = async () => {
+                    if (!selectedSearchTag.value) {
+                        tagSearchResults.value = [];
+                        return;
+                    }
+                    const { data, error } = await supabaseClient
+                        .from('label_product_tags')
+                        .select(`product_id, label_products(*, label_product_tags(tag_id))`)
+                        .eq('tag_id', selectedSearchTag.value);
+                    
+                    if (!error) tagSearchResults.value = data;
+                };
+
+                const openProductEditModal = (product) => {
+                    const currentTagIds = product.label_product_tags 
+                        ? product.label_product_tags.map(pt => pt.tag_id) : [];
+                    editingProduct.value = {
+                        id: product.id, name: product.name,
+                        url: product.url, note: product.note,
+                        selectedTags: currentTagIds
+                    };
+                };
+
+                const closeProductEditModal = () => {
+                    editingProduct.value = null;
+                };
+
+                const updateProduct = async () => {
+                    const { id, name, url, note, selectedTags } = editingProduct.value;
+
+                    const { error: pErr } = await supabaseClient
+                        .from('label_products')
+                        .update({ name, url, note }).eq('id', id);
+
+                    if (pErr) { alert('更新商品資料失敗！'); return; }
+
+                    await supabaseClient.from('label_product_tags').delete().eq('product_id', id);
+                    if (selectedTags.length > 0) {
+                        const tagInserts = selectedTags.map(tagId => ({
+                            product_id: id, tag_id: tagId
+                        }));
+                        await supabaseClient.from('label_product_tags').insert(tagInserts);
+                    }
+
+                    closeProductEditModal();
+                    searchProducts(); 
+                    if (selectedSearchTag.value) searchProductsByTag(); 
+                };
+
+                onMounted(() => {
+                    fetchTags();
+                    searchProducts();
+                });
+
+                return {
+                    allTags, searchResults, tagSearchResults,
+                    newTag, newProduct, editingProduct, editingTag,
+                    searchQuery, selectedSearchTag,
+                    tagSearchQuery, productTagSearchQuery,
+                    filteredAllTags, filteredProductTags, selectedSearchTagObj, // 匯出計算屬性供 HTML 使用
+                    tagCategoryName,
+                    // 標籤 Functions
+                    addTag, openTagEditModal, closeTagEditModal, updateTag, deleteTag,
+                    // 商品 Functions
+                    addProduct, deleteProduct, searchProducts, 
+                    selectTagForSearch, clearSelectedTag, searchProductsByTag,
+                    openProductEditModal, closeProductEditModal, updateProduct
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
