@@ -549,7 +549,7 @@
                         await supabaseClient.from('label_product_tags').insert(tagInserts);
                     }
 
-                    alert('✅ 商品新增成功！'); 
+                    // alert('✅ 商品新增成功！'); 
                     newProduct.value = { name: '', url: '', note: '', selectedTags: [] }; 
                     productFormTagSearchQuery.value = ''; 
                     searchProducts();
